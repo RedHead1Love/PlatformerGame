@@ -1,0 +1,19 @@
+fileFormatVersion: 2
+guid: 84fe9c0e17657bd47b480f58e0ccbbd3
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - attack1HitSound: {instanceID: 0}
+  - attack2HitSound: {instanceID: 0}
+  - attack3HitSound: {instanceID: 0}
+  - airAttackHitSound: {instanceID: 0}
+  - attack1MissSound: {instanceID: 0}
+  - attack2MissSound: {instanceID: 0}
+  - attack3MissSound: {instanceID: 0}
+  - airAttackMissSound: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

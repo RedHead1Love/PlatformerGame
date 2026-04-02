@@ -1,0 +1,157 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!74 &7400000
+AnimationClip:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Logic
+  serializedVersion: 7
+  m_Legacy: 0
+  m_Compressed: 0
+  m_UseHighQualityCurve: 1
+  m_RotationCurves: []
+  m_CompressedRotationCurves: []
+  m_EulerCurves: []
+  m_PositionCurves: []
+  m_ScaleCurves: []
+  m_FloatCurves: []
+  m_PPtrCurves:
+  - serializedVersion: 2
+    curve:
+    - time: 0
+      value: {fileID: 21300000, guid: 7a5a68d53a721a44c95ca7a03626d7e1, type: 3}
+    - time: 0.21666667
+      value: {fileID: 21300000, guid: 60de44ca253e77146bd7a8c4d9793af3, type: 3}
+    - time: 0.43333334
+      value: {fileID: 21300000, guid: 7d42c02392da9c44bbb56c66059c6d5c, type: 3}
+    - time: 0.6666667
+      value: {fileID: 21300000, guid: 8cc84a5cb1aabe44cb75960c4a072293, type: 3}
+    - time: 0.8333333
+      value: {fileID: 21300000, guid: b489a0132d02a5648b7de6d1f448ae6e, type: 3}
+    - time: 1
+      value: {fileID: 21300000, guid: 13cbe636a0c0ae54ca207fe33613f9d7, type: 3}
+    - time: 1.1666666
+      value: {fileID: 21300000, guid: 653b4f35afb97204dab771ff7211acbb, type: 3}
+    - time: 1.3333334
+      value: {fileID: 21300000, guid: e0ad465cb7390184889f479af877889b, type: 3}
+    - time: 1.4666667
+      value: {fileID: 21300000, guid: 27272751df0c5d6459984a4b7e1eff5b, type: 3}
+    - time: 1.5666667
+      value: {fileID: 21300000, guid: bd30f269f5c7c0c4b9b47f86e0d26e6e, type: 3}
+    - time: 1.6666666
+      value: {fileID: 21300000, guid: 6f40e99bebb26454eacac7d62116654d, type: 3}
+    - time: 1.8333334
+      value: {fileID: 21300000, guid: 9ca2bb7be282f1f47a1887ff4c5431a8, type: 3}
+    - time: 2
+      value: {fileID: 21300000, guid: 9ca2bb7be282f1f47a1887ff4c5431a8, type: 3}
+    attribute: m_Sprite
+    path: Lightingtrap
+    classID: 212
+    script: {fileID: 0}
+    flags: 2
+  m_SampleRate: 60
+  m_WrapMode: 0
+  m_Bounds:
+    m_Center: {x: 0, y: 0, z: 0}
+    m_Extent: {x: 0, y: 0, z: 0}
+  m_ClipBindingConstant:
+    genericBindings:
+    - serializedVersion: 2
+      path: 28728082
+      attribute: 0
+      script: {fileID: 0}
+      typeID: 212
+      customType: 23
+      isPPtrCurve: 1
+      isIntCurve: 0
+      isSerializeReferenceCurve: 0
+    pptrCurveMapping:
+    - {fileID: 21300000, guid: 7a5a68d53a721a44c95ca7a03626d7e1, type: 3}
+    - {fileID: 21300000, guid: 60de44ca253e77146bd7a8c4d9793af3, type: 3}
+    - {fileID: 21300000, guid: 7d42c02392da9c44bbb56c66059c6d5c, type: 3}
+    - {fileID: 21300000, guid: 8cc84a5cb1aabe44cb75960c4a072293, type: 3}
+    - {fileID: 21300000, guid: b489a0132d02a5648b7de6d1f448ae6e, type: 3}
+    - {fileID: 21300000, guid: 13cbe636a0c0ae54ca207fe33613f9d7, type: 3}
+    - {fileID: 21300000, guid: 653b4f35afb97204dab771ff7211acbb, type: 3}
+    - {fileID: 21300000, guid: e0ad465cb7390184889f479af877889b, type: 3}
+    - {fileID: 21300000, guid: 27272751df0c5d6459984a4b7e1eff5b, type: 3}
+    - {fileID: 21300000, guid: bd30f269f5c7c0c4b9b47f86e0d26e6e, type: 3}
+    - {fileID: 21300000, guid: 6f40e99bebb26454eacac7d62116654d, type: 3}
+    - {fileID: 21300000, guid: 9ca2bb7be282f1f47a1887ff4c5431a8, type: 3}
+    - {fileID: 21300000, guid: 9ca2bb7be282f1f47a1887ff4c5431a8, type: 3}
+  m_AnimationClipSettings:
+    serializedVersion: 2
+    m_AdditiveReferencePoseClip: {fileID: 0}
+    m_AdditiveReferencePoseTime: 0
+    m_StartTime: 0
+    m_StopTime: 2.0166667
+    m_OrientationOffsetY: 0
+    m_Level: 0
+    m_CycleOffset: 0
+    m_HasAdditiveReferencePose: 0
+    m_LoopTime: 1
+    m_LoopBlend: 0
+    m_LoopBlendOrientation: 0
+    m_LoopBlendPositionY: 0
+    m_LoopBlendPositionXZ: 0
+    m_KeepOriginalOrientation: 0
+    m_KeepOriginalPositionY: 1
+    m_KeepOriginalPositionXZ: 0
+    m_HeightFromFeet: 0
+    m_Mirror: 0
+  m_EditorCurves: []
+  m_EulerEditorCurves: []
+  m_HasGenericRootTransform: 0
+  m_HasMotionFloatCurves: 0
+  m_Events:
+  - time: 0.6666667
+    functionName: AnimationEvent_LightningStrike
+    data: 
+    objectReferenceParameter: {fileID: 0}
+    floatParameter: 0
+    intParameter: 0
+    messageOptions: 0
+  - time: 0.8333333
+    functionName: AnimationEvent_ApplyDamage
+    data: 
+    objectReferenceParameter: {fileID: 0}
+    floatParameter: 0
+    intParameter: 0
+    messageOptions: 0
+  - time: 1
+    functionName: AnimationEvent_ApplyDamage
+    data: 
+    objectReferenceParameter: {fileID: 0}
+    floatParameter: 0
+    intParameter: 0
+    messageOptions: 0
+  - time: 1.1666666
+    functionName: AnimationEvent_ApplyDamage
+    data: 
+    objectReferenceParameter: {fileID: 0}
+    floatParameter: 0
+    intParameter: 0
+    messageOptions: 0
+  - time: 1.3333334
+    functionName: AnimationEvent_ApplyDamage
+    data: 
+    objectReferenceParameter: {fileID: 0}
+    floatParameter: 0
+    intParameter: 0
+    messageOptions: 0
+  - time: 1.4666667
+    functionName: AnimationEvent_ApplyDamage
+    data: 
+    objectReferenceParameter: {fileID: 0}
+    floatParameter: 0
+    intParameter: 0
+    messageOptions: 0
+  - time: 1.5666667
+    functionName: AnimationEvent_ApplyDamage
+    data: 
+    objectReferenceParameter: {fileID: 0}
+    floatParameter: 0
+    intParameter: 0
+    messageOptions: 0
