@@ -32,9 +32,9 @@ namespace GameLogic
 
         private void InitializeWallet()
         {
-            _coins[CoinType.Bronze] = 0;
-            _coins[CoinType.Silver] = 0;
-            _coins[CoinType.Gold] = 0;
+            _coins[CoinType.Bronze] = 20;
+            _coins[CoinType.Silver] = 20;
+            _coins[CoinType.Gold] = 20;
         }
 
         public void AddCoins(CoinType type, int amount)

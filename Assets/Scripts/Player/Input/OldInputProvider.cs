@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+using PlayerDropOnPlatform;
 using UnityEngine;
 
 namespace Player.Input
@@ -10,6 +12,10 @@ namespace Player.Input
         private const string SecondaryAttackButtonName = "Fire2";
         private const KeyCode SlideKeyCode = KeyCode.LeftShift;
         private const KeyCode LiftKeyCode = KeyCode.E;
+        private const KeyCode IsDropHeroKeyCode = KeyCode.S;
+        private const KeyCode MapKey = KeyCode.M;
+        private const KeyCode MenuKey = KeyCode.Escape;
+        private const KeyCode interactKey = KeyCode.F;
 
         private bool _isInputBlocked = false;
         private bool _isShopOpen = false; 
@@ -68,5 +74,10 @@ namespace Player.Input
 
         public bool IsLiftPressed =>
             (_isInputBlocked || _isShopOpen) ? false : UnityEngine.Input.GetKeyDown(LiftKeyCode);
+        public bool IsDropHeroPressed =>
+            (_isInputBlocked || _isShopOpen) ? false : UnityEngine.Input.GetKeyDown(IsDropHeroKeyCode);
+        public bool IsOpenMapPressed => (!_isInputBlocked) && UnityEngine.Input.GetKeyDown(MapKey);
+        public bool IsMenuPressed => (!_isInputBlocked) && UnityEngine.Input.GetKeyDown(MenuKey);
+        public bool IsOpenShopOrChestPressed => (!_isInputBlocked) && UnityEngine.Input.GetKeyDown(KeyCode.F);
     }
 }

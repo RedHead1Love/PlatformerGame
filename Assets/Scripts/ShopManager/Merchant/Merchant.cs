@@ -1,3 +1,4 @@
+using Player.Input;
 using UnityEngine;
 
 namespace NPC
@@ -8,6 +9,9 @@ namespace NPC
         private const int StateIdle2 = 1;
         private const int StateTalk = 2;
         private const float DefaultInteractionRadius = 2f;
+
+        [Header("Input")]
+        [SerializeField] private IInputProvider _inputProvider;
 
         [Header("Animations")]
         [SerializeField] private Animator _animator;
@@ -32,6 +36,7 @@ namespace NPC
         private void Start()
         {
             InitializeReferences();
+            FindInputProvider();
         }
 
         private void InitializeReferences()
@@ -87,9 +92,19 @@ namespace NPC
             }
         }
 
+        private void FindInputProvider()
+        {
+            //_inputProvider = FindObjectOfType<OldInputProvider>();
+            if (_inputProvider == null)
+                _inputProvider = FindObjectOfType<JoystickInput>();
+
+            if (_inputProvider == null)
+                Debug.LogWarning("IInputProvider not found! Map toggle won't work with key.");
+        }
+
         private void HandlePlayerInput()
         {
-            if (_isPlayerInRange && Input.GetKeyDown(KeyCode.F))
+            if (_isPlayerInRange && _inputProvider.IsOpenShopOrChestPressed)
             {
                 if (!_isShopOpen)
                 {
@@ -101,7 +116,7 @@ namespace NPC
                 }
             }
 
-            if (_isShopOpen && Input.GetKeyDown(KeyCode.Escape))
+            if (_isShopOpen && _inputProvider.IsMenuPressed)
             {
                 CloseShop();
             }

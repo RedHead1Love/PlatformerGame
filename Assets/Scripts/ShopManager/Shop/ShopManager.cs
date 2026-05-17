@@ -247,6 +247,25 @@ public sealed class ShopManager : MonoBehaviour
         }
     }
 
+    private void HandleShopInput(Vector2 input)
+    {
+        if (_navigationController.TryMove(input))
+        {
+            OnNavigationChanged();
+        }
+
+        if (UnityEngine.Input.GetKeyDown(KeyCode.Space) ||
+            UnityEngine.Input.GetKeyDown(KeyCode.Return))
+        {
+            TryPurchaseSelectedItem();
+        }
+
+        if (UnityEngine.Input.GetKeyDown(KeyCode.Escape))
+        {
+            CloseShop();
+        }
+    }
+
     private void OnNavigationChanged()
     {
         UpdateUI();
@@ -415,4 +434,10 @@ public sealed class ShopManager : MonoBehaviour
             _inputProvider.SetShopMode(false);
         }
     }
+
+    public void NavigateUp() => HandleShopInput(Vector2.up);
+    public void NavigateDown() => HandleShopInput(Vector2.down);
+    public void NavigateLeft() => HandleShopInput(Vector2.left);
+    public void NavigateRight() => HandleShopInput(Vector2.right);
+    public void ConfirmPurchase() => TryPurchaseSelectedItem();
 }

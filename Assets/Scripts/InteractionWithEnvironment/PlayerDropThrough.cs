@@ -1,5 +1,7 @@
 ﻿using System.Collections;
+using Player.Input;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace PlayerDropOnPlatform
 {
@@ -16,24 +18,40 @@ namespace PlayerDropOnPlatform
         [SerializeField] private float _dropOffsetY = DefaultDropOffsetY;
         [SerializeField] private float _dropVelocityY = DefaultDropVelocityY;
         [SerializeField] private float _ignoreDuration = DefaultIgnoreDuration;
+        [SerializeField] private Button _mobileDropKey;
+        [SerializeField] private IInputProvider _inputProvider;
 
         private Collider2D _playerCollider;
         private Rigidbody2D _rigidbody;
         private LayerMask _platformLayerMask;
+        private bool _dropPressed;
 
         private void Awake()
         {
             _playerCollider = GetComponent<Collider2D>();
             _rigidbody = GetComponent<Rigidbody2D>();
             _platformLayerMask = LayerMask.GetMask(PlatformLayerName);
+            _inputProvider = GetComponentInParent<IInputProvider>() ?? FindObjectOfType<OldInputProvider>();
+        }
+
+        private void Start()
+        {
+
+            if (_mobileDropKey != null)
+                _mobileDropKey.onClick.AddListener(() => _dropPressed = true);
         }
 
         private void Update()
         {
-            if (Input.GetKeyDown(DropKey))
+            if (_inputProvider != null && _inputProvider.IsDropHeroPressed)
             {
                 StartCoroutine(PerformDropThrough());
             }
+        }
+
+        private void OnDestroy()
+        {
+            if (_mobileDropKey != null) _mobileDropKey.onClick.RemoveAllListeners();
         }
 
         private IEnumerator PerformDropThrough()

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Player.Input;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,6 +12,9 @@ public sealed class MiniMapController : MonoBehaviour
     [Header("MiniMap Settings")]
     [SerializeField] private GameObject _miniMapPanel;
     [SerializeField] private KeyCode _toggleKey = DefaultToggleKey;
+
+    [Header("Input")]
+    [SerializeField] private IInputProvider _inputProvider;
 
     [Header("Lock State")]
     [SerializeField] private bool _isMapLocked = true;
@@ -46,6 +50,7 @@ public sealed class MiniMapController : MonoBehaviour
     private void Awake()
     {
         InitializeMiniMap();
+        FindInputProvider();
     }
 
     private void Start()
@@ -102,6 +107,16 @@ public sealed class MiniMapController : MonoBehaviour
         InitializePlayerMarker();
     }
 
+    private void FindInputProvider()
+    {
+        //_inputProvider = FindObjectOfType<OldInputProvider>();
+        if (_inputProvider == null)
+            _inputProvider = FindObjectOfType<JoystickInput>();
+
+        if (_inputProvider == null)
+            Debug.LogWarning("IInputProvider not found! Map toggle won't work with key.");
+    }
+
     private void InitializePlayerMarker()
     {
         if (_playerMarker != null)
@@ -139,7 +154,7 @@ public sealed class MiniMapController : MonoBehaviour
 
     private void HandleMiniMapToggle()
     {
-        if (Input.GetKeyDown(_toggleKey))
+        if (_inputProvider != null && _inputProvider.IsOpenMapPressed)
         {
             ToggleMiniMap();
         }

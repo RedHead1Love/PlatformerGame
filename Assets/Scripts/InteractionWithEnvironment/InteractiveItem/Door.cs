@@ -1,15 +1,19 @@
 using DoorControl;
+using Player.Input;
 using UnityEngine;
 
 public sealed class Door : MonoBehaviour, IOpenable
 {
+    [Header("Input")]
+    [SerializeField] private IInputProvider _inputProvider;
+
     [Header("References")]
     public SpriteRenderer spriteRenderer;
     public Sprite spriteOpened;
     public Sprite spriteClosed;
 
     [Header("Interaction")]
-    public KeyCode interactKey = KeyCode.F;
+    
     public Vector2 triggerSize = new Vector2(1.5f, 1.5f);
     public LayerMask playerLayer;
 
@@ -61,11 +65,12 @@ public sealed class Door : MonoBehaviour, IOpenable
         }
 
         ApplyVisualState(isOpened);
+        FindInputProvider();
     }
 
     private void Update()
     {
-        if (Input.GetKeyDown(interactKey) &&
+        if (_inputProvider.IsOpenShopOrChestPressed &&
             Physics2D.OverlapBox(transform.position, triggerSize, 0, playerLayer))
         {
             TryToggle();
@@ -140,6 +145,15 @@ public sealed class Door : MonoBehaviour, IOpenable
         PlayCloseSound();
     }
 
+    private void FindInputProvider()
+    {
+        //_inputProvider = FindObjectOfType<OldInputProvider>();
+        if (_inputProvider == null)
+            _inputProvider = FindObjectOfType<JoystickInput>();
+
+        if (_inputProvider == null)
+            Debug.LogWarning("IInputProvider not found! Map toggle won't work with key.");
+    }
     private void ApplyVisualState(bool opened)
     {
         if (spriteRenderer != null)
