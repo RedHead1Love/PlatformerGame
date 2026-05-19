@@ -2,6 +2,7 @@ using Player;
 using Player.StateMachine;
 using System.Collections;
 using UnityEngine;
+using YG;
 
 public sealed class DieState : IState
 {
@@ -43,6 +44,7 @@ public sealed class DieState : IState
     private bool IsDieAnimationFinished()
     {
         AnimatorStateInfo stateInfo = _animator.GetCurrentAnimatorStateInfo(0);
+        YG2.InterstitialAdvShow();
 
         return stateInfo.IsName(DieAnimationName) && stateInfo.normalizedTime >= RestartAnimationThreshold;
     }

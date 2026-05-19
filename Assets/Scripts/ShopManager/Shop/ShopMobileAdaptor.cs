@@ -83,25 +83,4 @@ public class ShopMobileAdapter : MonoBehaviour
                 OnCurrencyChanged?.Invoke(currentCurrency);
         }
     }
-
-    // Методы для добавления предметов
-    public void AddItems(WalletManager.CoinType currency, List<IShopItem> items)
-    {
-        _navigation.AddItems(currency, items);
-    }
-
-    public IShopItem GetCurrentItem()
-    {
-        return _navigation.GetCurrentItem();
-    }
-
-    public WalletManager.CoinType GetCurrentCurrency()
-    {
-        return _navigation.CurrentCurrency;
-    }
-
-    public void ResetNavigation()
-    {
-        _navigation.Reset();
-    }
 }
