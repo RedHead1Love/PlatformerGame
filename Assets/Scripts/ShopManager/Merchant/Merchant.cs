@@ -1,5 +1,6 @@
 using Player.Input;
 using UnityEngine;
+using YG;
 
 namespace NPC
 {
@@ -94,10 +95,18 @@ namespace NPC
 
         private void FindInputProvider()
         {
-            //_inputProvider = FindObjectOfType<OldInputProvider>();
             if (_inputProvider == null)
-                _inputProvider = FindObjectOfType<JoystickInput>();
-
+            {
+                if (YG2.envir.isDesktop)
+                {
+                    _inputProvider = FindObjectOfType<OldInputProvider>();
+                }
+                else if (YG2.envir.isMobile)
+                {
+                    _inputProvider = FindObjectOfType<JoystickInput>();
+                }
+            }
+            
             if (_inputProvider == null)
                 Debug.LogWarning("IInputProvider not found! Map toggle won't work with key.");
         }

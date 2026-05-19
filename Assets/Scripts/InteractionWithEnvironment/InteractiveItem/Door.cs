@@ -1,6 +1,7 @@
 using DoorControl;
 using Player.Input;
 using UnityEngine;
+using YG;
 
 public sealed class Door : MonoBehaviour, IOpenable
 {
@@ -147,9 +148,17 @@ public sealed class Door : MonoBehaviour, IOpenable
 
     private void FindInputProvider()
     {
-        //_inputProvider = FindObjectOfType<OldInputProvider>();
         if (_inputProvider == null)
-            _inputProvider = FindObjectOfType<JoystickInput>();
+        {
+            if (YG2.envir.isDesktop)
+            {
+                _inputProvider = FindObjectOfType<OldInputProvider>();
+            }
+            else if (YG2.envir.isMobile)
+            {
+                _inputProvider = FindObjectOfType<JoystickInput>();
+            }
+        }
 
         if (_inputProvider == null)
             Debug.LogWarning("IInputProvider not found! Map toggle won't work with key.");
