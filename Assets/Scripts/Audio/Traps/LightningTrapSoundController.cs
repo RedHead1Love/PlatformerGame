@@ -7,6 +7,7 @@ namespace Traps
     public sealed class LightningTrapSoundController : MonoBehaviour
     {
         private const string PlayerTag = "Player";
+        private const float DefaultVolume = 1f;
 
         [Header("Sound Configuration")]
         [SerializeField] private AudioClip _lightningStrikeSound;
@@ -26,19 +27,17 @@ namespace Traps
         {
             InitializeAudioPlayer();
             InitializePlayerReference();
-            InitializeAudioControllerReference();
             InitializeDistanceChecker();
+
+            if (_audioController == null)
+            {
+                _audioController = FindFirstObjectByType<AudioController>();
+            }
         }
 
         private void InitializeAudioPlayer()
         {
             AudioSource audioSource = GetComponent<AudioSource>();
-
-            if (audioSource == null)
-            {
-                audioSource = gameObject.AddComponent<AudioSource>();
-            }
-
             audioSource.playOnAwake = false;
             audioSource.loop = false;
 
@@ -55,14 +54,6 @@ namespace Traps
             }
         }
 
-        private void InitializeAudioControllerReference()
-        {
-            if (_audioController == null)
-            {
-                _audioController = FindFirstObjectByType<AudioController>();
-            }
-        }
-
         private void InitializeDistanceChecker()
         {
             _distanceChecker = new DistanceChecker();
@@ -70,24 +61,18 @@ namespace Traps
 
         public void PlayLightningStrikeSound()
         {
-            if (_lightningStrikeSound == null)
-            {
-                return;
-            }
-
-            if (ShouldPlaySound() == false)
+            if (_lightningStrikeSound == null || !ShouldPlaySound())
             {
                 return;
             }
 
             float volume = GetSoundVolume();
-
             _audioPlayer.PlayOneShot(_lightningStrikeSound, volume);
         }
 
         private bool ShouldPlaySound()
         {
-            if (_enableDistanceCheck == false || _playerTransform == null)
+            if (!_enableDistanceCheck || _playerTransform == null)
             {
                 return true;
             }
@@ -97,14 +82,7 @@ namespace Traps
 
         private float GetSoundVolume()
         {
-            float defaultVolume = 1f;
-
-            if (_audioController != null)
-            {
-                return _audioController.SoundEffectsVolume;
-            }
-
-            return defaultVolume;
+            return _audioController != null ? _audioController.SoundEffectsVolume : DefaultVolume;
         }
 
         public void StopSound()
