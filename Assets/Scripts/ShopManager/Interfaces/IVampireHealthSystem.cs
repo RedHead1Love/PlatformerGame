@@ -1,8 +1,9 @@
-public interface IVampireHealthSystem
-{
-    int HealthPerKill { get; }
-    bool IsActive { get; }
+using GeneralLogicEnemies;
 
-    void Activate();
-    void Deactivate();
+namespace Player.Abilities
+{
+    public interface IVampireHealthSystem
+    {
+        void OnEnemyKilled(Entity enemy);
+    }
 }
