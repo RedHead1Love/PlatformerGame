@@ -29,7 +29,7 @@ namespace GameLogic
             {
                 Instance = this;
                 _internalWallet = new Wallet();
-                
+
                 DontDestroyOnLoad(gameObject);
             }
             else if (Instance != this)
@@ -61,17 +61,21 @@ namespace GameLogic
                 NotifyCoinsChanged(type);
                 return true;
             }
-            
+
             return false;
         }
 
         public virtual void ResetWallets()
         {
             _internalWallet?.Reset();
-            
+
             NotifyCoinsChanged(CoinType.Bronze);
             NotifyCoinsChanged(CoinType.Silver);
             NotifyCoinsChanged(CoinType.Gold);
+        }
+
+        public virtual void LoadFromSaveData(CoinData data)
+        {
         }
 
         protected void NotifyCoinsChanged(CoinType type)
