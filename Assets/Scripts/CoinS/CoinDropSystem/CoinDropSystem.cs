@@ -29,26 +29,15 @@ namespace GeneralLogicEnemies
 
         private void Awake()
         {
-            Initialize();
-        }
-
-        private void Initialize()
-        {
             _entity = GetComponent<Entity>();
-
-            if (_entity == null)
-            {
-                _entity = gameObject.AddComponent<Entity>();
-            }
-
             _entity.OnEntityDeath += HandleEntityDeath;
         }
 
-        private void Start()
+        private void OnDestroy()
         {
-            if (_entity == null)
+            if (_entity != null)
             {
-                Initialize();
+                _entity.OnEntityDeath -= HandleEntityDeath;
             }
         }
 
@@ -59,45 +48,39 @@ namespace GeneralLogicEnemies
             _maxCoins = maxCoins;
         }
 
-        public void DropCoins()
-        {
-            int incrementForMaxRange = 1;
-
-            if (_hasDroppedCoins || _coinPrefab == null)
-            {
-                return;
-            }
-
-            int coinCount = Random.Range(_minCoins, _maxCoins + incrementForMaxRange);
-
-            for (int i = 0; i < coinCount; i++)
-            {
-                SpawnCoin(i);
-            }
-
-            _hasDroppedCoins = true;
-        }
-
         private void HandleEntityDeath(Entity entity)
         {
             DropCoins();
         }
 
-        private void SpawnCoin(int index)
+        public void DropCoins()
         {
-             float verticalOffset = 0.5f;
-             float rotation = 0f;
-
-            Vector3 spawnPosition = transform.position + new Vector3(Random.Range(-_dropRadius, _dropRadius), verticalOffset, rotation);
-
-            GameObject coin = Instantiate(_coinPrefab, spawnPosition, Quaternion.identity);
-
-            if (coin == null)
+            if (_hasDroppedCoins || _coinPrefab == null)
             {
                 return;
             }
 
+            _hasDroppedCoins = true;
+            int coinsToDrop = Random.Range(_minCoins, _maxCoins + 1);
+
+            for (int i = 0; i < coinsToDrop; i++)
+            {
+                SpawnCoin();
+            }
+        }
+
+        private void SpawnCoin()
+        {
+            Vector3 spawnPosition = CalculateSpawnPosition();
+            GameObject coin = Instantiate(_coinPrefab, spawnPosition, Quaternion.identity);
+
             SetupCoinPhysics(coin);
+        }
+
+        private Vector3 CalculateSpawnPosition()
+        {
+            Vector2 randomOffset = Random.insideUnitCircle * _dropRadius;
+            return transform.position + new Vector3(randomOffset.x, randomOffset.y, 0f);
         }
 
         private void SetupCoinPhysics(GameObject coin)
@@ -107,16 +90,13 @@ namespace GeneralLogicEnemies
             if (rigidbody == null)
             {
                 rigidbody = coin.AddComponent<Rigidbody2D>();
-
-                SetupDefaultRigidbody(rigidbody);
             }
 
+            SetupDefaultRigidbody(rigidbody);
             rigidbody.sharedMaterial = CreatePhysicsMaterial();
-
             ApplyRandomForces(rigidbody);
 
             var groundHandler = coin.AddComponent<CoinPhysicsHandler>();
-
             groundHandler.Initialize(_groundLayer);
         }
 
@@ -142,17 +122,12 @@ namespace GeneralLogicEnemies
 
         private void ApplyRandomForces(Rigidbody2D rigidbody)
         {
-            float minHorizontalDirection = -1f;
-            float maxHorizontalDirection = 1f;
-
-            float horizontalDir = Random.Range(-minHorizontalDirection, maxHorizontalDirection);
-
+            float horizontalDir = Random.Range(-1f, 1f);
             Vector2 force = new Vector2(horizontalDir * _horizontalForce, _verticalForce);
 
             rigidbody.AddForce(force, ForceMode2D.Impulse);
 
             float torque = Random.Range(-_torqueForce, _torqueForce);
-
             rigidbody.AddTorque(torque, ForceMode2D.Impulse);
         }
     }
