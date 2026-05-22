@@ -8,7 +8,7 @@ namespace ShopLogic
     {
         [Header("Shop Content")]
         [SerializeField] private List<ShopItemData> _availableItems;
-        
+
         [Header("UI References")]
         [SerializeField] private Transform _itemsContainer;
         [SerializeField] private GameObject _shopItemPrefab;
@@ -47,7 +47,7 @@ namespace ShopLogic
             {
                 Destroy(child.gameObject);
             }
-            
+
             _activeViews.Clear();
         }
 
