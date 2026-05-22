@@ -39,7 +39,7 @@ namespace ShopLogic
         private void CompletePurchase(ShopItemData itemData, ShopItemView view)
         {
             WalletManager.Instance.SpendCoins(WalletManager.CoinType.Bronze, itemData.Price);
-            
+
             if (!itemData.IsConsumable && ShopSaveManager.Instance != null)
             {
                 ShopSaveManager.Instance.SavePurchasedItem(itemData.ItemId);
@@ -47,14 +47,14 @@ namespace ShopLogic
 
             ApplyItemEffect();
             PlayPurchaseSound();
-            
+
             view.RefreshState();
         }
 
         private void ApplyItemEffect()
         {
             ShopEffectsInitializer initializer = FindFirstObjectByType<ShopEffectsInitializer>();
-            
+
             initializer?.InitializeShopEffects();
         }
 
