@@ -1,75 +1,80 @@
-using Player.Abilities;
+using System.Collections.Generic;
 using UnityEngine;
 
-public sealed class ShopSaveManager : MonoBehaviour
+namespace ShopLogic
 {
-    private static ShopSaveManager _instance;
-    public static ShopSaveManager Instance => _instance;
-
-    private void Awake()
+    public sealed class ShopSaveManager : MonoBehaviour
     {
-        if (_instance == null)
+        private const string PurchasedItemsKey = "ShopItemKeys";
+        private const char Separator = ',';
+
+        public static ShopSaveManager Instance { get; private set; }
+
+        private HashSet<string> _purchasedItems = new HashSet<string>();
+
+        private void Awake()
         {
-            _instance = this;
-
-            DontDestroyOnLoad(gameObject);
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
-    }
-
-    public void OnItemPurchased(string itemId, AbilityManager abilityManager)
-    {
-         int purchasedFlag = 1;
-
-        PlayerPrefs.SetInt($"ShopItem_{itemId}_Purchased", purchasedFlag);
-        PlayerPrefs.Save();
-
-        if (abilityManager != null && SaveSystem.Instance != null)
-        {
-            SaveSystem.Instance.UpdateAbilityData(abilityManager);
-        }
-    }
-
-    public bool IsItemPurchased(string itemId)
-    {
-         int purchasedValue = 1;
-         int notPurchasedValue = 0;
-
-        if (PlayerPrefs.HasKey($"ShopItem_{itemId}_Purchased"))
-        {
-            return PlayerPrefs.GetInt($"ShopItem_{itemId}_Purchased", notPurchasedValue) == purchasedValue;
+            InitializeSingleton();
         }
 
-        if (SaveSystem.Instance != null && SaveSystem.Instance.CurrentSave?.purchasedItemIds != null)
+        private void InitializeSingleton()
         {
-            return SaveSystem.Instance.CurrentSave.purchasedItemIds.Contains(itemId);
-        }
-
-        return false;
-    }
-
-    public void LoadAllPurchases()
-    {
-        if (SaveSystem.Instance == null || SaveSystem.Instance.CurrentSave == null)
-        {
-            return;
-        }
-    }
-
-    public void ResetAllPurchases()
-    {
-        foreach (var key in PlayerPrefs.GetString("ShopItemKeys", "").Split(','))
-        {
-            if (!string.IsNullOrEmpty(key))
+            if (Instance == null)
             {
-                PlayerPrefs.DeleteKey($"ShopItem_{key}_Purchased");
+                Instance = this;
+                
+                DontDestroyOnLoad(gameObject);
+                LoadPurchasedItems();
+            }
+            else
+            {
+                Destroy(gameObject);
             }
         }
 
-        PlayerPrefs.DeleteKey("ShopItemKeys");
-        PlayerPrefs.Save();
+        public void SavePurchasedItem(string itemId)
+        {
+            if (string.IsNullOrEmpty(itemId) || _purchasedItems.Contains(itemId))
+            {
+                return;
+            }
+
+            _purchasedItems.Add(itemId);
+            
+            SaveToPlayerPrefs();
+        }
+
+        public bool IsItemPurchased(string itemId)
+        {
+            return _purchasedItems.Contains(itemId);
+        }
+
+        private void LoadPurchasedItems()
+        {
+            string savedData = PlayerPrefs.GetString(PurchasedItemsKey, string.Empty);
+            
+            if (string.IsNullOrEmpty(savedData))
+            {
+                return;
+            }
+
+            string[] items = savedData.Split(Separator);
+            
+            foreach (string item in items)
+            {
+                if (!string.IsNullOrEmpty(item))
+                {
+                    _purchasedItems.Add(item);
+                }
+            }
+        }
+
+        private void SaveToPlayerPrefs()
+        {
+            string dataToSave = string.Join(Separator.ToString(), _purchasedItems);
+            
+            PlayerPrefs.SetString(PurchasedItemsKey, dataToSave);
+            PlayerPrefs.Save();
+        }
     }
 }
