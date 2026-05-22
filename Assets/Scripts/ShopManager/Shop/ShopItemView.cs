@@ -23,7 +23,7 @@ namespace ShopLogic
             _purchaseHandler = purchaseHandler;
 
             UpdateUI();
-            
+
             _purchaseButton.onClick.AddListener(OnPurchaseClicked);
         }
 
@@ -50,7 +50,7 @@ namespace ShopLogic
             _iconImage.sprite = _itemData.Icon;
 
             bool isPurchased = !_itemData.IsConsumable && ShopSaveManager.Instance.IsItemPurchased(_itemData.ItemId);
-            
+
             if (_soldOutOverlay != null)
             {
                 _soldOutOverlay.SetActive(isPurchased);
