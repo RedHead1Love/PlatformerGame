@@ -22,7 +22,7 @@ namespace ShopLogic
             if (Instance == null)
             {
                 Instance = this;
-                
+
                 DontDestroyOnLoad(gameObject);
                 LoadPurchasedItems();
             }
@@ -40,7 +40,7 @@ namespace ShopLogic
             }
 
             _purchasedItems.Add(itemId);
-            
+
             SaveToPlayerPrefs();
         }
 
@@ -52,14 +52,14 @@ namespace ShopLogic
         private void LoadPurchasedItems()
         {
             string savedData = PlayerPrefs.GetString(PurchasedItemsKey, string.Empty);
-            
+
             if (string.IsNullOrEmpty(savedData))
             {
                 return;
             }
 
             string[] items = savedData.Split(Separator);
-            
+
             foreach (string item in items)
             {
                 if (!string.IsNullOrEmpty(item))
@@ -72,7 +72,7 @@ namespace ShopLogic
         private void SaveToPlayerPrefs()
         {
             string dataToSave = string.Join(Separator.ToString(), _purchasedItems);
-            
+
             PlayerPrefs.SetString(PurchasedItemsKey, dataToSave);
             PlayerPrefs.Save();
         }
