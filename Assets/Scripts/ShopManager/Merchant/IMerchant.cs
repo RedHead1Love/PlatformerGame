@@ -1,11 +1,8 @@
-namespace NPC
+namespace ShopLogic
 {
     public interface IMerchant
     {
-        bool IsShopOpen { get; }
-
         void OpenShop();
         void CloseShop();
-        void CloseShopExternal();
     }
 }
