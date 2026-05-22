@@ -28,7 +28,7 @@ namespace Traps
         private void Awake()
         {
             _animator = GetComponent<Animator>();
-            
+
             if (_soundController == null)
             {
                 _soundController = GetComponent<LightningTrapSoundController>();
@@ -70,7 +70,7 @@ namespace Traps
             }
 
             IDamageable damageable = target.GetComponent<IDamageable>() ?? target.GetComponentInParent<IDamageable>();
-            
+
             damageable?.TakeDamage(_damage);
         }
     }
