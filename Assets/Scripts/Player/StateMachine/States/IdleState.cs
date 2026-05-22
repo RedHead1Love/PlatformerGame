@@ -7,6 +7,7 @@ namespace Player.StateMachine
     public sealed class IdleState : IState
     {
         private const float HorizontalDeadZone = 0.1f;
+        private const float ZeroVelocityX = 0.0f;
 
         private readonly Hero _hero;
         private readonly IInputProvider _inputProvider;
@@ -23,7 +24,10 @@ namespace Player.StateMachine
             _rigidbody = hero.Rigidbody;
         }
 
-        public void Enter() => UpdateAnimationState();
+        public void Enter()
+        {
+            UpdateAnimationState();
+        }
 
         public void Tick()
         {
@@ -39,7 +43,10 @@ namespace Player.StateMachine
             HandleInput();
         }
 
-        public void FixedTick() => StopHorizontalMovement();
+        public void FixedTick()
+        {
+            StopHorizontalMovement();
+        }
 
         public void Exit() { }
 
@@ -92,7 +99,7 @@ namespace Player.StateMachine
         {
             Vector2 velocity = _rigidbody.velocity;
 
-            _rigidbody.velocity = new Vector2(0.0f, velocity.y);
+            _rigidbody.velocity = new Vector2(ZeroVelocityX, velocity.y);
         }
     }
 }
