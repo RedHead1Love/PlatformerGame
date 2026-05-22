@@ -21,9 +21,9 @@ namespace GameLogic
             if (Instance == null)
             {
                 Instance = this;
-                WalletManager.Instance = this; 
+                WalletManager.Instance = this;
                 _internalWallet = new Wallet();
-                
+
                 DontDestroyOnLoad(gameObject);
             }
             else if (Instance != this)
@@ -41,12 +41,12 @@ namespace GameLogic
         public override bool SpendCoins(CoinType type, int amount)
         {
             bool success = base.SpendCoins(type, amount);
-            
+
             if (success)
             {
                 SaveCoins();
             }
-            
+
             return success;
         }
 
@@ -61,7 +61,7 @@ namespace GameLogic
             PlayerPrefs.SetInt(BronzeKey, GetCoins(CoinType.Bronze));
             PlayerPrefs.SetInt(SilverKey, GetCoins(CoinType.Silver));
             PlayerPrefs.SetInt(GoldKey, GetCoins(CoinType.Gold));
-            
+
             PlayerPrefs.Save();
         }
 
