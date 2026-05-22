@@ -5,6 +5,7 @@ namespace Player.StateMachine
     public sealed class HurtState : IState
     {
         private const string HurtAnimationName = "Hurt";
+        private const float InitialTimerValue = 0.0f;
 
         private readonly Hero _hero;
         private float _timer;
@@ -17,7 +18,7 @@ namespace Player.StateMachine
         public void Enter()
         {
             _hero.AnimationService.SetState(States.Hurt);
-            _timer = 0.0f;
+            _timer = InitialTimerValue;
         }
 
         public void Tick()
