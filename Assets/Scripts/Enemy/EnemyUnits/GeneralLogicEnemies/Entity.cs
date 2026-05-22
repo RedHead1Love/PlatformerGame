@@ -9,12 +9,18 @@ namespace GeneralLogicEnemies
         private const float GrayColorValue = 0.5f;
         private const float GrayAlphaValue = 0.7f;
 
-        [SerializeField] protected int lives = DefaultMaxLives;
-        [SerializeField] protected float deathAnimationDelay = DefaultDeathAnimationDelay;
+        [SerializeField] private int _lives = DefaultMaxLives;
+        [SerializeField] private float _deathAnimationDelay = DefaultDeathAnimationDelay;
 
         public int MaxLives { get; protected set; } = DefaultMaxLives;
         public bool IsDead { get; protected set; }
-        public bool IsAlive => lives > 0 && !IsDead;
+        public bool IsAlive => _lives > 0 && !IsDead;
+
+        protected int Lives
+        {
+            get => _lives;
+            set => _lives = value;
+        }
 
         public event System.Action<Entity> OnEntityDeath;
 
@@ -32,9 +38,9 @@ namespace GeneralLogicEnemies
                 return;
             }
 
-            lives -= amount;
+            _lives -= amount;
 
-            if (lives < deathThreshold)
+            if (_lives < deathThreshold)
             {
                 Die();
             }
@@ -55,7 +61,7 @@ namespace GeneralLogicEnemies
             PlayDeathAnimation();
             MarkEnemyAsKilled();
 
-            Invoke(nameof(DestroyAfterAnimation), deathAnimationDelay);
+            Invoke(nameof(DestroyAfterAnimation), _deathAnimationDelay);
         }
 
         protected virtual void PlayDeathAnimation()
@@ -77,18 +83,18 @@ namespace GeneralLogicEnemies
 
         protected virtual void DisablePhysics()
         {
-            Collider2D collider = GetComponent<Collider2D>();
+            Collider2D entityCollider = GetComponent<Collider2D>();
 
-            if (collider != null)
+            if (entityCollider != null)
             {
-                collider.enabled = false;
+                entityCollider.enabled = false;
             }
 
-            Rigidbody2D rigidbody = GetComponent<Rigidbody2D>();
+            Rigidbody2D entityRigidbody = GetComponent<Rigidbody2D>();
 
-            if (rigidbody != null)
+            if (entityRigidbody != null)
             {
-                rigidbody.simulated = false;
+                entityRigidbody.simulated = false;
             }
         }
 
