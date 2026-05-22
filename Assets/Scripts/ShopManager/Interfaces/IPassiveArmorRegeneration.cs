@@ -1,6 +1,6 @@
 namespace Player.Abilities
 {
-    public interface IPassiveHealthRegeneration
+    public interface IPassiveArmorRegeneration
     {
     }
 }
