@@ -22,7 +22,7 @@ namespace ShopLogic
         private void Start()
         {
             _closeButton?.onClick.AddListener(CloseShop);
-            
+
             if (_shopPanel != null)
             {
                 _shopPanel.SetActive(false);
@@ -60,7 +60,7 @@ namespace ShopLogic
             }
 
             IsShopOpen = false;
-            
+
             if (_shopAnimator != null)
             {
                 _shopAnimator.SetTrigger(CloseTrigger);
