@@ -1,149 +1,38 @@
-﻿using GeneralLogicEnemies;
-using Player.Abilities;
+using GeneralLogicEnemies;
 using UnityEngine;
 
-public sealed class VampireHealthSystem : MonoBehaviour, IVampireHealthSystem
+namespace Player.Abilities
 {
-    private const int DefaultHealthPerKill = 1;
-    private const float CheckInterval = 2f;
-
-    [SerializeField] private int _healthPerKill = DefaultHealthPerKill;
-    [SerializeField] private bool _showHealEffect = true;
-
-    private Hero _hero;
-    private HealthManager _healthManager;
-    private AbilityManager _abilityManager;
-    private bool _isActive = false;
-    private float _checkTimer = 0f;
-
-    public int HealthPerKill => _healthPerKill;
-    public bool IsActive => _isActive;
-
-    private void Awake()
+    public sealed class VampireHealthSystem : MonoBehaviour, IVampireHealthSystem
     {
-        _hero = GetComponent<Hero>();
-        _healthManager = GetComponent<HealthManager>();
-    }
+        private const float VampireHealChance = 0.2f;
+        private const int HealAmount = 1;
 
-    private void Start()
-    {
-        CheckIfAbilityPurchased();
-    }
+        private Hero _hero;
 
-    private void OnEnable()
-    {
-        if (_isActive)
+        private void Start()
         {
-            SubscribeToAllEnemies();
-        } 
-    }
+            _hero = GetComponent<Hero>();
 
-    private void OnDisable()
-    {
-        UnsubscribeFromAllEnemies();
-    }
-
-    private void Update()
-    {
-        if (!_isActive)
-        {
-            return;
-        }
-
-        _checkTimer += Time.deltaTime;
-
-        if (_checkTimer >= CheckInterval)
-        {
-            _checkTimer = 0f;
-
-            SubscribeToAllEnemies();
-        }
-    }
-
-
-    public void Activate()
-    {
-        _isActive = true;
-
-        if (_abilityManager == null && _hero != null)
-        {
-            _abilityManager = _hero.AbilityManager;
-        }
-
-        if (_abilityManager != null)
-        {
-            _abilityManager.HasVampireAbility = true;
-        }
-
-        SubscribeToAllEnemies();
-    }
-
-    private void CheckIfAbilityPurchased()
-    {
-        if (_hero != null && _abilityManager == null)
-        {
-            _abilityManager = _hero.AbilityManager;
-        }
-
-        _isActive = (_abilityManager?.HasVampireAbility ?? false);
-
-        if (_isActive)
-        {
-            SubscribeToAllEnemies();
-        }
-    }
-
-    public void Deactivate()
-    {
-        _isActive = false;
-
-        UnsubscribeFromAllEnemies();
-    }
-
-    private void SubscribeToAllEnemies()
-    {
-        Entity[] allEnemies = FindObjectsOfType<Entity>();
-
-        foreach (Entity enemy in allEnemies)
-        {
-            SubscribeToEnemy(enemy);
-        }
-    }
-
-    private void UnsubscribeFromAllEnemies()
-    {
-        Entity[] allEnemies = FindObjectsOfType<Entity>();
-
-        foreach (Entity enemy in allEnemies)
-        {
-            if (enemy != null)
+            if (_hero == null)
             {
-                enemy.OnEntityDeath -= OnEnemyKilled;
+                _hero = FindFirstObjectByType<Hero>();
             }
         }
-    }
 
-    private void SubscribeToEnemy(Entity enemy)
-    {
-        if (enemy != null)
+        public void OnEnemyKilled(Entity enemy)
         {
-            enemy.OnEntityDeath -= OnEnemyKilled;
-            enemy.OnEntityDeath += OnEnemyKilled;
-        }
-    }
+            if (_hero == null || _hero.AbilityManager == null || !_hero.AbilityManager.HasVampireAbility)
+            {
+                return;
+            }
 
-    private void OnEnemyKilled(Entity enemy)
-    {
-        if (!_isActive || _healthManager == null || _hero == null)
-        {
-            return;
-        }
+            if (Random.value <= VampireHealChance && _hero.NeedsHealing())
+            {
+                HealthManager healthManager = _hero.GetComponent<HealthManager>();
 
-        if (_healthManager.IsFullHealth || !_hero.IsAlive())
-        {
-            return;
+                healthManager?.Heal(HealAmount);
+            }
         }
-
-        _healthManager.Heal(_healthPerKill);
     }
 }
