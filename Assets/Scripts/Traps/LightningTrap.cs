@@ -1,228 +1,77 @@
+using Shared.Damage;
+using System.Collections;
 using UnityEngine;
 
 namespace Traps
 {
+    [RequireComponent(typeof(Animator), typeof(Collider2D))]
     public sealed class LightningTrap : MonoBehaviour
     {
-        [Header("Trap Activation")]
-        [SerializeField] private bool _activateOnTriggerEnter = true;
-        [SerializeField] private LayerMask _activationLayer;
-        [SerializeField] private string _playerTag = "Player";
+        private const string PlayerTag = "Player";
+        private const float DefaultStrikeDelay = 0.5f;
+        private const float DefaultCooldown = 2f;
+        private const int DefaultDamage = 2;
+        private const string TriggerAnimationParam = "Strike";
 
         [Header("Trap Settings")]
-        [SerializeField] private float _damage = 1;
-        [SerializeField] private Vector2 _damageAreaSize = new Vector2(1.5f, 5f);
-        [SerializeField] private Vector2 _damageAreaOffset = Vector2.zero;
+        [SerializeField] private int _damage = DefaultDamage;
+        [SerializeField] private float _strikeDelay = DefaultStrikeDelay;
+        [SerializeField] private float _cooldown = DefaultCooldown;
 
-        [Header("Animation Events")]
-        [SerializeField] private string _startDamageEventName = "StartDamage";
-        [SerializeField] private string _endDamageEventName = "EndDamage";
-
-        [Header("Sound Controller")]
+        [Header("Effects")]
         [SerializeField] private LightningTrapSoundController _soundController;
 
-        [Header("Position Activation (Optional)")]
-        [SerializeField] private bool _usePositionActivation = false;
-        [SerializeField] private Transform _activationPoint;
-        [SerializeField] private float _activationRange = 3f;
-
         private Animator _animator;
-        private SpriteRenderer _spriteRenderer;
-        private Collider2D _damageCollider;
-        private Transform _player;
-
-        private bool _isActive = false;
-        private Vector2 _damageAreaCenter;
-
-        public bool IsActive => _isActive;
-        public Vector2 DamageAreaCenter => _damageAreaCenter;
+        private bool _isActive;
+        private bool _isCooldown;
 
         private void Awake()
         {
             _animator = GetComponent<Animator>();
-            _spriteRenderer = GetComponentInChildren<SpriteRenderer>();
-
+            
             if (_soundController == null)
             {
                 _soundController = GetComponent<LightningTrapSoundController>();
-                if (_soundController == null)
-                {
-                    _soundController = gameObject.AddComponent<LightningTrapSoundController>();
-                }
-            }
-
-            InitializeDamageCollider();
-
-            if (_usePositionActivation)
-            {
-                var playerObj = GameObject.FindGameObjectWithTag(_playerTag);
-
-                if (playerObj != null)
-                {
-                    _player = playerObj.transform;
-                }
-            }
-
-            CalculateDamageAreaCenter();
-        }
-
-        private void Start()
-        {
-            if (!_isActive)
-            {
-                _animator.enabled = false;
             }
         }
 
-        private void Update()
+        private void OnTriggerEnter2D(Collider2D other)
         {
-            CalculateDamageAreaCenter();
-
-            if (_usePositionActivation && _player != null && !_isActive)
+            if (!_isCooldown && !_isActive && other.CompareTag(PlayerTag))
             {
-                CheckPositionActivation();
+                StartCoroutine(ActivateTrapCoroutine(other.gameObject));
             }
         }
 
-        private void InitializeDamageCollider()
+        private IEnumerator ActivateTrapCoroutine(GameObject target)
         {
-            _damageCollider = GetComponent<Collider2D>();
-
-            if (_damageCollider == null)
-            {
-                _damageCollider = gameObject.AddComponent<BoxCollider2D>();
-            }
-
-            if (_damageCollider is BoxCollider2D boxCollider)
-            {
-                boxCollider.size = _damageAreaSize;
-                boxCollider.offset = _damageAreaOffset;
-                boxCollider.isTrigger = true;
-            }
-
-            _damageCollider.enabled = false;
-        }
-
-        private void CalculateDamageAreaCenter()
-        {
-            _damageAreaCenter = (Vector2)transform.position + _damageAreaOffset;
-        }
-
-        private void CheckPositionActivation()
-        {
-            if (_activationPoint == null)
-            {
-                return;
-            }
-
-            float distanceToPlayer = Vector2.Distance(_activationPoint.position, _player.position);
-
-            if (distanceToPlayer <= _activationRange)
-            {
-                ActivateTrap();
-            }
-        }
-
-        public void ActivateTrap()
-        {
-            if (_isActive)
-            {
-                return;
-            }
-
             _isActive = true;
-            _animator.enabled = true;
+            _isCooldown = true;
 
-            _animator.SetTrigger("Activate");
-        }
+            _animator?.SetTrigger(TriggerAnimationParam);
+            _soundController?.PlayLightningStrikeSound();
 
-        public void ApplyDamage()
-        {
-            Collider2D[] hits = Physics2D.OverlapBoxAll(_damageAreaCenter, _damageAreaSize, 0f);
+            yield return new WaitForSeconds(_strikeDelay);
 
-            foreach (var hit in hits)
-            {
-                if (hit.CompareTag(_playerTag))
-                {
-                    TryDamagePlayer(hit);
-                }
-            }
-        }
+            DealDamage(target);
 
-        private void TryDamagePlayer(Collider2D playerCollider)
-        {
-            if (playerCollider.TryGetComponent<Hero>(out var hero))
-            {
-                hero.TakeDamage((int)_damage);
-            }
-        }
-
-        public void SetDamageArea(Vector2 size, Vector2 offset)
-        {
-            _damageAreaSize = size;
-            _damageAreaOffset = offset;
-
-            if (_damageCollider is BoxCollider2D boxCollider)
-            {
-                boxCollider.size = size;
-                boxCollider.offset = offset;
-            }
-
-            CalculateDamageAreaCenter();
-        }
-
-        public void AnimationEvent_ApplyDamage()
-        {
-            ApplyDamage();
-        }
-
-        public void AnimationEvent_PlayLightningSound()
-        {
-            if (_soundController != null)
-            {
-                _soundController.PlayLightningStrikeSound();
-            }
-        }
-
-        public void AnimationEvent_LightningStrike()
-        {
-            if (_soundController != null)
-            {
-                _soundController.PlayLightningStrikeSound();
-            }
-
-            ApplyDamage();
-        }
-
-        public void Deactivate()
-        {
             _isActive = false;
-            _damageCollider.enabled = false;
-            _animator.enabled = false;
 
-            if (_soundController != null)
+            yield return new WaitForSeconds(_cooldown);
+
+            _isCooldown = false;
+        }
+
+        private void DealDamage(GameObject target)
+        {
+            if (target == null)
             {
-                _soundController.StopSound();
+                return;
             }
-        }
 
-        public void SetSoundController(LightningTrapSoundController controller)
-        {
-            _soundController = controller;
-        }
-
-        public void SetLightningSound(AudioClip lightningSound)
-        {
-            if (_soundController != null)
-            {
-                _soundController.SetLightningSound(lightningSound);
-            }
-        }
-
-        private void OnDrawGizmosSelected()
-        {
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireCube(_damageAreaCenter, _damageAreaSize);
+            IDamageable damageable = target.GetComponent<IDamageable>() ?? target.GetComponentInParent<IDamageable>();
+            
+            damageable?.TakeDamage(_damage);
         }
     }
 }
