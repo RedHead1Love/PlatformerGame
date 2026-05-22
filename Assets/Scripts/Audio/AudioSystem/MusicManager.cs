@@ -8,8 +8,9 @@ namespace AudioSystem
 
         private readonly IAudioPlayer _audioPlayer;
         private readonly IMusicPlaylist _playlist;
-        private bool _isBossFightActive = false;
-        private bool _isBackgroundMusicPlaying = false;
+
+        private bool _isBossFightActive;
+        private bool _isBackgroundMusicPlaying;
 
         public MusicManager(IAudioPlayer audioPlayer, IMusicPlaylist playlist)
         {
@@ -43,7 +44,7 @@ namespace AudioSystem
             }
         }
 
-        public void PlayBossMusic(AudioClip bossMusic)
+        public void PlayBoss(AudioClip bossMusic)
         {
             if (bossMusic == null)
             {
@@ -57,7 +58,7 @@ namespace AudioSystem
             _audioPlayer.Play(bossMusic);
         }
 
-        public void StopBossMusic()
+        public void StopBoss()
         {
             _isBossFightActive = false;
 
@@ -68,7 +69,7 @@ namespace AudioSystem
             PlayNextTrack();
         }
 
-        public void PauseBackgroundMusic()
+        public void Pause()
         {
             if (_isBossFightActive == false)
             {
@@ -78,7 +79,7 @@ namespace AudioSystem
             }
         }
 
-        public void ResumeBackgroundMusic()
+        public void Resume()
         {
             if (_isBossFightActive == false)
             {
@@ -93,7 +94,7 @@ namespace AudioSystem
             _audioPlayer.SetVolume(volume);
         }
 
-        public void StartBackgroundMusic()
+        public void StartBackground()
         {
             if (_playlist.HasTracks && _isBossFightActive == false)
             {
