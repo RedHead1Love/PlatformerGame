@@ -7,6 +7,7 @@ using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.XR;
+using YG;
 
 public sealed class SaveSystem : MonoBehaviour
 {
@@ -54,6 +55,7 @@ public sealed class SaveSystem : MonoBehaviour
         UpdateCoinData();
 
         SaveToFile();
+        YG2.InterstitialAdvShow();
     }
 
     private void InitializeSaveDataIfNeeded()
