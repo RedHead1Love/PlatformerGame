@@ -1,8 +1,9 @@
-﻿using System.Collections;
+using System.Collections;
 using UnityEngine;
 
 namespace PlayerDropOnPlatform
 {
+    [RequireComponent(typeof(Collider2D), typeof(Rigidbody2D))]
     public sealed class PlayerDropThrough : MonoBehaviour
     {
         private const string PlatformLayerName = "Platform";
@@ -32,11 +33,11 @@ namespace PlayerDropOnPlatform
         {
             if (Input.GetKeyDown(DropKey))
             {
-                StartCoroutine(PerformDropThrough());
+                StartCoroutine(PerformDropThroughCoroutine());
             }
         }
 
-        private IEnumerator PerformDropThrough()
+        private IEnumerator PerformDropThroughCoroutine()
         {
             Collider2D platform = FindPlatformBelow();
 
