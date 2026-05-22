@@ -1,83 +1,54 @@
-using Player.Abilities;
 using UnityEngine;
 
-public sealed class PassiveArmorRegeneration : MonoBehaviour, IPassiveArmorRegeneration
+namespace Player.Abilities
 {
-    private const float DefaultRegenInterval = 10f;
-    private const int DefaultRegenAmount = 1;
-    private const float CheckInterval = 1f;
-
-    [SerializeField] private float _regenInterval = DefaultRegenInterval;
-    [SerializeField] private int _regenAmount = DefaultRegenAmount;
-
-    private Hero _hero;
-    private IArmorManager _armorManager;
-    private AbilityManager _abilityManager;
-    private float _timer;
-    private bool _isActive = false;
-    private float _checkTimer;
-
-    public float RegenInterval => _regenInterval;
-    public int RegenAmount => _regenAmount;
-    public bool IsActive => _isActive;
-
-    private void Awake()
+    public sealed class PassiveArmorRegeneration : MonoBehaviour, IPassiveArmorRegeneration
     {
-        _hero = GetComponent<Hero>() ?? FindObjectOfType<Hero>();
+        private const float RegenerationInterval = 10f;
+        private const int ArmorRegenAmount = 1;
+        private const float ResetTimerValue = 0f;
 
-        _armorManager = GetComponent<IArmorManager>() ?? GetComponent<ArmorManager>() as IArmorManager ?? FindObjectOfType<ArmorManager>() as IArmorManager;
-    }
+        private Hero _hero;
+        private ArmorManager _armorManager;
+        private float _timer;
 
-    private void Update()
-    {
-        if (!_isActive)
+        private void Start()
         {
-            _checkTimer += Time.deltaTime;
+            _hero = GetComponent<Hero>() ?? FindFirstObjectByType<Hero>();
+            _armorManager = GetComponent<ArmorManager>();
+        }
 
-            if (_checkTimer >= CheckInterval)
+        private void Update()
+        {
+            if (!CanRegenerateArmor())
             {
-                _checkTimer = 0f;
-
-                CheckIfAbilityPurchased();
+                _timer = ResetTimerValue;
+                return;
             }
 
-            return;
+            ProcessRegeneration();
         }
 
-        if (_armorManager == null || _hero == null)
+        private bool CanRegenerateArmor()
         {
-            return;
+            return _hero != null
+                   && _armorManager != null
+                   && _hero.AbilityManager != null
+                   && _hero.AbilityManager.HasRobocopRegeneration
+                   && _armorManager.HasArmor
+                   && _hero.IsAlive()
+                   && _armorManager.CurrentArmor < _armorManager.MaxArmor;
         }
 
-        if (!_armorManager.IsArmorUnlocked() || _armorManager.CurrentArmor >= _armorManager.MaxArmor)
+        private void ProcessRegeneration()
         {
-            return;
-        } 
+            _timer += Time.deltaTime;
 
-        _timer += Time.deltaTime;
-
-        if (_timer >= _regenInterval)
-        {
-            _timer = 0f;
-
-            _armorManager.AddArmor(_regenAmount);
+            if (_timer >= RegenerationInterval)
+            {
+                _armorManager.AddArmor(ArmorRegenAmount);
+                _timer = ResetTimerValue;
+            }
         }
-    }
-
-    private void CheckIfAbilityPurchased()
-    {
-        _isActive = _hero?.AbilityManager?.HasRobocopRegeneration ?? false;
-    }
-
-    public void Activate()
-    {
-        _isActive = true;
-
-        _timer = 0f;
-    }
-
-    public void Deactivate()
-    {
-        _isActive = false;
     }
 }
