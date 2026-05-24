@@ -15,6 +15,7 @@ namespace EnemyLogicWithEnhancedStrike
         private const float BoxRotationAngle = 0f;
         private const float StrongAttackProbability = 30f;
         private const float DefaultSoundVolume = 1f;
+        private const float MovementThreshold = 0.01f;
 
         [Header("Attack Settings")]
         [SerializeField] private float _attackCooldown = 1f;
@@ -43,6 +44,12 @@ namespace EnemyLogicWithEnhancedStrike
         private bool _isAttacking;
         private bool _inAttackRange;
 
+        private enum AnimationState
+        {
+            Idle = 0,
+            Walk = 1
+        }
+
         protected override void Awake()
         {
             base.Awake();
@@ -59,6 +66,7 @@ namespace EnemyLogicWithEnhancedStrike
             if (_patrolAI != null)
             {
                 _patrolAI.OnInAttackRange += HandleAttackRange;
+                _patrolAI.OnMoveDirectionChanged += HandleMovementDirectionChanged;
             }
         }
 
@@ -67,6 +75,7 @@ namespace EnemyLogicWithEnhancedStrike
             if (_patrolAI != null)
             {
                 _patrolAI.OnInAttackRange -= HandleAttackRange;
+                _patrolAI.OnMoveDirectionChanged -= HandleMovementDirectionChanged;
             }
         }
 
@@ -94,6 +103,34 @@ namespace EnemyLogicWithEnhancedStrike
             }
         }
 
+        private void HandleMovementDirectionChanged(Vector2 direction)
+        {
+            if (IsDead || _isAttacking)
+            {
+                return;
+            }
+
+            if (direction.magnitude > MovementThreshold)
+            {
+                SetAnimationState(AnimationState.Walk);
+                FlipSprite(direction.x);
+            }
+            else
+            {
+                SetAnimationState(AnimationState.Idle);
+            }
+        }
+
+        private void FlipSprite(float directionX)
+        {
+            if ((directionX > 0 && transform.localScale.x < 0) || (directionX < 0 && transform.localScale.x > 0))
+            {
+                Vector3 scale = transform.localScale;
+                scale.x *= -1;
+                transform.localScale = scale;
+            }
+        }
+
         private void HandleAttackRange(bool inRange)
         {
             _inAttackRange = inRange;
@@ -112,6 +149,8 @@ namespace EnemyLogicWithEnhancedStrike
             _isAttacking = true;
             _attackTimer = _attackCooldown;
 
+            StopMovementAnimation();
+
             bool canPerformSpecial = _specialAttackTimer <= 0f;
             bool triggersSpecial = Random.Range(0, MaxRandomValue) < StrongAttackProbability;
 
@@ -123,6 +162,19 @@ namespace EnemyLogicWithEnhancedStrike
             else
             {
                 _animator.SetTrigger("Attack");
+            }
+        }
+
+        private void StopMovementAnimation()
+        {
+            SetAnimationState(AnimationState.Idle);
+        }
+
+        private void SetAnimationState(AnimationState state)
+        {
+            if (_animator != null)
+            {
+                _animator.SetInteger("state", (int)state);
             }
         }
 
@@ -159,6 +211,15 @@ namespace EnemyLogicWithEnhancedStrike
         public void AnimEvent_EndAttack()
         {
             _isAttacking = false;
+
+            if (_patrolAI != null && _patrolAI.CurrentMoveDirection.magnitude > MovementThreshold)
+            {
+                SetAnimationState(AnimationState.Walk);
+            }
+            else
+            {
+                SetAnimationState(AnimationState.Idle);
+            }
         }
 
         private void ProcessDamage(Vector2 offset, Vector2 size, int damage, AudioClip attackSound)
@@ -177,7 +238,6 @@ namespace EnemyLogicWithEnhancedStrike
                 damageable?.TakeDamage(damage);
             }
         }
-
 
         private void OnDrawGizmosSelected()
         {
