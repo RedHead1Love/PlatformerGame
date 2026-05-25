@@ -40,9 +40,6 @@ namespace GameLogic
 
         public virtual int GetCoins(CoinType type)
         {
-            _coins[CoinType.Bronze] = 20;
-            _coins[CoinType.Silver] = 20;
-            _coins[CoinType.Gold] = 20;
             return _internalWallet?.GetCoins(type) ?? 0;
         }
 

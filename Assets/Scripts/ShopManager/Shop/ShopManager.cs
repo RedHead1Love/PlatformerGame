@@ -25,41 +25,6 @@ namespace ShopLogic
         {
             PopulateShop();
         }
-    }
-
-    private void HandleShopInput(Vector2 input)
-    {
-        if (_navigationController.TryMove(input))
-        {
-            OnNavigationChanged();
-        }
-
-        if (UnityEngine.Input.GetKeyDown(KeyCode.Space) ||
-            UnityEngine.Input.GetKeyDown(KeyCode.Return))
-        {
-            TryPurchaseSelectedItem();
-        }
-
-        if (UnityEngine.Input.GetKeyDown(KeyCode.Escape))
-        {
-            CloseShop();
-        }
-    }
-
-    private void OnNavigationChanged()
-    {
-        UpdateUI();
-        UpdateDescription();
-    }
-
-    private void UpdateUI()
-    {
-        var currency = _navigationController.CurrentCurrency;
-
-        _uiManager.SwitchCurrency(currency);
-
-        _uiManager.UpdateItemSelection(currency, _navigationController.CurrentItemIndex);
-    }
 
         private void PopulateShop()
         {
@@ -106,11 +71,4 @@ namespace ShopLogic
             }
         }
     }
-
-    public void NavigateUp() => HandleShopInput(Vector2.up);
-    public void NavigateDown() => HandleShopInput(Vector2.down);
-    public void NavigateLeft() => HandleShopInput(Vector2.left);
-    public void NavigateRight() => HandleShopInput(Vector2.right);
-    public void ConfirmPurchase() => TryPurchaseSelectedItem();
-}
 }

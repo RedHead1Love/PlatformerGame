@@ -1,5 +1,3 @@
-using System.Runtime.InteropServices;
-using PlayerDropOnPlatform;
 using UnityEngine;
 
 namespace Player.Input
@@ -12,10 +10,6 @@ namespace Player.Input
         private const string SecondaryAttackButtonName = "Fire2";
         private const KeyCode SlideKeyCode = KeyCode.LeftShift;
         private const KeyCode LiftKeyCode = KeyCode.E;
-        private const KeyCode IsDropHeroKeyCode = KeyCode.S;
-        private const KeyCode MapKey = KeyCode.M;
-        private const KeyCode MenuKey = KeyCode.Escape;
-        private const KeyCode interactKey = KeyCode.F;
 
         private bool _isInputBlocked;
         private bool _isShopOpen;
@@ -64,25 +58,5 @@ namespace Player.Input
         {
             _isShopOpen = isShopOpen;
         }
-
-        public float HorizontalAxis =>
-            (_isInputBlocked || _isShopOpen) ? 0f : UnityEngine.Input.GetAxisRaw(HorizontalAxisName);
-
-        public bool IsJumpPressed =>
-            (_isInputBlocked || _isShopOpen) ? false : UnityEngine.Input.GetButtonDown(JumpButtonName);
-
-        public bool IsAttackPressed =>
-            (_isInputBlocked || _isShopOpen) ? false : UnityEngine.Input.GetButtonDown(PrimaryAttackButtonName);
-
-        public bool IsSecondaryAttackPressed =>
-            (_isInputBlocked || _isShopOpen) ? false : UnityEngine.Input.GetButtonDown(SecondaryAttackButtonName);
-
-        public bool IsLiftPressed =>
-            (_isInputBlocked || _isShopOpen) ? false : UnityEngine.Input.GetKeyDown(LiftKeyCode);
-        public bool IsDropHeroPressed =>
-            (_isInputBlocked || _isShopOpen) ? false : UnityEngine.Input.GetKeyDown(IsDropHeroKeyCode);
-        public bool IsOpenMapPressed => (!_isInputBlocked) && UnityEngine.Input.GetKeyDown(MapKey);
-        public bool IsMenuPressed => (!_isInputBlocked) && UnityEngine.Input.GetKeyDown(MenuKey);
-        public bool IsOpenShopOrChestPressed => (!_isInputBlocked) && UnityEngine.Input.GetKeyDown(KeyCode.F);
     }
 }
