@@ -1,9 +1,6 @@
-public interface IPassiveHealthRegeneration
+namespace Player.Abilities
 {
-    float RegenerationInterval { get; }
-    int HealAmount { get; }
-    bool IsActive { get; }
-
-    void EnableRegeneration();
-    void DisableRegeneration();
+    public interface IPassiveHealthRegeneration
+    {
+    }
 }

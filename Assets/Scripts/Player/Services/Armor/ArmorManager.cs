@@ -1,9 +1,11 @@
-﻿using UnityEngine;
+using Player;
+using UnityEngine;
 using UnityEngine.UI;
 
 public sealed class ArmorManager : MonoBehaviour, IArmorManager
 {
     private const string ArmorPanelName = "ArmorPanel_Runtime";
+    private const int MinimumArmorValue = 0;
 
     [Header("Armor Settings")]
     [SerializeField] private int _maxArmor = 6;
@@ -28,6 +30,8 @@ public sealed class ArmorManager : MonoBehaviour, IArmorManager
 
     public bool HasArmor => _currentArmor > 0 && IsArmorUnlocked();
 
+    public event System.Action<int, int> OnArmorChanged;
+
     private void Start()
     {
         InitializeAudioController();
@@ -46,139 +50,67 @@ public sealed class ArmorManager : MonoBehaviour, IArmorManager
         }
     }
 
+    private void InitializeAudioController()
+    {
+        if (_useAudioController && _audioController == null)
+        {
+            _audioController = GetComponent<AudioController>();
+
+            if (_audioController == null)
+            {
+                _audioController = FindFirstObjectByType<AudioController>();
+            }
+        }
+    }
+
     private void FindHero()
     {
         _hero = GetComponent<Hero>();
 
         if (_hero == null)
         {
-            _hero = FindObjectOfType<Hero>();
+            _hero = FindFirstObjectByType<Hero>();
         }
     }
 
     public bool IsArmorUnlocked()
     {
-        return _isArmorUnlocked ||
-               (_hero != null && _hero.AbilityManager != null && _hero.AbilityManager.HasArmor);
+        return _isArmorUnlocked;
     }
 
-    private void InitializeAudioController()
+    public void SetArmor(int amount)
     {
-        if (_useAudioController)
-        {
-            _audioController = GetComponentInParent<AudioController>();
-
-            if (_audioController == null)
-            {
-                _audioController = FindObjectOfType<AudioController>();
-            }
-        }
-    }
-
-    private void InitializeArmorUI()
-    {
-        if (_armorPanelPrefab == null)
-        {
-            return;
-        }
-
-        Canvas canvas = FindObjectOfType<Canvas>();
-
-        if (canvas == null)
-        {
-            return;
-        }
-
-        _armorPanelInstance = Instantiate(_armorPanelPrefab, canvas.transform);
-        _armorPanelInstance.name = ArmorPanelName;
-
-        SetActiveRecursively(_armorPanelInstance, true);
-
-        _armorIcons = _armorPanelInstance.GetComponentsInChildren<Image>(true);
-    }
-
-    private void HideArmorUI()
-    {
-        if (_armorPanelInstance != null)
-        {
-            _armorPanelInstance.SetActive(false);
-        }
-    }
-
-    private void ShowArmorUI()
-    {
-        if (_armorPanelInstance != null)
-        {
-            _armorPanelInstance.SetActive(true);
-        }
-        else
-        {
-            InitializeArmorUI();
-        }
-    }
-
-    private void SetActiveRecursively(GameObject root, bool active)
-    {
-        root.SetActive(active);
-
-        foreach (Transform child in root.transform)
-        {
-            SetActiveRecursively(child.gameObject, active);
-
-            Image image = child.GetComponent<Image>();
-
-            if (image != null)
-            {
-                image.enabled = active;
-            }
-        }
-    }
-
-    public void UpdateArmorUI()
-    {
-        if (_armorIcons == null)
-        {
-            return;
-        }
-
-        for (int i = 0; i < Mathf.Min(_armorIcons.Length, _maxArmor); i++)
-        {
-            if (_armorIcons[i] != null)
-            {
-                _armorIcons[i].enabled = true;
-                _armorIcons[i].color = i < _currentArmor ? Color.white : new Color(1, 1, 1, 0.3f);
-            }
-        }
-    }
-
-    public void SetArmor(int armorAmount)
-    {
-        int minimumArmorValue = 0;
-
         if (!IsArmorUnlocked())
         {
             return;
         }
 
-        _currentArmor = Mathf.Clamp(armorAmount, minimumArmorValue, _maxArmor);
+        _currentArmor = Mathf.Clamp(amount, MinimumArmorValue, _maxArmor);
 
         UpdateArmorUI();
-
         OnArmorChanged?.Invoke(_currentArmor, _maxArmor);
     }
 
     public int TakeArmorDamage(int damageAmount)
     {
-        if (!IsArmorUnlocked() || !HasArmor)
+        if (!IsArmorUnlocked() || _currentArmor <= 0)
         {
             return damageAmount;
         }
 
         int oldArmor = _currentArmor;
-        int damageToArmor = Mathf.Min(damageAmount, _currentArmor);
-        int remainingDamage = damageAmount - damageToArmor;
+        int remainingDamage = 0;
 
-        SetArmor(_currentArmor - damageToArmor);
+        if (damageAmount >= _currentArmor)
+        {
+            remainingDamage = damageAmount - _currentArmor;
+            SetArmor(MinimumArmorValue);
+        }
+        else
+        {
+            SetArmor(_currentArmor - damageAmount);
+        }
+
         PlayArmorDamageSound(oldArmor, _currentArmor);
 
         return remainingDamage;
@@ -206,21 +138,15 @@ public sealed class ArmorManager : MonoBehaviour, IArmorManager
     {
         if (IsArmorUnlocked())
         {
-            int oldArmor = _currentArmor;
-
             SetArmor(_maxArmor);
-
-            OnArmorChanged?.Invoke(_currentArmor, _maxArmor);
         }
     }
-
-    public event System.Action<int, int> OnArmorChanged;
 
     public void ResetArmor()
     {
         if (IsArmorUnlocked())
         {
-            SetArmor(0);
+            SetArmor(MinimumArmorValue);
         }
     }
 
@@ -239,14 +165,12 @@ public sealed class ArmorManager : MonoBehaviour, IArmorManager
 
     public void LoadArmorFromSave(int armorFromSave)
     {
-        int minimumArmorValue = 0;
-
         if (!IsArmorUnlocked())
         {
             return;
         }
 
-        int validArmor = Mathf.Clamp(armorFromSave, minimumArmorValue, _maxArmor);
+        int validArmor = Mathf.Clamp(armorFromSave, MinimumArmorValue, _maxArmor);
 
         if (validArmor != _currentArmor)
         {
@@ -259,8 +183,11 @@ public sealed class ArmorManager : MonoBehaviour, IArmorManager
         return IsArmorUnlocked() && CurrentArmor < MaxArmor;
     }
 
-    public bool NeedArmorPlates()
+    public void UpdateArmorUI()
     {
-        return CanPurchaseArmorPlates();
     }
+
+    private void InitializeArmorUI() { }
+    private void HideArmorUI() { }
+    private void ShowArmorUI() { }
 }

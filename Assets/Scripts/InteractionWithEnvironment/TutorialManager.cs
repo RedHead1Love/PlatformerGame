@@ -26,20 +26,29 @@ public sealed class TutorialManager : MonoBehaviour
         {
             ResumeGame();
 
-            _tutorialPanel.SetActive(false);
+            if (_tutorialPanel != null)
+            {
+                _tutorialPanel.SetActive(false);
+            }
         }
     }
 
     private void ShowTutorial()
     {
-        _tutorialPanel.SetActive(true);
+        if (_tutorialPanel != null)
+        {
+            _tutorialPanel.SetActive(true);
+        }
 
         PauseGame();
     }
 
     public void CloseTutorial()
     {
-        _tutorialPanel.SetActive(false);
+        if (_tutorialPanel != null)
+        {
+            _tutorialPanel.SetActive(false);
+        }
 
         ResumeGame();
 
@@ -68,4 +77,5 @@ public sealed class TutorialManager : MonoBehaviour
             CloseTutorial();
         }
     }
+}
 }

@@ -1,10 +1,12 @@
 ﻿using System.Collections;
 using Player.Input;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace PlayerDropOnPlatform
 {
+    [RequireComponent(typeof(Collider2D), typeof(Rigidbody2D))]
     public sealed class PlayerDropThrough : MonoBehaviour
     {
         private const string PlatformLayerName = "Platform";
@@ -45,7 +47,7 @@ namespace PlayerDropOnPlatform
         {
             if (_inputProvider != null && _inputProvider.IsDropHeroPressed)
             {
-                StartCoroutine(PerformDropThrough());
+                StartCoroutine(PerformDropThroughCoroutine());
             }
         }
 
@@ -55,6 +57,7 @@ namespace PlayerDropOnPlatform
         }
 
         private IEnumerator PerformDropThrough()
+        private IEnumerator PerformDropThroughCoroutine()
         {
             Collider2D platform = FindPlatformBelow();
 

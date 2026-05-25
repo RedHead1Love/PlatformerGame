@@ -1,52 +1,53 @@
-using Player;
-using Player.StateMachine;
 using Shared.Sensors;
 using UnityEngine;
 
-public sealed class AirAttackState : BaseAttackState
+namespace Player.StateMachine
 {
-    private readonly GroundCheck _groundCheck;
-
-    public AirAttackState(Hero hero, Transform attackPoint)
-        : base(hero, attackPoint, hero.Data.AirAttackDamage, States.AirAttack)
+    public sealed class AirAttackState : BaseAttackState
     {
-        _groundCheck = hero.GetComponentInChildren<GroundCheck>();
-    }
+        private readonly GroundCheck _groundCheck;
 
-    public override void Tick()
-    {
-        if (_hero.AnimationService.IsAnimationFinished(States.AirAttack.ToString()))
+        public AirAttackState(Hero hero, Transform attackPoint)
+            : base(hero, attackPoint, hero.Data.AirAttackDamage, States.AirAttack)
         {
-            _hero.StateMachine.Change<JumpState>();
-        }
-    }
-
-    public override void OnAnimationEnd()
-    {
-        if (_groundCheck.IsGrounded)
-        {
-            _hero.StateMachine.Change<IdleState>();
-        }
-        else
-        {
-            _hero.StateMachine.Change<JumpState>();
-        }
-    }
-
-    protected override void PlayAttackSound(bool hitConnected)
-    {
-        if (_hero.AudioController == null)
-        {
-            return;
+            _groundCheck = hero.GetComponentInChildren<GroundCheck>();
         }
 
-        if (hitConnected)
+        public override void Tick()
         {
-            _hero.AudioController.PlayAirAttackHitSound();
+            if (_hero.AnimationService.IsAnimationFinished(States.AirAttack.ToString()))
+            {
+                _hero.StateMachine.Change<JumpState>();
+            }
         }
-        else
+
+        public override void OnAnimationEnd()
         {
-            _hero.AudioController.PlayAirAttackMissSound();
+            if (_groundCheck.IsGrounded)
+            {
+                _hero.StateMachine.Change<IdleState>();
+            }
+            else
+            {
+                _hero.StateMachine.Change<JumpState>();
+            }
+        }
+
+        protected override void PlayAttackSound(bool hitConnected)
+        {
+            if (_hero.AudioController == null)
+            {
+                return;
+            }
+
+            if (hitConnected)
+            {
+                _hero.AudioController.PlayAirAttackHitSound();
+            }
+            else
+            {
+                _hero.AudioController.PlayAirAttackMissSound();
+            }
         }
     }
 }

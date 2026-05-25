@@ -1,9 +1,6 @@
-public interface IPassiveArmorRegeneration
+namespace Player.Abilities
 {
-    float RegenInterval { get; }
-    int RegenAmount { get; }
-    bool IsActive { get; }
-
-    void Activate();
-    void Deactivate();
+    public interface IPassiveArmorRegeneration
+    {
+    }
 }

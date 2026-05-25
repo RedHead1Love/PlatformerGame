@@ -17,28 +17,23 @@ namespace Player.Input
         private const KeyCode MenuKey = KeyCode.Escape;
         private const KeyCode interactKey = KeyCode.F;
 
-        private bool _isInputBlocked = false;
-        private bool _isShopOpen = false; 
+        private bool _isInputBlocked;
+        private bool _isShopOpen;
         private Hero _hero;
 
-        private void Start()
-        {
-            _hero = GetComponent<Hero>();
-
-            if (_hero == null)
-            {
-                _hero = FindObjectOfType<Hero>();
-            }
-        }
+        public float HorizontalAxis => (_isInputBlocked || _isShopOpen) ? 0f : UnityEngine.Input.GetAxisRaw(HorizontalAxisName);
+        public bool IsJumpPressed => !(_isInputBlocked || _isShopOpen) && UnityEngine.Input.GetButtonDown(JumpButtonName);
+        public bool IsAttackPressed => !(_isInputBlocked || _isShopOpen) && UnityEngine.Input.GetButtonDown(PrimaryAttackButtonName);
+        public bool IsSecondaryAttackPressed => !(_isInputBlocked || _isShopOpen) && UnityEngine.Input.GetButtonDown(SecondaryAttackButtonName);
+        public bool IsLiftPressed => !(_isInputBlocked || _isShopOpen) && UnityEngine.Input.GetKeyDown(LiftKeyCode);
 
         public bool IsSlidePressed
         {
             get
             {
-                if (_isInputBlocked)
+                if (_isInputBlocked || _isShopOpen)
                 {
                     return false;
-
                 }
 
                 if (_hero != null && _hero.AbilityManager != null)
@@ -47,6 +42,16 @@ namespace Player.Input
                 }
 
                 return UnityEngine.Input.GetKeyDown(SlideKeyCode);
+            }
+        }
+
+        private void Start()
+        {
+            _hero = GetComponent<Hero>();
+
+            if (_hero == null)
+            {
+                _hero = FindFirstObjectByType<Hero>();
             }
         }
 

@@ -7,7 +7,7 @@ namespace AudioSystem
     {
         private List<AudioClip> _tracks = new List<AudioClip>();
         private List<AudioClip> _shuffledTracks = new List<AudioClip>();
-        private int _currentTrackIndex = 0;
+        private int _currentTrackIndex;
 
         public bool HasTracks => _tracks.Count > 0;
 

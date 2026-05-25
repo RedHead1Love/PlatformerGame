@@ -1,62 +1,25 @@
-using Shared.Damage;
+using Player.Abilities;
 using UnityEngine;
 
-namespace Player
+namespace Shared.Damage
 {
     public sealed class EnhancedDamageService
     {
-        private readonly Hero _hero;
-        private readonly DamageCalculator _damageCalculator;
+        private readonly DamageBonusService _bonusService;
 
-        public EnhancedDamageService(Hero hero)
+        public EnhancedDamageService(DamageBonusService bonusService)
         {
-            _hero = hero;
-            _damageCalculator = new DamageCalculator(_hero.AbilityManager);
+            _bonusService = bonusService;
         }
 
-        public void ApplyDamageToTarget(int baseDamage, GameObject target)
+        public int ProcessDamage(int baseDamage, GameObject target)
         {
-            if (target == null)
+            if (_bonusService != null)
             {
-                return;
+                return _bonusService.CalculateDamageWithBonuses(baseDamage, target);
             }
 
-            IDamageable damageable = target.GetComponent<IDamageable>() ?? target.GetComponentInParent<IDamageable>();
-
-            if (damageable != null)
-            {
-                int finalDamage = _damageCalculator.CalculateDamageWithBonuses(baseDamage, target);
-                damageable.TakeDamage(finalDamage);
-
-                if (finalDamage > baseDamage)
-                {
-                    ShowBonusDamageEffect(target);
-                }
-            }
-        }
-
-        private void ShowBonusDamageEffect(GameObject target)
-        {
-            CreateDamageText(target, "Болото x2!");
-        }
-
-        private void CreateDamageText(GameObject target, string text)
-        {
-            float verticalOffset = 1.5f;
-            string damageTextObjectName = "BonusDamageText";
-            int textFontSize = 20;
-            float textLifetime = 1f;
-
-            GameObject textObj = new GameObject(damageTextObjectName);
-            textObj.transform.position = target.transform.position + Vector3.up * verticalOffset;
-
-            TextMesh textMesh = textObj.AddComponent<TextMesh>();
-            textMesh.text = text;
-            textMesh.color = Color.green;
-            textMesh.fontSize = textFontSize;
-            textMesh.anchor = TextAnchor.MiddleCenter;
-
-            Object.Destroy(textObj, textLifetime);
+            return baseDamage;
         }
     }
 }

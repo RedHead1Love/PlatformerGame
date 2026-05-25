@@ -1,5 +1,9 @@
-public interface IEnemyTypeComponent
+namespace GeneralLogicEnemies
 {
-    EnemyType EnemyType { get; }
-    void SetEnemyType(EnemyType type);
+    public interface IEnemyTypeComponent
+    {
+        EnemyType EnemyType { get; }
+
+        void SetEnemyType(EnemyType type);
+    }
 }

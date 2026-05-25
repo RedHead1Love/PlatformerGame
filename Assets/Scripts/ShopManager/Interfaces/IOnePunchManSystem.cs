@@ -1,11 +1,9 @@
 using GeneralLogicEnemies;
 
-public interface IOnePunchManSystem
+namespace Player.Abilities
 {
-    float InstakillChance { get; }
-    bool IsActive { get; }
-
-    void Activate();
-    void Deactivate();
-    bool CheckForInstakill(Entity enemy);
+    public interface IOnePunchManSystem
+    {
+        bool CheckForInstakill(Entity enemy);
+    }
 }

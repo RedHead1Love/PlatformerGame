@@ -5,10 +5,12 @@ using UnityEngine.SceneManagement;
 public sealed class GameManager : MonoBehaviour
 {
     private const string MainMenuSceneName = "MainMenu";
+    private const string LastChancePrefKey = "LastChance_Active";
+    private const string ArmorPlatesPrefKey = "ArmorPlates_Used";
 
     public static GameManager Instance { get; private set; }
 
-    [SerializeField] private bool _shouldStartNewGame = false;
+    [SerializeField] private bool _shouldStartNewGame;
 
     private void Awake()
     {
@@ -25,7 +27,6 @@ public sealed class GameManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-
             DontDestroyOnLoad(gameObject);
 
             SceneManager.sceneLoaded += OnSceneLoaded;
@@ -50,8 +51,8 @@ public sealed class GameManager : MonoBehaviour
 
         _shouldStartNewGame = false;
 
-        PlayerPrefs.DeleteKey("LastChance_Active");
-        PlayerPrefs.DeleteKey("ArmorPlates_Used");
+        PlayerPrefs.DeleteKey(LastChancePrefKey);
+        PlayerPrefs.DeleteKey(ArmorPlatesPrefKey);
 
         SaveSystem.Instance?.DeleteSaveData();
 
@@ -65,7 +66,7 @@ public sealed class GameManager : MonoBehaviour
 
     private void ResetKeyCollectionUI()
     {
-        KeyCollection keyCollection = FindObjectOfType<KeyCollection>();
+        KeyCollection keyCollection = FindFirstObjectByType<KeyCollection>();
 
         keyCollection?.ResetAllKeys();
     }
