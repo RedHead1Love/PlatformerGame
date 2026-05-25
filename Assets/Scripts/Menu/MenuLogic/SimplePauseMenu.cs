@@ -1,5 +1,7 @@
+﻿using Player.Input;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using YG;
 
 public sealed class SimplePauseMenu : MonoBehaviour
 {
@@ -11,14 +13,17 @@ public sealed class SimplePauseMenu : MonoBehaviour
     private bool _isPaused = false;
     private Rect _pauseWindowRect;
 
+    [SerializeField] private IInputProvider _inputProvider;
+
     private void Start()
     {
         InitializePauseWindow();
+        FindInputProvider();
     }
 
     private void Update()
     {
-        if (Input.GetKeyDown(PauseKey))
+        if (_inputProvider != null && _inputProvider.IsMenuPressed)
         {
             TogglePauseState();
         }
@@ -37,6 +42,24 @@ public sealed class SimplePauseMenu : MonoBehaviour
     private void OnDestroy()
     {
         ResumeGame();
+    }
+
+    private void FindInputProvider()
+    {
+        if (_inputProvider == null)
+        {
+            if (YG2.envir.isDesktop)
+            {
+                _inputProvider = FindObjectOfType<OldInputProvider>();
+            }
+            else if (YG2.envir.isMobile)
+            {
+                _inputProvider = FindObjectOfType<JoystickInput>();
+            }
+        }
+
+        if (_inputProvider == null)
+            Debug.LogWarning("IInputProvider not found! Pause menu won't work");
     }
 
     private void InitializePauseWindow()

@@ -1,14 +1,22 @@
 using DoorControl;
+using Player.Input;
 using UnityEngine;
+using YG;
 
 public sealed class Door : MonoBehaviour, IOpenable
 {
+    [Header("Input")]
+    [SerializeField] private IInputProvider _inputProvider;
+
     [Header("References")]
     [SerializeField] private SpriteRenderer _spriteRenderer;
     [SerializeField] private Sprite _spriteOpened;
     [SerializeField] private Sprite _spriteClosed;
 
     [Header("Interaction")]
+    
+    public Vector2 triggerSize = new Vector2(1.5f, 1.5f);
+    public LayerMask playerLayer;
     [SerializeField] private KeyCode _interactKey = KeyCode.F;
     [SerializeField] private Vector2 _triggerSize = new Vector2(1.5f, 1.5f);
     [SerializeField] private LayerMask _playerLayer;
@@ -50,6 +58,27 @@ public sealed class Door : MonoBehaviour, IOpenable
         }
     }
 
+    private void Start()
+    {
+        if (animator != null)
+        {
+            animator.Play(isOpened ? "Opened" : "Closed");
+        }
+
+        ApplyVisualState(isOpened);
+        FindInputProvider();
+    }
+
+    private void Update()
+    {
+        if (_inputProvider.IsOpenShopOrChestPressed &&
+            Physics2D.OverlapBox(transform.position, triggerSize, 0, playerLayer))
+        {
+            TryToggle();
+        }
+    }
+
+    private void TryToggle()
     public void Open()
     {
         if (_isOpened)
@@ -88,6 +117,24 @@ public sealed class Door : MonoBehaviour, IOpenable
         }
     }
 
+    private void FindInputProvider()
+    {
+        if (_inputProvider == null)
+        {
+            if (YG2.envir.isDesktop)
+            {
+                _inputProvider = FindObjectOfType<OldInputProvider>();
+            }
+            else if (YG2.envir.isMobile)
+            {
+                _inputProvider = FindObjectOfType<JoystickInput>();
+            }
+        }
+
+        if (_inputProvider == null)
+            Debug.LogWarning("IInputProvider not found! Map toggle won't work with key.");
+    }
+    private void ApplyVisualState(bool opened)
     private void PlaySound(AudioClip clip)
     {
         if (clip == null)

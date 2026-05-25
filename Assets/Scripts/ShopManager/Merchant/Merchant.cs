@@ -1,11 +1,32 @@
 using Player.Input;
 using UnityEngine;
+using YG;
 
 namespace ShopLogic
 {
     [RequireComponent(typeof(Collider2D))]
     public sealed class Merchant : MonoBehaviour, IMerchant
     {
+        private const int StateIdle = 0;
+        private const int StateIdle2 = 1;
+        private const int StateTalk = 2;
+        private const float DefaultInteractionRadius = 2f;
+
+        [Header("Input")]
+        [SerializeField] private IInputProvider _inputProvider;
+
+        [Header("Animations")]
+        [SerializeField] private Animator _animator;
+
+        [Header("Shop Settings")]
+        [SerializeField] private GameObject _shopPanel;
+        [SerializeField] private ShopManager _shopManager;
+        [SerializeField] private bool _closeShopOnExit = true;
+
+        [Header("Interaction Points")]
+        [SerializeField] private float _interactionRadius = DefaultInteractionRadius;
+        [SerializeField] private Transform _interactionPoint;
+        [SerializeField] private GameObject _interactionHint;
         private const KeyCode InteractKey = KeyCode.E;
         private const string PlayerTag = "Player";
 
@@ -18,6 +39,27 @@ namespace ShopLogic
 
         private void Start()
         {
+            InitializeReferences();
+            FindInputProvider();
+        }
+
+        private void InitializeReferences()
+        {
+            _interactionPoint ??= transform;
+
+            if (_interactionHint != null)
+            {
+                _interactionHint.SetActive(false);
+            }
+
+            if (_shopPanel != null)
+            {
+                _shopPanel.SetActive(false);
+            }
+
+            _shopManager ??= _shopPanel?.GetComponent<ShopManager>();
+
+            SetAnimation(StateIdle2);
             InitializeShopManager();
             HideInteractionHint();
         }
@@ -33,6 +75,39 @@ namespace ShopLogic
             }
         }
 
+        private void FindInputProvider()
+        {
+            if (_inputProvider == null)
+            {
+                if (YG2.envir.isDesktop)
+                {
+                    _inputProvider = FindObjectOfType<OldInputProvider>();
+                }
+                else if (YG2.envir.isMobile)
+                {
+                    _inputProvider = FindObjectOfType<JoystickInput>();
+                }
+            }
+            
+            if (_inputProvider == null)
+                Debug.LogWarning("IInputProvider not found! Map toggle won't work with key.");
+        }
+
+        private void HandlePlayerInput()
+        {
+            if (_isPlayerInRange && _inputProvider.IsOpenShopOrChestPressed)
+            {
+                if (!_isShopOpen)
+                {
+                    OpenShop();
+                }
+                else
+                {
+                    CloseShop();
+                }
+            }
+
+            if (_isShopOpen && _inputProvider.IsMenuPressed)
         private void InitializeShopManager()
         {
             if (_shopUIManager == null)

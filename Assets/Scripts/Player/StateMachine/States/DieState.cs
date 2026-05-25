@@ -1,6 +1,7 @@
 using Player;
 using System.Collections;
 using UnityEngine;
+using YG;
 using UnityEngine.SceneManagement;
 
 namespace Player.StateMachine
@@ -43,6 +44,10 @@ namespace Player.StateMachine
 
         public void Exit() { }
 
+    private bool IsDieAnimationFinished()
+    {
+        AnimatorStateInfo stateInfo = _animator.GetCurrentAnimatorStateInfo(0);
+        YG2.InterstitialAdvShow();
         private bool IsDieAnimationFinished()
         {
             AnimatorStateInfo stateInfo = _animator.GetCurrentAnimatorStateInfo(BaseLayerIndex);

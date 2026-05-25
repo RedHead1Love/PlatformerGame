@@ -1,3 +1,4 @@
+using Player.Input;
 using UnityEngine;
 
 public sealed class TutorialManager : MonoBehaviour
@@ -13,14 +14,6 @@ public sealed class TutorialManager : MonoBehaviour
     private void Start()
     {
         InitializeTutorial();
-    }
-
-    private void Update()
-    {
-        if (_tutorialPanel.activeInHierarchy && Input.GetKeyDown(CloseTutorialKey))
-        {
-            CloseTutorial();
-        }
     }
 
     private void InitializeTutorial()
@@ -76,4 +69,13 @@ public sealed class TutorialManager : MonoBehaviour
     {
         Time.timeScale = NormalTimeScale;
     }
+
+    public void TryCloseTutorial()
+    {
+        if (_tutorialPanel.activeInHierarchy)
+        {
+            CloseTutorial();
+        }
+    }
+}
 }

@@ -1,7 +1,10 @@
+﻿using System.Collections.Generic;
+using Player.Input;
 using Player;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using YG;
 
 public sealed class MiniMapController : MonoBehaviour
 {
@@ -24,6 +27,9 @@ public sealed class MiniMapController : MonoBehaviour
     [SerializeField] private GameObject _miniMapPanel;
     [SerializeField] private KeyCode _toggleKey = DefaultToggleKey;
 
+    [Header("Input")]
+    [SerializeField] private IInputProvider _inputProvider;
+
     [Header("Lock State")]
     [SerializeField] private bool _isMapLocked = true;
     [SerializeField] private GameObject _lockOverlay;
@@ -39,6 +45,27 @@ public sealed class MiniMapController : MonoBehaviour
 
     private bool _isMiniMapVisible;
     private RectTransform _miniMapRectTransform;
+    private int _currentMapIndex = 0;
+
+    private const string MapUnlockedKey = "MapUnlocked";
+
+    [System.Serializable]
+    public class MiniMapData
+    {
+        private const float DefaultMapWidth = 50f;
+        private const float DefaultMapHeight = 50f;
+
+        public string locationName;
+        public Sprite mapTexture;
+        public Vector2 mapWorldSize = new Vector2(DefaultMapWidth, DefaultMapHeight);
+        public Vector2 mapWorldCenter = Vector2.zero;
+    }
+
+    private void Awake()
+    {
+        InitializeMiniMap();
+        FindInputProvider();
+    }
     private int _currentMapIndex;
 
     private void Start()
@@ -58,6 +85,25 @@ public sealed class MiniMapController : MonoBehaviour
         UpdateLockOverlayVisibility();
     }
 
+    private void FindInputProvider()
+    {
+        if (_inputProvider == null)
+        {
+            if (YG2.envir.isDesktop)
+            {
+                _inputProvider = FindObjectOfType<OldInputProvider>();
+            }
+            else if (YG2.envir.isMobile)
+            {
+                _inputProvider = FindObjectOfType<JoystickInput>();
+            }
+        }
+
+        if (_inputProvider == null)
+            Debug.LogWarning("IInputProvider not found! Map toggle won't work with key.");
+    }
+
+    private void InitializePlayerMarker()
     private void Update()
     {
         if (Input.GetKeyDown(_toggleKey))
@@ -81,6 +127,7 @@ public sealed class MiniMapController : MonoBehaviour
 
     public void ToggleMiniMap()
     {
+        if (_inputProvider != null && _inputProvider.IsOpenMapPressed)
         _isMiniMapVisible = !_isMiniMapVisible;
 
         if (_miniMapPanel != null)
