@@ -1,7 +1,6 @@
-using GeneralLogicEnemies;
+﻿using GeneralLogicEnemies;
 using UnityEngine;
 
-[RequireComponent(typeof(Entity))]
 public sealed class EnemyRegistration : MonoBehaviour
 {
     private const string DefaultIdFormat = "{0}_{1:F3}_{2:F3}";
@@ -26,35 +25,6 @@ public sealed class EnemyRegistration : MonoBehaviour
         _isQuitting = true;
     }
 
-    private void OnDestroy()
-    {
-        if (_enemyEntity != null)
-        {
-            _enemyEntity.OnEntityDeath -= OnEnemyDeath;
-        }
-
-        if (!_isDead && _isRegistered && !_isQuitting)
-        {
-            if (EnemyManager.Instance != null && !string.IsNullOrEmpty(_enemyId))
-            {
-                EnemyManager.Instance.RemoveEnemy(_enemyId);
-            }
-        }
-    }
-
-    public void SetEnemyId(string id)
-    {
-        if (!string.IsNullOrEmpty(id))
-        {
-            _enemyId = id;
-        }
-    }
-
-    public string GetEnemyId()
-    {
-        return _enemyId;
-    }
-
     private void InitializeEnemyRegistration()
     {
         _enemyEntity = GetComponent<Entity>();
@@ -67,7 +37,6 @@ public sealed class EnemyRegistration : MonoBehaviour
         GenerateEnemyIdIfEmpty();
 
         _enemyEntity.OnEntityDeath += OnEnemyDeath;
-
         EnemyManager.Instance.RegisterEnemy(_enemyEntity, _enemyId);
 
         _isRegistered = true;
@@ -78,13 +47,11 @@ public sealed class EnemyRegistration : MonoBehaviour
         if (string.IsNullOrEmpty(_enemyId))
         {
             _counter++;
-
             _enemyId = string.Format(
                 DefaultIdFormat,
                 gameObject.name.Replace("(Clone)", "").Trim(),
                 transform.position.x,
-                transform.position.y
-            ) + $"_{_counter}";
+                transform.position.y) + $"_{_counter}";
         }
     }
 
@@ -96,7 +63,6 @@ public sealed class EnemyRegistration : MonoBehaviour
         }
 
         _isDead = true;
-
         Invoke(nameof(SaveEnemyDeath), DeathSaveDelay);
     }
 
@@ -107,14 +73,30 @@ public sealed class EnemyRegistration : MonoBehaviour
             return;
         }
 
-        if (EnemyManager.Instance != null)
+        EnemyManager.Instance?.MarkEnemyKilled(_enemyId);
+        SaveSystem.Instance?.MarkEnemyKilled(_enemyId);
+    }
+
+    private void OnDestroy()
+    {
+        if (_enemyEntity != null)
         {
-            EnemyManager.Instance.MarkEnemyKilled(_enemyId);
+            _enemyEntity.OnEntityDeath -= OnEnemyDeath;
         }
 
-        if (SaveSystem.Instance != null)
+        if (!_isDead && _isRegistered && !_isQuitting && EnemyManager.Instance != null)
         {
-            SaveSystem.Instance.MarkEnemyKilled(_enemyId);
+            EnemyManager.Instance.RemoveEnemy(_enemyId);
         }
     }
+
+    public void SetEnemyId(string id)
+    {
+        if (!string.IsNullOrEmpty(id))
+        {
+            _enemyId = id;
+        }
+    }
+
+    public string GetEnemyId() => _enemyId;
 }

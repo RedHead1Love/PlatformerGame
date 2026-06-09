@@ -7,7 +7,6 @@ namespace AudioSystem
         public bool IsWithinDistance(Vector3 sourcePosition, Vector3 targetPosition, float maxDistance)
         {
             float distance = CalculateDistance(sourcePosition, targetPosition);
-
             return distance <= maxDistance;
         }
 

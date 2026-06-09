@@ -7,7 +7,6 @@ namespace Traps
     public sealed class LightningTrapSoundController : MonoBehaviour
     {
         private const string PlayerTag = "Player";
-        private const float DefaultVolume = 1f;
 
         [Header("Sound Configuration")]
         [SerializeField] private AudioClip _lightningStrikeSound;
@@ -27,17 +26,19 @@ namespace Traps
         {
             InitializeAudioPlayer();
             InitializePlayerReference();
+            InitializeAudioControllerReference();
             InitializeDistanceChecker();
-
-            if (_audioController == null)
-            {
-                _audioController = FindFirstObjectByType<AudioController>();
-            }
         }
 
         private void InitializeAudioPlayer()
         {
             AudioSource audioSource = GetComponent<AudioSource>();
+
+            if (audioSource == null)
+            {
+                audioSource = gameObject.AddComponent<AudioSource>();
+            }
+
             audioSource.playOnAwake = false;
             audioSource.loop = false;
 
@@ -54,6 +55,14 @@ namespace Traps
             }
         }
 
+        private void InitializeAudioControllerReference()
+        {
+            if (_audioController == null)
+            {
+                _audioController = FindFirstObjectByType<AudioController>();
+            }
+        }
+
         private void InitializeDistanceChecker()
         {
             _distanceChecker = new DistanceChecker();
@@ -61,7 +70,12 @@ namespace Traps
 
         public void PlayLightningStrikeSound()
         {
-            if (_lightningStrikeSound == null || !ShouldPlaySound())
+            if (_lightningStrikeSound == null)
+            {
+                return;
+            }
+
+            if (!ShouldPlaySound())
             {
                 return;
             }
@@ -82,7 +96,12 @@ namespace Traps
 
         private float GetSoundVolume()
         {
-            return _audioController != null ? _audioController.SoundEffectsVolume : DefaultVolume;
+            if (_audioController != null)
+            {
+                return _audioController.SoundEffectsVolume;
+            }
+
+            return 1f;
         }
 
         public void StopSound()

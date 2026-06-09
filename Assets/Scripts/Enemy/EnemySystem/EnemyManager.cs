@@ -1,13 +1,17 @@
-using GeneralLogicEnemies;
+﻿using GeneralLogicEnemies;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public sealed class EnemyManager : MonoBehaviour
 {
+    private const float SaveSyncDelay = 0.5f;
+    private const string InvalidIdentifier = "-1";
+
     public static EnemyManager Instance { get; private set; }
 
-    private readonly Dictionary<string, Entity> _enemies = new Dictionary<string, Entity>();
+    private Dictionary<string, Entity> _enemies = new Dictionary<string, Entity>();
     private HashSet<string> _killedEnemies = new HashSet<string>();
 
     private void Awake()
@@ -31,7 +35,6 @@ public sealed class EnemyManager : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
-
             SubscribeToEvents();
         }
         else
@@ -64,28 +67,64 @@ public sealed class EnemyManager : MonoBehaviour
     {
         if (SaveSystem.Instance != null && SaveSystem.Instance.HasSave())
         {
-            SyncWithSaveData();
+            StartCoroutine(DelayedSaveSync());
         }
+    }
+
+    private IEnumerator DelayedSaveSync()
+    {
+        yield return new WaitForSeconds(SaveSyncDelay);
+        SyncWithSaveData();
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        SyncWithSaveData();
+        if (IsRestartingSameScene(scene.name))
+        {
+            ResetForSceneRestart();
+        }
     }
 
-    private void OnGameLoaded(GameSaveData saveData)
+    private bool IsRestartingSameScene(string newSceneName)
     {
-        SyncWithSaveData();
+        return SaveSystem.Instance != null &&
+               SaveSystem.Instance.HasSave() &&
+               SaveSystem.Instance.CurrentSave.sceneName == newSceneName;
+    }
+
+    public void ResetForSceneRestart()
+    {
+        _enemies.Clear();
+
+        if (SaveSystem.Instance != null && SaveSystem.Instance.HasSave())
+        {
+            var saveData = SaveSystem.Instance.CurrentSave;
+            _killedEnemies = saveData.killedEnemies != null
+                ? new HashSet<string>(saveData.killedEnemies)
+                : new HashSet<string>();
+        }
+        else
+        {
+            _killedEnemies.Clear();
+        }
     }
 
     public void RegisterEnemy(Entity enemy, string enemyId)
     {
-        if (string.IsNullOrEmpty(enemyId) || enemy == null)
+        const int MinRandomValue = 1000;
+        const int MaxRandomValue = 9999;
+
+        if (string.IsNullOrEmpty(enemyId) || enemyId.Contains(InvalidIdentifier))
         {
-            return;
+            enemyId = $"{enemy.gameObject.name}_{Random.Range(MinRandomValue, MaxRandomValue)}";
         }
 
-        _enemies[enemyId] = enemy;
+        if (_enemies.ContainsKey(enemyId))
+        {
+            enemyId = $"{enemyId}_{Random.Range(MinRandomValue, MaxRandomValue)}";
+        }
+
+        _enemies.Add(enemyId, enemy);
 
         if (_killedEnemies.Contains(enemyId))
         {
@@ -103,14 +142,54 @@ public sealed class EnemyManager : MonoBehaviour
 
     public void MarkEnemyKilled(string enemyId)
     {
-        if (string.IsNullOrEmpty(enemyId))
+        if (string.IsNullOrEmpty(enemyId) || enemyId.Contains(InvalidIdentifier))
+        {
+            return;
+        }
+
+        if (_killedEnemies.Contains(enemyId))
         {
             return;
         }
 
         _killedEnemies.Add(enemyId);
 
+        SaveSystem.Instance?.MarkEnemyKilled(enemyId);
+
+        if (_enemies.ContainsKey(enemyId))
+        {
+            _enemies.Remove(enemyId);
+        }
+    }
+
+    public HashSet<string> GetKilledEnemies()
+    {
+        return new HashSet<string>(_killedEnemies);
+    }
+
+    private void OnGameLoaded(GameSaveData saveData)
+    {
+        if (saveData == null)
+        {
+            return;
+        }
+
+        _killedEnemies = saveData.killedEnemies != null
+            ? new HashSet<string>(saveData.killedEnemies)
+            : new HashSet<string>();
+
         ApplyKilledEnemiesStates();
+    }
+
+    private void ApplyKilledEnemiesStates()
+    {
+        foreach (var enemyId in _killedEnemies)
+        {
+            if (_enemies.ContainsKey(enemyId) && IsEnemyValid(_enemies[enemyId]))
+            {
+                _enemies[enemyId].gameObject.SetActive(false);
+            }
+        }
     }
 
     public void SyncWithSaveData()
@@ -122,10 +201,9 @@ public sealed class EnemyManager : MonoBehaviour
 
         var saveData = SaveSystem.Instance.CurrentSave;
 
-        if (saveData.KilledEnemies != null)
+        if (saveData.killedEnemies != null)
         {
-            _killedEnemies = new HashSet<string>(saveData.KilledEnemies);
-
+            _killedEnemies = new HashSet<string>(saveData.killedEnemies);
             ApplyKilledEnemiesStates();
         }
     }
@@ -135,7 +213,7 @@ public sealed class EnemyManager : MonoBehaviour
         _killedEnemies.Clear();
         _enemies.Clear();
 
-        var allEnemies = FindObjectsByType<Entity>(FindObjectsSortMode.None);
+        Entity[] allEnemies = FindObjectsByType<Entity>(FindObjectsSortMode.None);
 
         foreach (var enemy in allEnemies)
         {
@@ -153,22 +231,13 @@ public sealed class EnemyManager : MonoBehaviour
             return false;
         }
 
-        return _enemies.TryGetValue(enemyId, out Entity enemy) && IsEnemyValid(enemy) && enemy.gameObject.activeInHierarchy;
-    }
-
-    private void ApplyKilledEnemiesStates()
-    {
-        foreach (var enemyId in _killedEnemies)
-        {
-            if (_enemies.TryGetValue(enemyId, out Entity enemy) && IsEnemyValid(enemy))
-            {
-                enemy.gameObject.SetActive(false);
-            }
-        }
+        return _enemies.ContainsKey(enemyId) &&
+               IsEnemyValid(_enemies[enemyId]) &&
+               _enemies[enemyId].gameObject.activeInHierarchy;
     }
 
     private bool IsEnemyValid(Entity enemy)
     {
-        return enemy != null;
+        return enemy != null && enemy.gameObject != null;
     }
 }

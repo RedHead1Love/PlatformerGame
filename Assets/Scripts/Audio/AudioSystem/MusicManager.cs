@@ -4,8 +4,6 @@ namespace AudioSystem
 {
     public sealed class MusicManager
     {
-        private const float MinimumTrackCount = 0;
-
         private readonly IAudioPlayer _audioPlayer;
         private readonly IMusicPlaylist _playlist;
 
@@ -23,7 +21,7 @@ namespace AudioSystem
 
         public void Update()
         {
-            if (_isBossFightActive == false && _isBackgroundMusicPlaying && _audioPlayer.IsPlaying == false)
+            if (!_isBossFightActive && _isBackgroundMusicPlaying && !_audioPlayer.IsPlaying)
             {
                 PlayNextTrack();
             }
@@ -31,7 +29,7 @@ namespace AudioSystem
 
         public void PlayNextTrack()
         {
-            if (_playlist.HasTracks == false)
+            if (!_playlist.HasTracks)
             {
                 return;
             }
@@ -44,7 +42,7 @@ namespace AudioSystem
             }
         }
 
-        public void PlayBoss(AudioClip bossMusic)
+        public void PlayBossMusic(AudioClip bossMusic)
         {
             if (bossMusic == null)
             {
@@ -58,33 +56,29 @@ namespace AudioSystem
             _audioPlayer.Play(bossMusic);
         }
 
-        public void StopBoss()
+        public void StopBossMusic()
         {
             _isBossFightActive = false;
-
             _audioPlayer.Stop();
 
             _isBackgroundMusicPlaying = true;
-
             PlayNextTrack();
         }
 
-        public void Pause()
+        public void PauseBackgroundMusic()
         {
-            if (_isBossFightActive == false)
+            if (!_isBossFightActive)
             {
                 _audioPlayer.Stop();
-
                 _isBackgroundMusicPlaying = false;
             }
         }
 
-        public void Resume()
+        public void ResumeBackgroundMusic()
         {
-            if (_isBossFightActive == false)
+            if (!_isBossFightActive)
             {
                 _isBackgroundMusicPlaying = true;
-
                 PlayNextTrack();
             }
         }
@@ -94,12 +88,11 @@ namespace AudioSystem
             _audioPlayer.SetVolume(volume);
         }
 
-        public void StartBackground()
+        public void StartBackgroundMusic()
         {
-            if (_playlist.HasTracks && _isBossFightActive == false)
+            if (_playlist.HasTracks && !_isBossFightActive)
             {
                 _isBackgroundMusicPlaying = true;
-
                 PlayNextTrack();
             }
         }

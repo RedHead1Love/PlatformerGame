@@ -1,28 +1,21 @@
-using Player;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using Player.Input;
 using UnityEngine;
 using UnityEngine.UI;
+using YG;
 
 public sealed class MiniMapController : MonoBehaviour
 {
-    [System.Serializable]
-    public sealed class MiniMapData
-    {
-        private const float DefaultMapWidth = 50f;
-        private const float DefaultMapHeight = 50f;
-
-        public string LocationName;
-        public Sprite MapTexture;
-        public Vector2 MapWorldSize = new Vector2(DefaultMapWidth, DefaultMapHeight);
-        public Vector2 MapWorldCenter = Vector2.zero;
-    }
-
     private const KeyCode DefaultToggleKey = KeyCode.M;
-    private const string MapUnlockedKey = "MapUnlocked";
+    private const float NormalizedMinValue = -1f;
+    private const float NormalizedMaxValue = 1f;
 
     [Header("MiniMap Settings")]
     [SerializeField] private GameObject _miniMapPanel;
     [SerializeField] private KeyCode _toggleKey = DefaultToggleKey;
+
+    [Header("Input")]
+    [SerializeField] private IInputProvider _inputProvider;
 
     [Header("Lock State")]
     [SerializeField] private bool _isMapLocked = true;
@@ -39,121 +32,278 @@ public sealed class MiniMapController : MonoBehaviour
 
     private bool _isMiniMapVisible;
     private RectTransform _miniMapRectTransform;
-    private int _currentMapIndex;
+    private int _currentMapIndex = 0;
+
+    private const string MapUnlockedKey = "MapUnlocked";
+
+    [System.Serializable]
+    public class MiniMapData
+    {
+        private const float DefaultMapWidth = 50f;
+        private const float DefaultMapHeight = 50f;
+
+        public string locationName;
+        public Sprite mapTexture;
+        public Vector2 mapWorldSize = new Vector2(DefaultMapWidth, DefaultMapHeight);
+        public Vector2 mapWorldCenter = Vector2.zero;
+    }
+
+    private void Awake()
+    {
+        InitializeMiniMap();
+        FindInputProvider();
+    }
 
     private void Start()
     {
-        _miniMapRectTransform = _miniMapImage?.GetComponent<RectTransform>();
-
         LoadMapState();
-        InitializePlayerTransform();
+        UpdateMapLockState();
+    }
 
-        if (_miniMapPanel != null)
+    private void InitializeMiniMap()
+    {
+        if (_miniMapPanel == null)
         {
-            _miniMapPanel.SetActive(false);
+            return;
         }
 
         _isMiniMapVisible = false;
 
-        UpdateLockOverlayVisibility();
-    }
-
-    private void Update()
-    {
-        if (Input.GetKeyDown(_toggleKey))
-        {
-            ToggleMiniMap();
-        }
-
-        if (_isMiniMapVisible && !_isMapLocked)
-        {
-            UpdatePlayerMarker();
-        }
-    }
-
-    private void InitializePlayerTransform()
-    {
         if (_playerTransform == null)
         {
-            _playerTransform = FindFirstObjectByType<Hero>()?.transform;
+            var hero = FindObjectOfType<Hero>();
+
+            if (hero != null)
+            {
+                _playerTransform = hero.transform;
+            }
         }
-    }
 
-    public void ToggleMiniMap()
-    {
-        _isMiniMapVisible = !_isMiniMapVisible;
+        if (_miniMapImage == null)
+        {
+            _miniMapImage = _miniMapPanel.GetComponentInChildren<Image>();
+        }
 
-        if (_miniMapPanel != null)
+        if (_lockOverlay == null && _miniMapPanel != null)
+        {
+            var lockObj = _miniMapPanel.transform.Find("LockOverlay");
+
+            if (lockObj != null)
+            {
+                _lockOverlay = lockObj.gameObject;
+            }
+        }
+
+        _miniMapRectTransform = _miniMapPanel.GetComponent<RectTransform>();
+
+        if (_isMapLocked)
+        {
+            _miniMapPanel.SetActive(false);
+        }
+        else
         {
             _miniMapPanel.SetActive(_isMiniMapVisible);
         }
 
-        UpdateLockOverlayVisibility();
+        InitializePlayerMarker();
+    }
 
-        if (_isMiniMapVisible && !_isMapLocked)
+    private void FindInputProvider()
+    {
+        if (_inputProvider == null)
         {
-            UpdatePlayerMarker();
+            if (YG2.envir.isDesktop)
+            {
+                _inputProvider = FindObjectOfType<OldInputProvider>();
+            }
+            else if (YG2.envir.isMobile)
+            {
+                _inputProvider = FindObjectOfType<JoystickInput>();
+            }
+        }
+
+        if (_inputProvider == null)
+            Debug.LogWarning("IInputProvider not found! Map toggle won't work with key.");
+    }
+
+    private void InitializePlayerMarker()
+    {
+        if (_playerMarker != null)
+        {
+            _playerMarker.gameObject.SetActive(_isMiniMapVisible && !_isMapLocked);
+            _playerMarker.anchoredPosition = Vector2.zero;
         }
     }
 
-    private void UpdateLockOverlayVisibility()
+    private void Update()
     {
-        if (_lockOverlay != null)
+        if (_isMapLocked)
         {
-            _lockOverlay.SetActive(_isMiniMapVisible && _isMapLocked);
+            CheckMapUnlockStatus();
+
+            return;
+        }
+
+        HandleMiniMapToggle();
+        UpdatePlayerMarkerIfVisible();
+    }
+
+    private void CheckMapUnlockStatus()
+    {
+        var hero = FindObjectOfType<Hero>();
+
+        if (hero != null && hero.AbilityManager != null)
+        {
+            if (hero.AbilityManager.HasMap && _isMapLocked)
+            {
+                UnlockMap();
+            }
+        }
+    }
+
+    private void HandleMiniMapToggle()
+    {
+        if (_inputProvider != null && _inputProvider.IsOpenMapPressed)
+        {
+            ToggleMiniMap();
+        }
+    }
+
+    private void UpdatePlayerMarkerIfVisible()
+    {
+        if (_isMiniMapVisible && _playerTransform != null && _playerMarker != null && !_isMapLocked)
+        {
+            UpdatePlayerMarker();
         }
     }
 
     private void UpdatePlayerMarker()
     {
-        if (_playerTransform == null || _miniMapRectTransform == null || _playerMarker == null)
-        {
-            return;
-        }
+        Vector2 normalizedPosition = CalculateNormalizedPlayerPosition();
+        Vector2 uiPosition = ConvertToUIPosition(normalizedPosition);
 
-        if (_currentMapIndex < 0 || _currentMapIndex >= _miniMapDataList.Count)
+        _playerMarker.anchoredPosition = uiPosition;
+
+        UpdatePlayerMarkerRotation();
+    }
+
+    private Vector2 CalculateNormalizedPlayerPosition()
+    {
+        float halfScale = 0.5f;
+
+        if (_miniMapDataList.Count <= _currentMapIndex || _playerTransform == null)
         {
-            return;
+            return Vector2.zero;
         }
 
         MiniMapData currentMap = _miniMapDataList[_currentMapIndex];
 
-        Vector3 playerPos = _playerTransform.position;
-        Vector2 normalizedPos = new Vector2(
-            (playerPos.x - currentMap.MapWorldCenter.x) / currentMap.MapWorldSize.x,
-            (playerPos.y - currentMap.MapWorldCenter.y) / currentMap.MapWorldSize.y
-        );
+        Vector2 worldOffset = (Vector2)_playerTransform.position - currentMap.mapWorldCenter;
 
-        normalizedPos.x = Mathf.Clamp(normalizedPos.x, -0.5f, 0.5f);
-        normalizedPos.y = Mathf.Clamp(normalizedPos.y, -0.5f, 0.5f);
+        Vector2 normalizedPosition = new Vector2(worldOffset.x / (currentMap.mapWorldSize.x * halfScale), worldOffset.y / (currentMap.mapWorldSize.y * halfScale));
 
-        _playerMarker.anchoredPosition = new Vector2(
-            normalizedPos.x * _mapUISize.x,
-            normalizedPos.y * _mapUISize.y
-        );
+        normalizedPosition.x = Mathf.Clamp(normalizedPosition.x, NormalizedMinValue, NormalizedMaxValue);
+        normalizedPosition.y = Mathf.Clamp(normalizedPosition.y, NormalizedMinValue, NormalizedMaxValue);
 
-        _playerMarker.localRotation = Quaternion.Euler(0, 0, _playerTransform.rotation.eulerAngles.z);
+        return normalizedPosition;
+    }
+
+    private Vector2 ConvertToUIPosition(Vector2 normalizedPosition)
+    {
+        float halfScale = 0.5f;
+
+        return new Vector2(normalizedPosition.x * (_mapUISize.x * halfScale), normalizedPosition.y * (_mapUISize.y * halfScale));
+    }
+
+    private void UpdatePlayerMarkerRotation()
+    {
+        if (_playerTransform == null || _playerMarker == null)
+        {
+            return;
+        }
+
+        float playerRotation = _playerTransform.eulerAngles.z;
+
+        _playerMarker.localEulerAngles = new Vector3(0, 0, playerRotation);
+    }
+
+    public void ToggleMiniMap()
+    {
+        if (_isMapLocked)
+        {
+            return;
+        }
+
+        _isMiniMapVisible = !_isMiniMapVisible;
+
+        _miniMapPanel.SetActive(_isMiniMapVisible);
+
+
+        if (_playerMarker != null)
+        {
+            _playerMarker.gameObject.SetActive(_isMiniMapVisible);
+
+            if (_isMiniMapVisible)
+            {
+                UpdatePlayerMarker();
+            }
+        }
     }
 
     public void UnlockMap()
     {
-        _isMapLocked = false;
+        if (_isMapLocked)
+        {
+            _isMapLocked = false;
 
-        PlayerPrefs.SetInt(MapUnlockedKey, 1);
+            SaveMapState();
+            UpdateMapLockState();
+        }
+    }
+
+    private void UpdateMapLockState()
+    {
+        if (_lockOverlay != null)
+        {
+            _lockOverlay.SetActive(_isMapLocked);
+        }
+
+        if (_isMapLocked && _miniMapPanel != null)
+        {
+            _miniMapPanel.SetActive(false);
+            _isMiniMapVisible = false;
+        }
+
+        if (_playerMarker != null)
+        {
+            _playerMarker.gameObject.SetActive(_isMiniMapVisible && !_isMapLocked);
+        }
+    }
+
+    private void SaveMapState()
+    {
+        int unlockedValue = 1;
+        int lockedValue = 0;
+
+        PlayerPrefs.SetInt(MapUnlockedKey, _isMapLocked ? lockedValue : unlockedValue);
         PlayerPrefs.Save();
-
-        UpdateLockOverlayVisibility();
     }
 
     private void LoadMapState()
     {
+        int unlockedStateValue = 0;
+        int defaultUnlockedValue = 0;
+
         if (PlayerPrefs.HasKey(MapUnlockedKey))
         {
-            _isMapLocked = PlayerPrefs.GetInt(MapUnlockedKey, 0) == 0;
+            int unlocked = PlayerPrefs.GetInt(MapUnlockedKey, unlockedStateValue);
+
+            _isMapLocked = (unlocked == defaultUnlockedValue);
         }
         else
         {
-            var hero = FindFirstObjectByType<Hero>();
+            var hero = FindObjectOfType<Hero>();
+
             if (hero != null && hero.AbilityManager != null && hero.AbilityManager.HasMap)
             {
                 _isMapLocked = false;
@@ -163,24 +313,29 @@ public sealed class MiniMapController : MonoBehaviour
 
     public void SetMiniMap(int mapIndex)
     {
-        if (mapIndex < 0 || mapIndex >= _miniMapDataList.Count)
+        int minimimValidIndex = 0;
+
+        if (mapIndex >= minimimValidIndex && mapIndex < _miniMapDataList.Count)
         {
-            return;
-        }
+            MiniMapData newMap = _miniMapDataList[mapIndex];
 
-        MiniMapData newMap = _miniMapDataList[mapIndex];
+            if (_miniMapImage == null)
+            {
+                return;
+            }
 
-        if (_miniMapImage == null || newMap.MapTexture == null)
-        {
-            return;
-        }
+            if (newMap.mapTexture == null)
+            {
+                return;
+            }
 
-        _currentMapIndex = mapIndex;
-        _miniMapImage.sprite = newMap.MapTexture;
+            _currentMapIndex = mapIndex;
+            _miniMapImage.sprite = newMap.mapTexture;
 
-        if (_isMiniMapVisible)
-        {
-            UpdatePlayerMarker();
+            if (_isMiniMapVisible)
+            {
+                UpdatePlayerMarker();
+            }
         }
     }
 
@@ -188,9 +343,10 @@ public sealed class MiniMapController : MonoBehaviour
     {
         for (int i = 0; i < _miniMapDataList.Count; i++)
         {
-            if (_miniMapDataList[i].LocationName == locationName)
+            if (_miniMapDataList[i].locationName == locationName)
             {
                 SetMiniMap(i);
+
                 return;
             }
         }

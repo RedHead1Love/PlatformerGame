@@ -34,35 +34,12 @@ public sealed class EnemyAudioController : MonoBehaviour
         _audioPlayer = new AudioPlayer(audioSource);
     }
 
-    public void PlayAttackHit()
-    {
-        PlaySound(_attackHitSound);
-    }
-
-    public void PlayAttackMiss()
-    {
-        PlaySound(_attackMissSound);
-    }
-
-    public void PlaySpecialAttackHit()
-    {
-        PlaySound(_specialAttackHitSound);
-    }
-
-    public void PlaySpecialAttackMiss()
-    {
-        PlaySound(_specialAttackMissSound);
-    }
-
-    public void PlayHurt()
-    {
-        PlaySound(_hurtSound);
-    }
-
-    public void PlayDeath()
-    {
-        PlaySound(_deathSound);
-    }
+    public void PlayAttackHitSound() => PlaySound(_attackHitSound);
+    public void PlayAttackMissSound() => PlaySound(_attackMissSound);
+    public void PlaySpecialAttackHitSound() => PlaySound(_specialAttackHitSound);
+    public void PlaySpecialAttackMissSound() => PlaySound(_specialAttackMissSound);
+    public void PlayHurtSound() => PlaySound(_hurtSound);
+    public void PlayDeathSound() => PlaySound(_deathSound);
 
     private void PlaySound(AudioClip audioClip)
     {
@@ -74,38 +51,10 @@ public sealed class EnemyAudioController : MonoBehaviour
         _audioPlayer.PlayOneShot(audioClip);
     }
 
-    public void PlayDeathSound()
-    {
-        PlaySound(_deathSound);
-    }
-
-    public void SetAttackHit(AudioClip audioClip)
-    {
-        _attackHitSound = audioClip;
-    }
-
-    public void SetAttackMiss(AudioClip audioClip)
-    {
-        _attackMissSound = audioClip;
-    }
-
-    public void SetSpecialAttackHit(AudioClip audioClip)
-    {
-        _specialAttackHitSound = audioClip;
-    }
-
-    public void SetSpecialAttackMiss(AudioClip audioClip)
-    {
-        _specialAttackMissSound = audioClip;
-    }
-
-    public void SetHurt(AudioClip audioClip)
-    {
-        _hurtSound = audioClip;
-    }
-
-    public void SetDeath(AudioClip audioClip)
-    {
-        _deathSound = audioClip;
-    }
+    public void SetAttackHitSound(AudioClip audioClip) => _attackHitSound = audioClip;
+    public void SetAttackMissSound(AudioClip audioClip) => _attackMissSound = audioClip;
+    public void SetSpecialAttackHitSound(AudioClip audioClip) => _specialAttackHitSound = audioClip;
+    public void SetSpecialAttackMissSound(AudioClip audioClip) => _specialAttackMissSound = audioClip;
+    public void SetHurtSound(AudioClip audioClip) => _hurtSound = audioClip;
+    public void SetDeathSound(AudioClip audioClip) => _deathSound = audioClip;
 }

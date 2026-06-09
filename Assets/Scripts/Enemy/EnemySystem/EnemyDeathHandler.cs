@@ -2,7 +2,6 @@ using GeneralLogicEnemies;
 using System.Linq;
 using UnityEngine;
 
-[RequireComponent(typeof(Entity))]
 public sealed class EnemyDeathHandler : MonoBehaviour, IEnemyDeathHandler
 {
     [Header("Death Settings")]
@@ -21,6 +20,24 @@ public sealed class EnemyDeathHandler : MonoBehaviour, IEnemyDeathHandler
         InitializeComponents();
     }
 
+    private void InitializeComponents()
+    {
+        _entity = GetComponent<Entity>();
+        _registration = GetComponent<EnemyRegistration>();
+
+        _colliders = GetComponents<Collider2D>();
+        _rigidbody = GetComponent<Rigidbody2D>();
+
+        _aiComponents = GetComponents<MonoBehaviour>()
+            .Where(c => c != this &&
+                        c != _entity &&
+                        c != _registration &&
+                        !(c is Transform) &&
+                        !(c is Animator) &&
+                        !(c is SpriteRenderer))
+            .ToArray();
+    }
+
     private void OnEnable()
     {
         if (_entity != null)
@@ -37,38 +54,6 @@ public sealed class EnemyDeathHandler : MonoBehaviour, IEnemyDeathHandler
         }
     }
 
-    public void DisableColliderOnDeath(bool disable)
-    {
-        _disableColliderOnDeath = disable;
-    }
-
-    public void DisablePhysicsOnDeath(bool disable)
-    {
-        _disablePhysicsOnDeath = disable;
-    }
-
-    public void DisableAIOnDeath(bool disable)
-    {
-        _disableAIOnDeath = disable;
-    }
-
-    private void InitializeComponents()
-    {
-        _entity = GetComponent<Entity>();
-        _registration = GetComponent<EnemyRegistration>();
-        _colliders = GetComponents<Collider2D>();
-        _rigidbody = GetComponent<Rigidbody2D>();
-
-        _aiComponents = GetComponents<MonoBehaviour>()
-            .Where(component => component != this &&
-                                component != _entity &&
-                                component != _registration &&
-                                !(component is Transform) &&
-                                !(component is Animator) &&
-                                !(component is SpriteRenderer))
-            .ToArray();
-    }
-
     private void OnEntityDeath(Entity entity)
     {
         DisableComponents();
@@ -78,11 +63,11 @@ public sealed class EnemyDeathHandler : MonoBehaviour, IEnemyDeathHandler
     {
         if (_disableColliderOnDeath)
         {
-            foreach (Collider2D col in _colliders)
+            foreach (var collider in _colliders)
             {
-                if (col != null)
+                if (collider != null)
                 {
-                    col.enabled = false;
+                    collider.enabled = false;
                 }
             }
         }
@@ -95,7 +80,7 @@ public sealed class EnemyDeathHandler : MonoBehaviour, IEnemyDeathHandler
 
         if (_disableAIOnDeath)
         {
-            foreach (MonoBehaviour aiComponent in _aiComponents)
+            foreach (var aiComponent in _aiComponents)
             {
                 if (aiComponent != null)
                 {
@@ -104,4 +89,8 @@ public sealed class EnemyDeathHandler : MonoBehaviour, IEnemyDeathHandler
             }
         }
     }
+
+    public void DisableColliderOnDeath(bool disable) => _disableColliderOnDeath = disable;
+    public void DisablePhysicsOnDeath(bool disable) => _disablePhysicsOnDeath = disable;
+    public void DisableAIOnDeath(bool disable) => _disableAIOnDeath = disable;
 }

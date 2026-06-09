@@ -5,9 +5,11 @@ namespace AudioSystem
 {
     public sealed class MusicPlaylist : IMusicPlaylist
     {
+        private const int ResetIndex = 0;
+
         private List<AudioClip> _tracks = new List<AudioClip>();
         private List<AudioClip> _shuffledTracks = new List<AudioClip>();
-        private int _currentTrackIndex;
+        private int _currentTrackIndex = 0;
 
         public bool HasTracks => _tracks.Count > 0;
 
@@ -32,7 +34,6 @@ namespace AudioSystem
             }
 
             AudioClip nextTrack = _shuffledTracks[_currentTrackIndex];
-
             _currentTrackIndex++;
 
             return nextTrack;
@@ -40,21 +41,15 @@ namespace AudioSystem
 
         public void Shuffle()
         {
-            const int minRange = 0;
-            const int resetIndex = 0;
-
             _shuffledTracks = new List<AudioClip>(_tracks);
 
             for (int i = _shuffledTracks.Count - 1; i > 0; i--)
             {
-                int randomBoundary = i + 1;
-
-                int j = Random.Range(minRange, randomBoundary);
-
+                int j = Random.Range(0, i + 1);
                 (_shuffledTracks[i], _shuffledTracks[j]) = (_shuffledTracks[j], _shuffledTracks[i]);
             }
 
-            _currentTrackIndex = resetIndex;
+            _currentTrackIndex = ResetIndex;
         }
     }
 }

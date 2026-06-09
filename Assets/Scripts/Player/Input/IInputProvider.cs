@@ -8,5 +8,9 @@ namespace Player.Input
         bool IsSecondaryAttackPressed { get; }
         bool IsSlidePressed { get; }
         bool IsLiftPressed { get; }
+        bool IsDropHeroPressed { get; }
+        bool IsOpenMapPressed {  get; }
+        bool IsMenuPressed { get; }
+        bool IsOpenShopOrChestPressed {  get; }
     }
 }

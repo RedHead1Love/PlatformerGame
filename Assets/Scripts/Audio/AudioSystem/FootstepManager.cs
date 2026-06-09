@@ -1,9 +1,8 @@
 using UnityEngine;
 
-public class FootstepManager
+public sealed class FootstepManager
 {
     private readonly AudioSource _audioSource;
-
     private AudioClip _footstepSound;
     private bool _isLooping;
     private bool _isMoving;
@@ -14,7 +13,8 @@ public class FootstepManager
         _isLooping = loop;
 
         _audioSource = new GameObject("FootstepAudioSource").AddComponent<AudioSource>();
-        _audioSource.transform.SetParent(Camera.main?.transform ?? null);
+        _audioSource.transform.SetParent(Camera.main?.transform);
+
         _audioSource.playOnAwake = false;
         _audioSource.loop = _isLooping;
         _audioSource.clip = _footstepSound;
