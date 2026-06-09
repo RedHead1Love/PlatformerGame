@@ -7,6 +7,7 @@ namespace Player.StateMachine
     public sealed class RunState : IState
     {
         private const float HorizontalDeadZone = 0.1f;
+        private const float ZeroVelocityX = 0.0f;
 
         private readonly Hero _hero;
         private readonly IInputProvider _inputProvider;
@@ -16,10 +17,8 @@ namespace Player.StateMachine
         public RunState(Hero hero)
         {
             _hero = hero;
-
             _inputProvider = hero.GetComponent<IInputProvider>();
             _groundCheck = hero.GetComponentInChildren<GroundCheck>();
-
             _rigidbody = hero.Rigidbody;
         }
 
@@ -33,21 +32,18 @@ namespace Player.StateMachine
             if (_inputProvider.IsJumpPressed && _groundCheck.IsGrounded)
             {
                 _hero.StateMachine.Change<JumpState>();
-
                 return;
             }
 
             if (_inputProvider.IsSlidePressed && _groundCheck.IsGrounded)
             {
                 _hero.StateMachine.Change<SlideState>();
-
                 return;
             }
 
             if (Mathf.Abs(_inputProvider.HorizontalAxis) < HorizontalDeadZone)
             {
                 _hero.StateMachine.Change<IdleState>();
-
                 return;
             }
 
@@ -61,14 +57,13 @@ namespace Player.StateMachine
         {
             float horizontalInput = _inputProvider.HorizontalAxis;
 
-            if (horizontalInput == 0.0f)
+            if (Mathf.Abs(horizontalInput) < HorizontalDeadZone)
             {
                 StopHorizontalMovement();
             }
             else
             {
                 MoveHorizontally(horizontalInput);
-
                 _hero.SetFacing(horizontalInput);
             }
         }
@@ -77,7 +72,7 @@ namespace Player.StateMachine
 
         private void StopHorizontalMovement()
         {
-            _rigidbody.velocity = new Vector2(0.0f, _rigidbody.velocity.y);
+            _rigidbody.velocity = new Vector2(ZeroVelocityX, _rigidbody.velocity.y);
         }
 
         private void MoveHorizontally(float direction)

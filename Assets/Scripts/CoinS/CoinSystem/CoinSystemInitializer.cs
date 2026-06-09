@@ -1,8 +1,16 @@
+using GameLogic;
 using System.Collections;
 using UnityEngine;
 
 public sealed class CoinSystemInitializer : MonoBehaviour
 {
+    private WaitForSeconds _initializationDelay;
+
+    private void Awake()
+    {
+        _initializationDelay = new WaitForSeconds(0.3f);
+    }
+
     private void Start()
     {
         StartCoroutine(InitializeCoins());
@@ -10,16 +18,15 @@ public sealed class CoinSystemInitializer : MonoBehaviour
 
     private IEnumerator InitializeCoins()
     {
-        yield return new WaitForSeconds(0.3f);
+        yield return _initializationDelay;
 
         if (SaveSystem.Instance != null && SaveSystem.Instance.HasSave())
         {
             var saveData = SaveSystem.Instance.CurrentSave;
 
-            if (saveData?.coins != null)
+            if (saveData?.Coins != null)
             {
-                InitializeFromSave(saveData.coins);
-
+                InitializeFromSave(saveData.Coins);
                 yield break;
             }
         }
@@ -39,6 +46,7 @@ public sealed class CoinSystemInitializer : MonoBehaviour
     {
         if (PersistentWallet.Instance != null)
         {
+            PersistentWallet.Instance.LoadCoins();
         }
     }
 }

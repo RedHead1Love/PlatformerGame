@@ -1,13 +1,16 @@
 using UnityEngine;
 
-public sealed class EnemyTypeComponent : MonoBehaviour, IEnemyTypeComponent
+namespace GeneralLogicEnemies
 {
-    [SerializeField] private EnemyType _enemyType = EnemyType.Default;
-
-    public EnemyType EnemyType => _enemyType;
-
-    public void SetEnemyType(EnemyType type)
+    public sealed class EnemyTypeComponent : MonoBehaviour, IEnemyTypeComponent
     {
-        _enemyType = type;
+        [SerializeField] private EnemyType _enemyType = EnemyType.Default;
+
+        public EnemyType EnemyType => _enemyType;
+
+        public void SetEnemyType(EnemyType type)
+        {
+            _enemyType = type;
+        }
     }
 }

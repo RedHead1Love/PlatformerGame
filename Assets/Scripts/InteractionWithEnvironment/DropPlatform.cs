@@ -2,6 +2,7 @@ using UnityEngine;
 
 namespace PlatformController
 {
+    [RequireComponent(typeof(Collider2D))]
     public sealed class DropPlatform : MonoBehaviour
     {
         private const KeyCode DropKey = KeyCode.S;
@@ -10,7 +11,7 @@ namespace PlatformController
         [SerializeField] private float _dropDuration = DefaultDropDuration;
 
         private Collider2D _platformCollider;
-        private bool _isDropping = false;
+        private bool _isDropping;
 
         private void Awake()
         {

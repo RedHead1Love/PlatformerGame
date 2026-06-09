@@ -1,57 +1,60 @@
 using Player;
-using Player.StateMachine;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
-public sealed class DieState : IState
+namespace Player.StateMachine
 {
-    private const string DieAnimationName = "Die";
-    private const float RestartAnimationThreshold = 0.55f;
-    private const float RestartDelay = 1f;
-
-    private readonly Hero _hero;
-    private readonly Animator _animator;
-    private bool _isRestarting;
-
-    public DieState(Hero hero)
+    public sealed class DieState : IState
     {
-        _hero = hero;
-        _animator = hero.GetComponent<Animator>();
-    }
+        private const string DieAnimationName = "Die";
+        private const string StateParameterName = "state";
+        private const float RestartAnimationThreshold = 0.55f;
+        private const float RestartDelay = 1f;
+        private const int BaseLayerIndex = 0;
 
-    public void Enter()
-    {
-        _animator.SetInteger("state", (int)States.Hurt);
+        private readonly Hero _hero;
+        private readonly Animator _animator;
+        private bool _isRestarting;
 
-        _isRestarting = false;
-    }
-
-    public void Tick()
-    {
-        if (!_isRestarting && IsDieAnimationFinished())
+        public DieState(Hero hero)
         {
-            _isRestarting = true;
-
-            _hero.StartCoroutine(RestartGame());
+            _hero = hero;
+            _animator = hero.GetComponent<Animator>();
         }
-    }
 
-    public void FixedTick() { }
+        public void Enter()
+        {
+            _animator.SetInteger(StateParameterName, (int)States.Hurt);
+            _isRestarting = false;
+        }
 
-    public void Exit() { }
+        public void Tick()
+        {
+            if (!_isRestarting && IsDieAnimationFinished())
+            {
+                _isRestarting = true;
 
-    private bool IsDieAnimationFinished()
-    {
-        AnimatorStateInfo stateInfo = _animator.GetCurrentAnimatorStateInfo(0);
+                _hero.StartCoroutine(RestartGameCoroutine());
+            }
+        }
 
-        return stateInfo.IsName(DieAnimationName) && stateInfo.normalizedTime >= RestartAnimationThreshold;
-    }
+        public void FixedTick() { }
 
-    private IEnumerator RestartGame()
-    {
-        yield return new WaitForSeconds(RestartDelay);
+        public void Exit() { }
 
-        UnityEngine.SceneManagement.SceneManager.LoadScene(
-            UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
+        private bool IsDieAnimationFinished()
+        {
+            AnimatorStateInfo stateInfo = _animator.GetCurrentAnimatorStateInfo(BaseLayerIndex);
+
+            return stateInfo.IsName(DieAnimationName) && stateInfo.normalizedTime >= RestartAnimationThreshold;
+        }
+
+        private IEnumerator RestartGameCoroutine()
+        {
+            yield return new WaitForSeconds(RestartDelay);
+
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        }
     }
 }

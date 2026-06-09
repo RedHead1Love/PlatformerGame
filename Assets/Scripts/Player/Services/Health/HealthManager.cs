@@ -1,7 +1,10 @@
+using Player;
 using UnityEngine;
 
 public sealed class HealthManager : MonoBehaviour
 {
+    private const int DeathThreshold = 0;
+
     [SerializeField] private int _maxHealth = 6;
     [SerializeField] private HealthBarUI _healthBarUI;
     [SerializeField] private ArmorManager _armorManager;
@@ -15,20 +18,9 @@ public sealed class HealthManager : MonoBehaviour
     public event System.Action OnDeath;
 
     private Hero _hero;
-    private AudioSource _audioSource;
 
     private void Awake()
     {
-        if (_audioController == null)
-        {
-            _audioController = GetComponent<AudioController>();
-
-            if (_audioController == null)
-            {
-                _audioController = FindObjectOfType<AudioController>();
-            }
-        }
-
         InitializeComponents();
         FindHero();
     }
@@ -51,7 +43,7 @@ public sealed class HealthManager : MonoBehaviour
 
             if (_audioController == null)
             {
-                _audioController = FindObjectOfType<AudioController>();
+                _audioController = FindFirstObjectByType<AudioController>();
             }
         }
     }
@@ -62,18 +54,13 @@ public sealed class HealthManager : MonoBehaviour
 
         if (_hero == null)
         {
-            _hero = FindObjectOfType<Hero>();
+            _hero = FindFirstObjectByType<Hero>();
         }
     }
 
-    public void SetHealth(int health)
+    public void SetHealth(int newHealth)
     {
-         int minimumHealth = 0;
-         int deathThreshold = 0;
-
-        int newHealth = Mathf.Clamp(health, minimumHealth, _maxHealth);
-
-        if (newHealth == CurrentHealth)
+        if (CurrentHealth == newHealth)
         {
             return;
         }
@@ -83,7 +70,7 @@ public sealed class HealthManager : MonoBehaviour
 
         UpdateHealthUI();
 
-        if (CurrentHealth <= deathThreshold)
+        if (CurrentHealth <= DeathThreshold)
         {
             OnDeath?.Invoke();
         }
@@ -92,7 +79,6 @@ public sealed class HealthManager : MonoBehaviour
     public void TakeDamage(int damageAmount)
     {
         int remainingDamage = damageAmount;
-
         int noDamageRemaining = 0;
 
         if (_armorManager != null && _armorManager.HasArmor)
@@ -116,7 +102,7 @@ public sealed class HealthManager : MonoBehaviour
 
     public void Heal(int healAmount)
     {
-        SetHealth(CurrentHealth + healAmount);
+        SetHealth(Mathf.Min(CurrentHealth + healAmount, _maxHealth));
     }
 
     public void FullHeal()

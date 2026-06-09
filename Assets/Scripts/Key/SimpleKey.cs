@@ -1,15 +1,19 @@
 using DoorControl;
+using System.Collections;
 using UnityEngine;
 
-public class SimpleKey : MonoBehaviour
+public sealed class SimpleKey : MonoBehaviour
 {
     private const string PlayerTag = "Player";
     private const float CollectAnimationDuration = 0.5f;
     private const float ScaleMultiplier = 0.2f;
     private const float RotationSpeed = 360f;
     private const float DebugRayLength = 2f;
+    private const float GizmoSphereRadius = 0.5f;
 
-    [SerializeField] public KeyColor _keyColor = KeyColor.BlackColor;
+    [SerializeField] private KeyColor _keyColor = KeyColor.BlackColor;
+
+    public KeyColor Color => _keyColor;
 
     private void Start()
     {
@@ -70,49 +74,58 @@ public class SimpleKey : MonoBehaviour
             return;
         }
 
-        spriteRenderer.color = GetColorFromKeyColor(_keyColor);
+        spriteRenderer.color = GetColorFromEnum(_keyColor);
     }
 
-    private Color GetColorFromKeyColor(KeyColor keyColor)
+    private Color GetColorFromEnum(KeyColor keyColor)
     {
         return keyColor switch
         {
-            KeyColor.WhiteColor => Color.white,
-            KeyColor.BlackColor => Color.black,
-            KeyColor.YellowColor => Color.yellow,
-            KeyColor.BlueColor => Color.blue,
-            _ => Color.white
+            KeyColor.WhiteColor => UnityEngine.Color.white,
+            KeyColor.BlackColor => UnityEngine.Color.black,
+            KeyColor.YellowColor => UnityEngine.Color.yellow,
+            KeyColor.BlueColor => UnityEngine.Color.blue,
+            _ => UnityEngine.Color.white
         };
     }
 
     private void CollectKey(GameObject player)
     {
-        KeyCollection keyCollection = player.GetComponent<KeyCollection>() ??
-                                     player.GetComponentInParent<KeyCollection>();
-
-        keyCollection?.AddKey(_keyColor);
-
-        StartCoroutine(PlayCollectionAnimation());
+        AddKeyToPlayer(player);
+        StartCoroutine(CollectAnimationCoroutine());
     }
 
-    private System.Collections.IEnumerator PlayCollectionAnimation()
+    private void AddKeyToPlayer(GameObject player)
+    {
+        KeyCollection keyCollection = player.GetComponent<KeyCollection>();
+
+        if (keyCollection == null)
+        {
+            keyCollection = player.GetComponentInParent<KeyCollection>();
+        }
+
+        if (keyCollection != null)
+        {
+            keyCollection.AddKey(_keyColor);
+        }
+    }
+
+    private IEnumerator CollectAnimationCoroutine()
     {
         SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
-        Collider2D collider = GetComponent<Collider2D>();
+        Collider2D keyCollider = GetComponent<Collider2D>();
 
-        if (collider != null)
+        if (keyCollider != null)
         {
-            collider.enabled = false;
+            keyCollider.enabled = false;
         }
 
         float elapsedTime = 0f;
-
         Vector3 originalScale = transform.localScale;
 
         while (elapsedTime < CollectAnimationDuration)
         {
             elapsedTime += Time.deltaTime;
-
             float progress = elapsedTime / CollectAnimationDuration;
 
             ApplyAnimationTransform(originalScale, progress, spriteRenderer);
@@ -137,21 +150,18 @@ public class SimpleKey : MonoBehaviour
     private void UpdateSpriteAlpha(SpriteRenderer spriteRenderer, float progress)
     {
         Color spriteColor = spriteRenderer.color;
-
         spriteColor.a = 1 - progress;
         spriteRenderer.color = spriteColor;
     }
 
     private void DrawDebugRay()
     {
-        Debug.DrawRay(transform.position, Vector3.up * DebugRayLength, Color.red);
+        Debug.DrawRay(transform.position, Vector3.up * DebugRayLength, UnityEngine.Color.red);
     }
 
     private void DrawGizmoSphere()
     {
-        float sphereRadius = 0.5f;
-
-        Gizmos.color = Color.green;
-        Gizmos.DrawWireSphere(transform.position, sphereRadius);
+        Gizmos.color = UnityEngine.Color.green;
+        Gizmos.DrawWireSphere(transform.position, GizmoSphereRadius);
     }
 }

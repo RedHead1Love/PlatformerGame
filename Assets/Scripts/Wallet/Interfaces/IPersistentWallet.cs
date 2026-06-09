@@ -1,14 +1,11 @@
-using System;
-
-public interface IPersistentWallet
+namespace GameLogic
 {
-    CoinData CurrentCoins { get; }
+    public interface IPersistentWallet : IWalletManager
+    {
+        CoinData CurrentCoins { get; }
 
-    event Action<CoinData> OnCoinsUpdated;
-
-    void AddCoins(string coinType, int amount);
-    void LoadCoinsFromSave(CoinData savedCoins);
-    void LoadFromSaveData(CoinData saveData);
-    void SaveCoins();
-    void LoadCoins();
+        void SaveCoins();
+        void LoadCoins();
+        void LoadFromSaveData(CoinData data);
+    }
 }

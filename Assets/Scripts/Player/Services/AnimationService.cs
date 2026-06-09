@@ -37,7 +37,7 @@ namespace Player
         public float GetAnimationLength(string stateName)
         {
             AnimationClip clip = _animator.runtimeAnimatorController.animationClips
-                .FirstOrDefault(clip => clip.name == stateName);
+                .FirstOrDefault(c => c.name == stateName);
 
             return clip?.length ?? 0f;
         }

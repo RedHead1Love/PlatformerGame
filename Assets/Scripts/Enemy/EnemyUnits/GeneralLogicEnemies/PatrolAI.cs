@@ -33,151 +33,119 @@ namespace GeneralEnemyPatrolSystem
         private HealthManager _playerHealthManager;
 
         private Vector3 _nextPatrolPoint;
-
         private bool _isPlayerDead = false;
 
-        public System.Action<Vector2> OnMoveDirectionChanged;
-        public System.Action<bool> OnInAttackRange;
+        public event System.Action<Vector2> OnMoveDirectionChanged;
+        public event System.Action<bool> OnInAttackRange;
 
-        public Vector2 CurrentDirection { get; private set; }
-        public bool InAttackRange { get; private set; }
+        public Vector2 CurrentMoveDirection { get; private set; }
 
         private void Awake()
         {
             _rigidbody = GetComponent<Rigidbody2D>();
+        }
 
-            _nextPatrolPoint = _pointB.position;
-            CurrentDirection = (_nextPatrolPoint - transform.position).normalized;
+        private void Start()
+        {
+            _nextPatrolPoint = _pointA.position;
         }
 
         private void Update()
         {
+            CheckPlayerDeath();
+
             if (_isPlayerDead)
             {
-                HandlePlayerDeadState();
+                Patrol();
                 return;
             }
 
             if (_playerTransform == null)
             {
                 SearchForPlayer();
-            }
-
-            if (_playerTransform != null)
-            {
-                HandlePlayerChase();
+                Patrol();
             }
             else
             {
-                HandlePatrolState();
+                ChaseOrAttackPlayer();
             }
-
-            NotifyStateChanges();
-        }
-
-        private void HandlePlayerDeadState()
-        {
-            _playerTransform = null;
-            _playerHealthManager = null;
-
-            InAttackRange = false;
-
-            Patrol();
-        }
-
-        private void HandlePlayerChase()
-        {
-            float distanceToPlayer = Vector2.Distance(transform.position, _playerTransform.position);
-
-            Vector2 attackCenter = CalculateAttackCenter(_attackOffset);
-
-            Collider2D playerInAttackRange = Physics2D.OverlapBox(
-                attackCenter,
-                _attackSize,
-                BoxRotationAngle,
-                _playerLayerMask
-            );
-
-            InAttackRange = playerInAttackRange != null;
-
-            if (distanceToPlayer > _loseRadius)
-            {
-                _playerTransform = null;
-                _playerHealthManager = null;
-                InAttackRange = false;
-
-                return;
-            }
-
-            if (InAttackRange)
-            {
-                StopMovement();
-                CheckPlayerDeath();
-            }
-            else
-            {
-                MoveToward(_playerTransform.position, _patrolSpeed * ChaseSpeedMultiplier);
-            }
-        }
-
-        private Vector2 CalculateAttackCenter(Vector2 offset)
-        {
-            float directionSign = Mathf.Sign(transform.localScale.x);
-
-            return (Vector2)transform.position + new Vector2(directionSign * offset.x, offset.y);
-        }
-
-        private void HandlePatrolState()
-        {
-            InAttackRange = false;
-
-            Patrol();
-        }
-
-        private void NotifyStateChanges()
-        {
-            OnMoveDirectionChanged?.Invoke(CurrentDirection);
-            OnInAttackRange?.Invoke(InAttackRange);
         }
 
         private void Patrol()
         {
+            OnInAttackRange?.Invoke(false);
+
             if (Vector2.Distance(transform.position, _nextPatrolPoint) < ArrivalThreshold)
             {
                 _nextPatrolPoint = _nextPatrolPoint == _pointA.position ? _pointB.position : _pointA.position;
             }
 
-            MoveToward(_nextPatrolPoint, _patrolSpeed);
+            MoveTowards(_nextPatrolPoint, _patrolSpeed);
         }
 
-        private void MoveToward(Vector3 target, float speed)
+        private void ChaseOrAttackPlayer()
         {
-            Vector2 direction = (target - transform.position).normalized;
+            float distanceToPlayer = Vector2.Distance(transform.position, _playerTransform.position);
 
-            if (TryInteractWithDoor(direction, out IOpenable door) && door.IsClosed)
+            if (distanceToPlayer > _loseRadius)
             {
-                door.Open();
-
+                _playerTransform = null;
                 return;
             }
 
-            _rigidbody.velocity = new Vector2(direction.x * speed, _rigidbody.velocity.y);
-            CurrentDirection = direction;
+            if (IsPlayerInAttackBox())
+            {
+                StopMovement();
+                OnInAttackRange?.Invoke(true);
+            }
+            else
+            {
+                OnInAttackRange?.Invoke(false);
+
+                if (!IsFacingDoor())
+                {
+                    MoveTowards(_playerTransform.position, _patrolSpeed * ChaseSpeedMultiplier);
+                }
+                else
+                {
+                    StopMovement();
+                }
+            }
         }
 
-        private bool TryInteractWithDoor(Vector2 direction, out IOpenable door)
+        private void MoveTowards(Vector3 targetPosition, float speed)
         {
+            Vector2 direction = (targetPosition - transform.position).normalized;
+            Vector2 velocity = new Vector2(direction.x * speed, _rigidbody.velocity.y);
+
+            _rigidbody.velocity = velocity;
+            CurrentMoveDirection = velocity;
+
+            OnMoveDirectionChanged?.Invoke(velocity);
+        }
+
+        private bool IsPlayerInAttackBox()
+        {
+            Vector2 boxCenter = (Vector2)transform.position + new Vector2(_attackOffset.x * Mathf.Sign(transform.localScale.x), _attackOffset.y);
+            Collider2D hit = Physics2D.OverlapBox(boxCenter, _attackSize, BoxRotationAngle, _playerLayerMask);
+
+            return hit != null;
+        }
+
+        private bool IsFacingDoor()
+        {
+            Vector2 direction = new Vector2(Mathf.Sign(transform.localScale.x), 0f);
             RaycastHit2D hit = Physics2D.Raycast(transform.position, direction, _doorCheckDistance, _doorLayerMask);
 
-            door = hit.collider?.GetComponent<IOpenable>();
-
-            return door != null;
+            return hit.collider != null;
         }
 
         private void StopMovement()
         {
-            _rigidbody.velocity = Vector2.zero;
-            CurrentDirection = Vector2.zero;
+            _rigidbody.velocity = new Vector2(0f, _rigidbody.velocity.y);
+            CurrentMoveDirection = Vector2.zero;
+
+            OnMoveDirectionChanged?.Invoke(Vector2.zero);
         }
 
         private void SearchForPlayer()
