@@ -4,6 +4,8 @@ using UnityEngine;
 
 public sealed class CoinSaveHandler : MonoBehaviour
 {
+    private const float InitializationDelay = 0.3f;
+
     private void Start()
     {
         StartCoroutine(InitializeCoins());
@@ -11,18 +13,16 @@ public sealed class CoinSaveHandler : MonoBehaviour
 
     private IEnumerator InitializeCoins()
     {
-        float initializationDelay = 0.3f;
+        yield return new WaitForSeconds(InitializationDelay);
 
-        yield return new WaitForSeconds(initializationDelay);
-
-        if (SaveSystem.Instance == null || !SaveSystem.Instance.HasSave())
+        if (SaveSystem.Instance == null || SaveSystem.Instance.HasSave() == false)
         {
             yield break;
         }
 
-        var saveData = SaveSystem.Instance.CurrentSave;
+        GameSaveData saveData = SaveSystem.Instance.CurrentSave;
 
-        if (saveData?.coins == null)
+        if (saveData == null || saveData.coins.isInitialized == false)
         {
             yield break;
         }
@@ -32,13 +32,7 @@ public sealed class CoinSaveHandler : MonoBehaviour
 
     private void InitializeFromSave(CoinData savedCoins)
     {
-        if (PersistentWallet.Instance != null)
-        {
-            PersistentWallet.Instance.LoadFromSaveData(savedCoins);
-        }
-        else if (WalletManager.Instance != null)
-        {
-            WalletManager.Instance.LoadFromSaveData(savedCoins);
-        }
+        PersistentWallet.Instance?.LoadFromSaveData(savedCoins);
+        WalletManager.Instance?.LoadFromSaveData(savedCoins);
     }
 }

@@ -5,7 +5,7 @@ using UnityEngine;
 public sealed class VampireHealthSystem : MonoBehaviour, IVampireHealthSystem
 {
     private const int DefaultHealthPerKill = 1;
-    private const float CheckInterval = 2f;
+    private const float EnemyCheckInterval = 2f;
 
     [SerializeField] private int _healthPerKill = DefaultHealthPerKill;
     [SerializeField] private bool _showHealEffect = true;
@@ -13,16 +13,15 @@ public sealed class VampireHealthSystem : MonoBehaviour, IVampireHealthSystem
     private Hero _hero;
     private HealthManager _healthManager;
     private AbilityManager _abilityManager;
-    private bool _isActive = false;
-    private float _checkTimer = 0f;
+    private bool _isActive;
+    private float _checkTimer;
 
     public int HealthPerKill => _healthPerKill;
     public bool IsActive => _isActive;
 
     private void Awake()
     {
-        _hero = GetComponent<Hero>();
-        _healthManager = GetComponent<HealthManager>();
+        InitializeReferences();
     }
 
     private void Start()
@@ -35,7 +34,7 @@ public sealed class VampireHealthSystem : MonoBehaviour, IVampireHealthSystem
         if (_isActive)
         {
             SubscribeToAllEnemies();
-        } 
+        }
     }
 
     private void OnDisable()
@@ -45,30 +44,28 @@ public sealed class VampireHealthSystem : MonoBehaviour, IVampireHealthSystem
 
     private void Update()
     {
-        if (!_isActive)
+        if (_isActive == false)
         {
             return;
         }
 
         _checkTimer += Time.deltaTime;
 
-        if (_checkTimer >= CheckInterval)
+        if (_checkTimer < EnemyCheckInterval)
         {
-            _checkTimer = 0f;
-
-            SubscribeToAllEnemies();
+            return;
         }
-    }
 
+        _checkTimer = 0f;
+
+        SubscribeToAllEnemies();
+    }
 
     public void Activate()
     {
         _isActive = true;
 
-        if (_abilityManager == null && _hero != null)
-        {
-            _abilityManager = _hero.AbilityManager;
-        }
+        RefreshAbilityManagerReference();
 
         if (_abilityManager != null)
         {
@@ -78,21 +75,6 @@ public sealed class VampireHealthSystem : MonoBehaviour, IVampireHealthSystem
         SubscribeToAllEnemies();
     }
 
-    private void CheckIfAbilityPurchased()
-    {
-        if (_hero != null && _abilityManager == null)
-        {
-            _abilityManager = _hero.AbilityManager;
-        }
-
-        _isActive = (_abilityManager?.HasVampireAbility ?? false);
-
-        if (_isActive)
-        {
-            SubscribeToAllEnemies();
-        }
-    }
-
     public void Deactivate()
     {
         _isActive = false;
@@ -100,11 +82,38 @@ public sealed class VampireHealthSystem : MonoBehaviour, IVampireHealthSystem
         UnsubscribeFromAllEnemies();
     }
 
+    private void InitializeReferences()
+    {
+        _hero = GetComponent<Hero>();
+        _healthManager = GetComponent<HealthManager>();
+        _abilityManager = _hero?.AbilityManager;
+    }
+
+    private void CheckIfAbilityPurchased()
+    {
+        RefreshAbilityManagerReference();
+
+        _isActive = _abilityManager?.HasVampireAbility ?? false;
+
+        if (_isActive)
+        {
+            SubscribeToAllEnemies();
+        }
+    }
+
+    private void RefreshAbilityManagerReference()
+    {
+        if (_abilityManager == null && _hero != null)
+        {
+            _abilityManager = _hero.AbilityManager;
+        }
+    }
+
     private void SubscribeToAllEnemies()
     {
-        Entity[] allEnemies = FindObjectsOfType<Entity>();
+        Entity[] enemies = FindObjectsByType<Entity>(FindObjectsSortMode.None);
 
-        foreach (Entity enemy in allEnemies)
+        foreach (Entity enemy in enemies)
         {
             SubscribeToEnemy(enemy);
         }
@@ -112,9 +121,9 @@ public sealed class VampireHealthSystem : MonoBehaviour, IVampireHealthSystem
 
     private void UnsubscribeFromAllEnemies()
     {
-        Entity[] allEnemies = FindObjectsOfType<Entity>();
+        Entity[] enemies = FindObjectsByType<Entity>(FindObjectsSortMode.None);
 
-        foreach (Entity enemy in allEnemies)
+        foreach (Entity enemy in enemies)
         {
             if (enemy != null)
             {
@@ -125,25 +134,31 @@ public sealed class VampireHealthSystem : MonoBehaviour, IVampireHealthSystem
 
     private void SubscribeToEnemy(Entity enemy)
     {
-        if (enemy != null)
-        {
-            enemy.OnEntityDeath -= OnEnemyKilled;
-            enemy.OnEntityDeath += OnEnemyKilled;
-        }
-    }
-
-    private void OnEnemyKilled(Entity enemy)
-    {
-        if (!_isActive || _healthManager == null || _hero == null)
+        if (enemy == null)
         {
             return;
         }
 
-        if (_healthManager.IsFullHealth || !_hero.IsAlive())
+        enemy.OnEntityDeath -= OnEnemyKilled;
+        enemy.OnEntityDeath += OnEnemyKilled;
+    }
+
+    private void OnEnemyKilled(Entity enemy)
+    {
+        if (CanHealFromKill() == false)
         {
             return;
         }
 
         _healthManager.Heal(_healthPerKill);
+    }
+
+    private bool CanHealFromKill()
+    {
+        return _isActive &&
+               _healthManager != null &&
+               _hero != null &&
+               _hero.IsAlive() &&
+               _healthManager.IsFullHealth == false;
     }
 }

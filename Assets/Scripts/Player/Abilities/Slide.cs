@@ -14,14 +14,15 @@ namespace Player.Abilities
         private readonly float _slideSpeed;
         private readonly float _slideDuration;
 
-        public Slide(Rigidbody2D rigidbody,
-                     BoxCollider2D boxCollider,
-                     float slideSpeed,
-                     float slideDuration,
-                     Vector2 slideColliderSize,
-                     Vector2 slideColliderOffset,
-                     Vector2 standColliderSize,
-                     Vector2 standColliderOffset)
+        public Slide(
+            Rigidbody2D rigidbody,
+            BoxCollider2D boxCollider,
+            float slideSpeed,
+            float slideDuration,
+            Vector2 slideColliderSize,
+            Vector2 slideColliderOffset,
+            Vector2 standColliderSize,
+            Vector2 standColliderOffset)
         {
             _rigidbody = rigidbody;
             _boxCollider = boxCollider;
@@ -47,17 +48,20 @@ namespace Player.Abilities
 
         private int CalculateSlideDirection(float rawDirection)
         {
-            return Mathf.RoundToInt(Mathf.Sign(rawDirection));
+            int direction = Mathf.RoundToInt(Mathf.Sign(rawDirection));
+
+            return direction == 0 ? 1 : direction;
         }
 
         private void ApplySlideColliderSettings(int direction)
         {
-            _boxCollider.size = _slideColliderSize;
+            if (_boxCollider == null)
+            {
+                return;
+            }
 
-            _boxCollider.offset = new Vector2(
-                _slideColliderOffset.x * direction,
-                _slideColliderOffset.y
-            );
+            _boxCollider.size = _slideColliderSize;
+            _boxCollider.offset = new Vector2(_slideColliderOffset.x * direction, _slideColliderOffset.y);
         }
 
         private IEnumerator PerformSlideMovement(int direction)
@@ -76,17 +80,32 @@ namespace Player.Abilities
 
         private void ApplySlideVelocity(int direction)
         {
+            if (_rigidbody == null)
+            {
+                return;
+            }
+
             _rigidbody.velocity = new Vector2(direction * _slideSpeed, _rigidbody.velocity.y);
         }
 
         private void ResetColliderToStanding()
         {
+            if (_boxCollider == null)
+            {
+                return;
+            }
+
             _boxCollider.size = _standColliderSize;
             _boxCollider.offset = _standColliderOffset;
         }
 
         private void StopHorizontalMovement()
         {
+            if (_rigidbody == null)
+            {
+                return;
+            }
+
             _rigidbody.velocity = new Vector2(0f, _rigidbody.velocity.y);
         }
     }

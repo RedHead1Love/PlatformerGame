@@ -5,10 +5,10 @@ namespace AudioSystem
 {
     public interface IMusicPlaylist
     {
+        bool HasTracks { get; }
+
         void Initialize(List<AudioClip> tracks);
         AudioClip GetNextTrack();
         void Shuffle();
-
-        bool HasTracks { get; }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public class LocationTrigger2D : MonoBehaviour, ILocationTrigger
+public sealed class LocationTrigger2D : MonoBehaviour, ILocationTrigger
 {
     [SerializeField] private string locationName = "MiddleLevel";
 
@@ -8,7 +8,7 @@ public class LocationTrigger2D : MonoBehaviour, ILocationTrigger
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (!enabled || !other.CompareTag("Player"))
+        if (enabled == false || other.CompareTag("Player") == false)
         {
             return;
         }
@@ -18,35 +18,31 @@ public class LocationTrigger2D : MonoBehaviour, ILocationTrigger
 
     public void TriggerLocation()
     {
-        MiniMapController miniMap = FindObjectOfType<MiniMapController>();
+        MiniMapController miniMap = FindFirstObjectByType<MiniMapController>();
 
-        if (miniMap != null)
-        {
-            miniMap.SetMiniMap(locationName);
-        }
+        miniMap?.SetMiniMap(locationName);
     }
 
     private void OnDrawGizmos()
     {
-        float gizmosDepth = 0.1f;
-        float zOffset = 0f;
+        const float gizmosDepth = 0.1f;
 
-        if (!enabled)
+        if (enabled == false)
         {
             return;
         }
 
-        BoxCollider2D collider = GetComponent<BoxCollider2D>();
+        BoxCollider2D boxCollider = GetComponent<BoxCollider2D>();
 
-        if (collider == null)
+        if (boxCollider == null)
         {
             return;
         }
 
         Gizmos.color = Color.green;
 
-        Vector3 center = transform.position + new Vector3(collider.offset.x, collider.offset.y, zOffset);
-        Vector3 size = new Vector3(collider.size.x, collider.size.y, gizmosDepth);
+        Vector3 center = transform.position + new Vector3(boxCollider.offset.x, boxCollider.offset.y, 0f);
+        Vector3 size = new Vector3(boxCollider.size.x, boxCollider.size.y, gizmosDepth);
 
         Gizmos.DrawWireCube(center, size);
     }
@@ -56,14 +52,16 @@ public class LocationTrigger2D : MonoBehaviour, ILocationTrigger
     {
         GameObject player = GameObject.FindGameObjectWithTag("Player");
 
-        if (player != null)
+        if (player == null)
         {
-            Collider2D playerCollider = player.GetComponent<Collider2D>();
+            return;
+        }
 
-            if (playerCollider != null)
-            {
-                OnTriggerEnter2D(playerCollider);
-            }
+        Collider2D playerCollider = player.GetComponent<Collider2D>();
+
+        if (playerCollider != null)
+        {
+            OnTriggerEnter2D(playerCollider);
         }
     }
 }

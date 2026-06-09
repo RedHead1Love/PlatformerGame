@@ -10,7 +10,7 @@ namespace PlatformController
         [SerializeField] private float _dropDuration = DefaultDropDuration;
 
         private Collider2D _platformCollider;
-        private bool _isDropping = false;
+        private bool _isDropping;
 
         private void Awake()
         {
@@ -19,7 +19,7 @@ namespace PlatformController
 
         private void Update()
         {
-            if (Input.GetKeyDown(DropKey) && !_isDropping)
+            if (Input.GetKeyDown(DropKey) && _isDropping == false)
             {
                 StartDrop();
             }
@@ -27,6 +27,11 @@ namespace PlatformController
 
         private void StartDrop()
         {
+            if (_platformCollider == null)
+            {
+                return;
+            }
+
             _isDropping = true;
             _platformCollider.enabled = false;
 
@@ -35,7 +40,11 @@ namespace PlatformController
 
         private void EndDrop()
         {
-            _platformCollider.enabled = true;
+            if (_platformCollider != null)
+            {
+                _platformCollider.enabled = true;
+            }
+
             _isDropping = false;
         }
     }

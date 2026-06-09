@@ -3,26 +3,23 @@ using YG;
 
 namespace Assets.Scripts.InteractionWithEnvironment
 {
-    public class MobileInterfaceSwitcher : MonoBehaviour
+    public sealed class MobileInterfaceSwitcher : MonoBehaviour
     {
         [SerializeField] private GameObject _mobilePanel;
 
         private void Awake()
         {
-            CheckMobileDevice();
+            ApplyMobilePanelState();
         }
 
-        private void CheckMobileDevice()
+        private void ApplyMobilePanelState()
         {
-            //if (YG2.envir.isDesktop)
-            //{
-            //    _mobilePanel.SetActive(false);
-            //}
-
-            if(YG2.envir.isMobile)
+            if (_mobilePanel == null)
             {
-                _mobilePanel.SetActive(true);
+                return;
             }
+
+            _mobilePanel.SetActive(YG2.envir.isMobile);
         }
     }
 }

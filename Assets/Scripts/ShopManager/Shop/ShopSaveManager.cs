@@ -3,28 +3,28 @@ using UnityEngine;
 
 public sealed class ShopSaveManager : MonoBehaviour
 {
-    private static ShopSaveManager _instance;
-    public static ShopSaveManager Instance => _instance;
+    private const string ShopItemKeyPrefix = "ShopItem_";
+    private const string ShopItemKeySuffix = "_Purchased";
+    private const string ShopItemKeysList = "ShopItemKeys";
+    private const int PurchasedValue = 1;
+    private const int NotPurchasedValue = 0;
+
+    public static ShopSaveManager Instance { get; private set; }
 
     private void Awake()
     {
-        if (_instance == null)
-        {
-            _instance = this;
-
-            DontDestroyOnLoad(gameObject);
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
+        InitializeSingleton();
     }
 
     public void OnItemPurchased(string itemId, AbilityManager abilityManager)
     {
-         int purchasedFlag = 1;
+        if (string.IsNullOrEmpty(itemId))
+        {
+            return;
+        }
 
-        PlayerPrefs.SetInt($"ShopItem_{itemId}_Purchased", purchasedFlag);
+        PlayerPrefs.SetInt(GetPurchaseKey(itemId), PurchasedValue);
+        AppendItemKey(itemId);
         PlayerPrefs.Save();
 
         if (abilityManager != null && SaveSystem.Instance != null)
@@ -35,20 +35,19 @@ public sealed class ShopSaveManager : MonoBehaviour
 
     public bool IsItemPurchased(string itemId)
     {
-         int purchasedValue = 1;
-         int notPurchasedValue = 0;
-
-        if (PlayerPrefs.HasKey($"ShopItem_{itemId}_Purchased"))
+        if (string.IsNullOrEmpty(itemId))
         {
-            return PlayerPrefs.GetInt($"ShopItem_{itemId}_Purchased", notPurchasedValue) == purchasedValue;
+            return false;
         }
 
-        if (SaveSystem.Instance != null && SaveSystem.Instance.CurrentSave?.purchasedItemIds != null)
+        if (PlayerPrefs.HasKey(GetPurchaseKey(itemId)))
         {
-            return SaveSystem.Instance.CurrentSave.purchasedItemIds.Contains(itemId);
+            return PlayerPrefs.GetInt(GetPurchaseKey(itemId), NotPurchasedValue) == PurchasedValue;
         }
 
-        return false;
+        return SaveSystem.Instance != null &&
+               SaveSystem.Instance.CurrentSave?.purchasedItemIds != null &&
+               SaveSystem.Instance.CurrentSave.purchasedItemIds.Contains(itemId);
     }
 
     public void LoadAllPurchases()
@@ -57,19 +56,70 @@ public sealed class ShopSaveManager : MonoBehaviour
         {
             return;
         }
+
+        if (SaveSystem.Instance.CurrentSave.purchasedItemIds == null)
+        {
+            return;
+        }
+
+        foreach (string itemId in SaveSystem.Instance.CurrentSave.purchasedItemIds)
+        {
+            PlayerPrefs.SetInt(GetPurchaseKey(itemId), PurchasedValue);
+            AppendItemKey(itemId);
+        }
+
+        PlayerPrefs.Save();
     }
 
     public void ResetAllPurchases()
     {
-        foreach (var key in PlayerPrefs.GetString("ShopItemKeys", "").Split(','))
+        string keysRaw = PlayerPrefs.GetString(ShopItemKeysList, string.Empty);
+        string[] keys = keysRaw.Split(',');
+
+        foreach (string key in keys)
         {
-            if (!string.IsNullOrEmpty(key))
+            if (string.IsNullOrEmpty(key))
             {
-                PlayerPrefs.DeleteKey($"ShopItem_{key}_Purchased");
+                continue;
             }
+
+            PlayerPrefs.DeleteKey(GetPurchaseKey(key));
         }
 
-        PlayerPrefs.DeleteKey("ShopItemKeys");
+        PlayerPrefs.DeleteKey(ShopItemKeysList);
         PlayerPrefs.Save();
+    }
+
+    private void InitializeSingleton()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+
+            DontDestroyOnLoad(gameObject);
+
+            return;
+        }
+
+        Destroy(gameObject);
+    }
+
+    private string GetPurchaseKey(string itemId)
+    {
+        return $"{ShopItemKeyPrefix}{itemId}{ShopItemKeySuffix}";
+    }
+
+    private void AppendItemKey(string itemId)
+    {
+        string currentKeys = PlayerPrefs.GetString(ShopItemKeysList, string.Empty);
+
+        if (currentKeys.Contains(itemId))
+        {
+            return;
+        }
+
+        string separator = string.IsNullOrEmpty(currentKeys) ? string.Empty : ",";
+
+        PlayerPrefs.SetString(ShopItemKeysList, $"{currentKeys}{separator}{itemId}");
     }
 }

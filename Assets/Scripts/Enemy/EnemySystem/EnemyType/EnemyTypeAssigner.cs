@@ -33,6 +33,7 @@ public sealed class EnemyTypeAssigner : EditorWindow
         DrawButton("Demon (демоны)", "demon", EnemyType.Demon);
         DrawButton("Spider (пауки)", "spider", EnemyType.Spider);
         DrawButton("Zombie (зомби)", "zombie", EnemyType.Zombie);
+        DrawButton("Boss (боссы)", "boss", EnemyType.Boss);
     }
 
     private void DrawButton(string buttonName, string namePart, EnemyType enemyType)
@@ -53,62 +54,60 @@ public sealed class EnemyTypeAssigner : EditorWindow
 
     private static void AssignEnemyTypeByName(string namePart, EnemyType enemyType)
     {
-        GameObject[] allObjects = FindObjectsOfType<GameObject>();
+        GameObject[] allObjects = FindObjectsByType<GameObject>(FindObjectsSortMode.None);
+        int changedCount = 0;
 
-        int count = 0;
-
-        foreach (GameObject obj in allObjects)
+        foreach (GameObject gameObject in allObjects)
         {
-            if (obj.name.ToLower().Contains(namePart))
+            if (gameObject.name.ToLower().Contains(namePart) == false)
             {
-                AddOrUpdateEnemyTypeComponent(obj, enemyType);
-                count++;
+                continue;
             }
+
+            AddOrUpdateEnemyTypeComponent(gameObject, enemyType);
+            changedCount++;
         }
+
+        Debug.Log($"EnemyType назначен объектам: {changedCount}");
     }
 
     private static void ShowEnemyTypeSelector()
     {
         GenericMenu menu = new GenericMenu();
 
-        AddMenuItem(menu, "Default", EnemyType.Default);
-        AddMenuItem(menu, "Swamp", EnemyType.Swamp);
-        AddMenuItem(menu, "Skeleton", EnemyType.Skeleton);
-        AddMenuItem(menu, "Demon", EnemyType.Demon);
-        AddMenuItem(menu, "Spider", EnemyType.Spider);
-        AddMenuItem(menu, "Zombie", EnemyType.Zombie);
-        AddMenuItem(menu, "Boss", EnemyType.Boss);
-        AddMenuItem(menu, "Flying", EnemyType.Flying);
+        foreach (EnemyType enemyType in System.Enum.GetValues(typeof(EnemyType)))
+        {
+            EnemyType capturedType = enemyType;
+
+            menu.AddItem(
+                new GUIContent(capturedType.ToString()),
+                false,
+                () => AssignEnemyTypeToSelected(capturedType));
+        }
 
         menu.ShowAsContext();
     }
 
-    private static void AddMenuItem(GenericMenu menu, string name, EnemyType enemyType)
-    {
-        menu.AddItem(new GUIContent(name), false, () =>
-            AssignEnemyTypeToSelected(enemyType));
-    }
-
     private static void AssignEnemyTypeToSelected(EnemyType enemyType)
     {
-        foreach (GameObject obj in Selection.gameObjects)
+        foreach (GameObject selectedObject in Selection.gameObjects)
         {
-            AddOrUpdateEnemyTypeComponent(obj, enemyType);
+            AddOrUpdateEnemyTypeComponent(selectedObject, enemyType);
         }
     }
 
-    private static void AddOrUpdateEnemyTypeComponent(GameObject obj, EnemyType enemyType)
+    private static void AddOrUpdateEnemyTypeComponent(GameObject targetObject, EnemyType enemyType)
     {
-        EnemyTypeComponent component = obj.GetComponent<EnemyTypeComponent>();
+        EnemyTypeComponent component = targetObject.GetComponent<EnemyTypeComponent>();
 
         if (component == null)
         {
-            component = obj.AddComponent<EnemyTypeComponent>();
+            component = targetObject.AddComponent<EnemyTypeComponent>();
         }
 
         component.SetEnemyType(enemyType);
 
-        EditorUtility.SetDirty(obj);
+        EditorUtility.SetDirty(targetObject);
     }
 }
 #endif

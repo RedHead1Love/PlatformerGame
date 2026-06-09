@@ -1,11 +1,14 @@
 using Cainos.LucidEditor;
+using DoorControl;
+using System.Collections;
 using UnityEngine;
 
 namespace DoorControl
 {
-    public class Key : MonoBehaviour
+    public sealed class Key : MonoBehaviour
     {
-        private const float EffectDestroyDelay = 2f;
+        private const string PlayerTag = "Player";
+        private const float CollectAnimationDuration = 0.5f;
         private const float RotationSpeed = 360f;
         private const float ScaleMultiplier = 0.2f;
 
@@ -18,13 +21,28 @@ namespace DoorControl
         [FoldoutGroup("Collection Effects")]
         public float collectSoundVolume = 0.5f;
 
-        private bool _isCollected = false;
+        private bool _isCollected;
         private SpriteRenderer _spriteRenderer;
         private Collider2D _collider;
 
         public KeyColor Color => keyColor;
 
         private void Start()
+        {
+            InitializeKey();
+        }
+
+        private void OnTriggerEnter2D(Collider2D other)
+        {
+            if (_isCollected || other.CompareTag(PlayerTag) == false)
+            {
+                return;
+            }
+
+            CollectKey(other.gameObject);
+        }
+
+        private void InitializeKey()
         {
             _spriteRenderer = GetComponent<SpriteRenderer>();
             _collider = GetComponent<Collider2D>();
@@ -39,44 +57,19 @@ namespace DoorControl
 
         private void ApplyKeyColor()
         {
-            if (_spriteRenderer != null)
-            {
-                switch (keyColor)
-                {
-                    case KeyColor.WhiteColor:
-                        _spriteRenderer.color = UnityEngine.Color.white;
-
-                        break;
-
-                    case KeyColor.BlackColor:
-                        _spriteRenderer.color = UnityEngine.Color.black;
-
-                        break;
-
-                    case KeyColor.YellowColor:
-                        _spriteRenderer.color = UnityEngine.Color.yellow;
-
-                        break;
-
-                    case KeyColor.BlueColor:
-                        _spriteRenderer.color = UnityEngine.Color.blue;
-
-                        break;
-                }
-            }
-        }
-
-        private void OnTriggerEnter2D(Collider2D other)
-        {
-            if (_isCollected)
+            if (_spriteRenderer == null)
             {
                 return;
             }
 
-            if (other.CompareTag("Player"))
+            _spriteRenderer.color = keyColor switch
             {
-                CollectKey(other.gameObject);
-            }
+                KeyColor.WhiteColor => UnityEngine.Color.white,
+                KeyColor.BlackColor => UnityEngine.Color.black,
+                KeyColor.YellowColor => UnityEngine.Color.yellow,
+                KeyColor.BlueColor => UnityEngine.Color.blue,
+                _ => UnityEngine.Color.white
+            };
         }
 
         private void CollectKey(GameObject player)
@@ -101,35 +94,31 @@ namespace DoorControl
                 keyCollection = player.GetComponentInParent<KeyCollection>();
             }
 
-            if (keyCollection != null)
-            {
-                keyCollection.AddKey(keyColor);
-            }
+            keyCollection?.AddKey(keyColor);
         }
 
-        private System.Collections.IEnumerator CollectAnimation()
+        private IEnumerator CollectAnimation()
         {
             PlayCollectEffects();
 
-            float duration = 0.5f;
-            float elapsed = 0f;
-
+            float elapsedTime = 0f;
             Vector3 originalScale = transform.localScale;
 
-            while (elapsed < duration)
+            while (elapsedTime < CollectAnimationDuration)
             {
-                elapsed += Time.deltaTime;
+                elapsedTime += Time.deltaTime;
 
-                float progress = elapsed / duration;
+                float progress = elapsedTime / CollectAnimationDuration;
 
-                transform.Rotate(0, 0, RotationSpeed * Time.deltaTime);
-                transform.localScale = originalScale * (1 + progress * ScaleMultiplier);
+                transform.Rotate(0f, 0f, RotationSpeed * Time.deltaTime);
+                transform.localScale = originalScale * (1f + progress * ScaleMultiplier);
 
                 if (_spriteRenderer != null)
                 {
                     Color color = _spriteRenderer.color;
 
-                    color.a = 1 - progress;
+                    color.a = 1f - progress;
+
                     _spriteRenderer.color = color;
                 }
 

@@ -8,33 +8,34 @@ namespace GeneralLogicEnemies
         private const float DefaultDeathAnimationDelay = 1f;
         private const float GrayColorValue = 0.5f;
         private const float GrayAlphaValue = 0.7f;
+        private const int DeathThreshold = 0;
 
         [SerializeField] protected int lives = DefaultMaxLives;
         [SerializeField] protected float deathAnimationDelay = DefaultDeathAnimationDelay;
 
         public int MaxLives { get; protected set; } = DefaultMaxLives;
         public bool IsDead { get; protected set; }
-        public bool IsAlive => lives > 0 && !IsDead;
+        public bool IsAlive => lives > DeathThreshold && IsDead == false;
+        public int CurrentLives => lives;
 
         public event System.Action<Entity> OnEntityDeath;
 
         protected virtual void Awake()
         {
             IsDead = false;
+            MaxLives = Mathf.Max(MaxLives, lives);
         }
 
         public virtual void TakeDamage(int amount)
         {
-            const int DeathThreshold = 1;
-
-            if (IsDead)
+            if (IsDead || amount <= 0)
             {
                 return;
             }
 
-            lives -= amount;
+            lives = Mathf.Max(DeathThreshold, lives - amount);
 
-            if (lives < DeathThreshold)
+            if (lives <= DeathThreshold)
             {
                 Die();
             }
@@ -51,9 +52,9 @@ namespace GeneralLogicEnemies
 
             OnEntityDeath?.Invoke(this);
 
+            MarkEnemyAsKilled();
             DisablePhysics();
             PlayDeathAnimation();
-            MarkEnemyAsKilled();
 
             Invoke(nameof(DestroyAfterAnimation), deathAnimationDelay);
         }
@@ -77,18 +78,19 @@ namespace GeneralLogicEnemies
 
         protected virtual void DisablePhysics()
         {
-            Collider2D collider = GetComponent<Collider2D>();
+            Collider2D entityCollider = GetComponent<Collider2D>();
 
-            if (collider != null)
+            if (entityCollider != null)
             {
-                collider.enabled = false;
+                entityCollider.enabled = false;
             }
 
-            Rigidbody2D rigidbody = GetComponent<Rigidbody2D>();
+            Rigidbody2D entityRigidbody = GetComponent<Rigidbody2D>();
 
-            if (rigidbody != null)
+            if (entityRigidbody != null)
             {
-                rigidbody.simulated = false;
+                entityRigidbody.velocity = Vector2.zero;
+                entityRigidbody.simulated = false;
             }
         }
 
@@ -96,15 +98,19 @@ namespace GeneralLogicEnemies
         {
             EnemyRegistration enemyRegistration = GetComponent<EnemyRegistration>();
 
-            if (enemyRegistration != null)
+            if (enemyRegistration == null)
             {
-                string enemyId = enemyRegistration.GetEnemyId();
-
-                if (!string.IsNullOrEmpty(enemyId) && EnemyManager.Instance != null)
-                {
-                    EnemyManager.Instance.MarkEnemyKilled(enemyId);
-                }
+                return;
             }
+
+            string enemyId = enemyRegistration.GetEnemyId();
+
+            if (string.IsNullOrEmpty(enemyId))
+            {
+                return;
+            }
+
+            EnemyManager.Instance?.MarkEnemyKilled(enemyId);
         }
 
         protected virtual void DestroyAfterAnimation()

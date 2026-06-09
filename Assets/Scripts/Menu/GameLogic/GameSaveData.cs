@@ -3,11 +3,10 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-[System.Serializable]
-public class GameSaveData
+[Serializable]
+public sealed class GameSaveData
 {
     public string saveId;
-
     public DateTime saveTime;
     public Vector3 playerPosition;
 
@@ -28,16 +27,42 @@ public class GameSaveData
 
     public GameSaveData()
     {
-        coins = new CoinData(0, 0, 0);
+        saveId = string.Empty;
+        saveTime = DateTime.Now;
+        playerPosition = Vector3.zero;
+
+        playerHealth = 0;
+        playerArmor = 0;
 
         collectedKeys = new List<KeyColor>();
-
         killedEnemies = new List<string>();
         collectedHealthPickups = new List<string>();
 
-        playerArmor = 0;
+        checkpointId = string.Empty;
+        sceneName = string.Empty;
+
+        coins = new CoinData(0, 0, 0);
 
         purchasedItemIds = new List<string>();
         abilityData = new AbilitySaveData();
+    }
+
+    public void EnsureValidCollections()
+    {
+        collectedKeys ??= new List<KeyColor>();
+        killedEnemies ??= new List<string>();
+        collectedHealthPickups ??= new List<string>();
+        purchasedItemIds ??= new List<string>();
+        abilityData ??= new AbilitySaveData();
+
+        if (coins.isInitialized == false)
+        {
+            coins = new CoinData(coins.bronze, coins.silver, coins.gold);
+        }
+
+        if (playerArmor < 0)
+        {
+            playerArmor = 0;
+        }
     }
 }

@@ -3,9 +3,15 @@ using UnityEngine;
 
 public sealed class AutoStopCoin : MonoBehaviour
 {
+    private const string GroundLayerName = "Ground";
     private const float DefaultStopDelay = 0.5f;
     private const float DefaultMinVelocity = 0.1f;
     private const float DefaultMaxLifetime = 10f;
+    private const float CheckInitialDelay = 0.1f;
+    private const float CheckRepeatInterval = 0.2f;
+    private const float StopMaxLifetime = 3f;
+    private const float VelocityDampingFactor = 0.7f;
+    private const float GroundCheckDelay = 0.2f;
 
     [Header("Auto Stop Settings")]
     [SerializeField] private float _stopDelay = DefaultStopDelay;
@@ -16,41 +22,59 @@ public sealed class AutoStopCoin : MonoBehaviour
     private Collider2D _collider;
     private ICoin _coin;
     private float _spawnTime;
-
-    private bool _isStopped = false;
+    private bool _isStopped;
 
     private void Start()
     {
-        _rigidbody = GetComponent<Rigidbody2D>();
-        _collider = GetComponent<Collider2D>();
-
-        _coin = GetComponent<ICoin>();
+        InitializeComponents();
 
         _spawnTime = Time.time;
 
         Invoke(nameof(StartStopCheck), _stopDelay);
-
         Destroy(gameObject, _maxLifetime);
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (_rigidbody == null || collision.gameObject.layer != LayerMask.NameToLayer(GroundLayerName))
+        {
+            return;
+        }
+
+        _rigidbody.velocity *= VelocityDampingFactor;
+
+        Invoke(nameof(CheckForStop), GroundCheckDelay);
+    }
+
+    private void OnDestroy()
+    {
+        CancelInvoke(nameof(CheckForStop));
+        CancelInvoke(nameof(StartStopCheck));
+    }
+
+    private void InitializeComponents()
+    {
+        _rigidbody = GetComponent<Rigidbody2D>();
+        _collider = GetComponent<Collider2D>();
+        _coin = GetComponent<ICoin>();
     }
 
     private void StartStopCheck()
     {
-        float initialDelay = 0.1f;
-        float repeatInterval = 0.2f;
-
-        InvokeRepeating(nameof(CheckForStop), initialDelay, repeatInterval);
+        InvokeRepeating(nameof(CheckForStop), CheckInitialDelay, CheckRepeatInterval);
     }
 
     private void CheckForStop()
     {
-        float maxLifetimeSeconds = 3f;
-
         if (_isStopped || _rigidbody == null)
         {
             return;
         }
 
-        if (_rigidbody.velocity.magnitude < _minVelocity || Time.time - _spawnTime > maxLifetimeSeconds)
+        bool isMovingSlowly = _rigidbody.velocity.magnitude < _minVelocity;
+        bool exceededLifetime = Time.time - _spawnTime > StopMaxLifetime;
+
+        if (isMovingSlowly || exceededLifetime)
         {
             StopCoin();
         }
@@ -58,9 +82,6 @@ public sealed class AutoStopCoin : MonoBehaviour
 
     private void StopCoin()
     {
-        float angularVelocity = 0f;
-        float selfDestructDelay = 0.1f;
-
         if (_isStopped || _rigidbody == null)
         {
             return;
@@ -69,7 +90,7 @@ public sealed class AutoStopCoin : MonoBehaviour
         _isStopped = true;
 
         _rigidbody.velocity = Vector2.zero;
-        _rigidbody.angularVelocity = angularVelocity;
+        _rigidbody.angularVelocity = 0f;
         _rigidbody.bodyType = RigidbodyType2D.Kinematic;
 
         if (_collider != null)
@@ -77,32 +98,10 @@ public sealed class AutoStopCoin : MonoBehaviour
             _collider.isTrigger = true;
         }
 
-        if (_coin != null)
-        {
-            _coin.EnableCollection();
-        }
+        _coin?.EnableCollection();
 
         CancelInvoke(nameof(CheckForStop));
 
-        Destroy(this, selfDestructDelay);
-    }
-
-    private void OnCollisionEnter2D(Collision2D collision)
-    {
-        float velocityDampingFactor = 0.7f;
-        float checkDelay = 0.2f;
-
-        if (collision.gameObject.layer == LayerMask.NameToLayer("Ground") && _rigidbody != null)
-        {
-            _rigidbody.velocity *= velocityDampingFactor;
-
-            Invoke(nameof(CheckForStop), checkDelay);
-        }
-    }
-
-    private void OnDestroy()
-    {
-        CancelInvoke(nameof(CheckForStop));
-        CancelInvoke(nameof(StartStopCheck));
+        Destroy(this, 0.1f);
     }
 }

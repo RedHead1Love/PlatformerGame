@@ -1,5 +1,4 @@
 using GeneralLogicEnemies;
-using System.Reflection;
 using UnityEngine;
 
 public sealed class BossHealthBar : MonoBehaviour
@@ -9,13 +8,12 @@ public sealed class BossHealthBar : MonoBehaviour
     private const float HealthBarBorderThickness = 3f;
     private const float HealthBarPadding = 2f;
     private const float TextOffsetY = 25f;
-    private const float FontSize = 16f;
+    private const int FontSize = 16;
 
     [SerializeField] private Vector2 _healthBarOffset = new Vector2(0f, 3f);
 
     private Camera _mainCamera;
     private Entity _bossEntity;
-    private FieldInfo _livesFieldInfo;
     private int _maxHealth;
 
     private void Start()
@@ -26,12 +24,15 @@ public sealed class BossHealthBar : MonoBehaviour
 
     private void Update()
     {
-        EnsureCameraReference();
+        if (_mainCamera == null)
+        {
+            _mainCamera = Camera.main ?? FindFirstObjectByType<Camera>();
+        }
     }
 
     private void OnGUI()
     {
-        if (!ShouldRenderHealthBar())
+        if (ShouldRenderHealthBar() == false)
         {
             return;
         }
@@ -47,33 +48,29 @@ public sealed class BossHealthBar : MonoBehaviour
 
     private void InitializeHealthData()
     {
-        _livesFieldInfo = typeof(Entity).GetField("lives", BindingFlags.NonPublic | BindingFlags.Instance);
-
-        if (_bossEntity != null && _livesFieldInfo != null)
+        if (_bossEntity == null)
         {
-            _maxHealth = (int)_livesFieldInfo.GetValue(_bossEntity);
-        }
-    }
+            _maxHealth = 1;
 
-    private void EnsureCameraReference()
-    {
-        if (_mainCamera == null)
-        {
-            _mainCamera = FindFirstObjectByType<Camera>();
+            return;
         }
+
+        _maxHealth = Mathf.Max(1, _bossEntity.CurrentLives);
     }
 
     private bool ShouldRenderHealthBar()
     {
-        return _mainCamera != null && _bossEntity != null;
+        return _mainCamera != null &&
+               _bossEntity != null &&
+               _bossEntity.IsDead == false;
     }
 
     private void RenderHealthBar()
     {
-        int currentHealth = GetCurrentHealth();
+        int currentHealth = Mathf.Max(0, _bossEntity.CurrentLives);
         Vector2 screenPosition = CalculateScreenPosition();
 
-        if (!IsPositionOnScreen(screenPosition))
+        if (IsPositionOnScreen(screenPosition) == false)
         {
             return;
         }
@@ -85,23 +82,9 @@ public sealed class BossHealthBar : MonoBehaviour
         DrawHealthText(healthBarRect, currentHealth);
     }
 
-    private int GetCurrentHealth()
-    {
-        int fallbackHealthValue = 0;
-
-        if (_bossEntity != null && _livesFieldInfo != null)
-        {
-            return (int)_livesFieldInfo.GetValue(_bossEntity);
-        }
-
-        return fallbackHealthValue;
-    }
-
     private Vector2 CalculateScreenPosition()
     {
-        float zeroZOffset = 0f;
-
-        Vector3 worldPosition = transform.position + new Vector3(_healthBarOffset.x, _healthBarOffset.y, zeroZOffset);
+        Vector3 worldPosition = transform.position + new Vector3(_healthBarOffset.x, _healthBarOffset.y, 0f);
         Vector3 screenPosition = _mainCamera.WorldToScreenPoint(worldPosition);
 
         return new Vector2(screenPosition.x, Screen.height - screenPosition.y);
@@ -109,61 +92,49 @@ public sealed class BossHealthBar : MonoBehaviour
 
     private bool IsPositionOnScreen(Vector2 screenPosition)
     {
-         float minXBoundary = 0f;
-         float minYBoundary = 0f;
-
-        return screenPosition.x >= minXBoundary && screenPosition.x <= Screen.width && screenPosition.y >= minYBoundary && screenPosition.y <= Screen.height;
+        return screenPosition.x >= 0f &&
+               screenPosition.x <= Screen.width &&
+               screenPosition.y >= 0f &&
+               screenPosition.y <= Screen.height;
     }
 
     private Rect CalculateHealthBarRect(Vector2 screenPosition)
     {
-        float positionOffset = 2f;
-
-        float xPosition = screenPosition.x - HealthBarWidth / positionOffset;
-
-        float yPosition = screenPosition.y - HealthBarHeight / positionOffset;
-
-        return new Rect(xPosition, yPosition, HealthBarWidth, HealthBarHeight);
+        return new Rect(
+            screenPosition.x - HealthBarWidth / 2f,
+            screenPosition.y - HealthBarHeight / 2f,
+            HealthBarWidth,
+            HealthBarHeight);
     }
 
     private float CalculateHealthPercentage(int currentHealth)
     {
-        int minimumHealthForCalculation = 0;
-        float minClampValue = 0f;
-
-        return _maxHealth > minimumHealthForCalculation ? Mathf.Clamp01((float)currentHealth / _maxHealth) : minClampValue;
+        return _maxHealth > 0
+            ? Mathf.Clamp01((float)currentHealth / _maxHealth)
+            : 0f;
     }
 
     private void DrawHealthBar(Rect healthBarRect, float healthPercentage)
     {
-        DrawHealthBarBackground(healthBarRect);
+        DrawRectangle(healthBarRect, Color.black);
         DrawHealthBarFill(healthBarRect, healthPercentage);
         DrawHealthBarBorder(healthBarRect);
     }
 
-    private void DrawHealthBarBackground(Rect healthBarRect)
-    {
-        DrawRectangle(healthBarRect, Color.black);
-    }
-
     private void DrawHealthBarFill(Rect healthBarRect, float healthPercentage)
     {
-        float minimumHealthPercentage = 0f;
-        float paddingMultiplier = 2f;
-
-        if (healthPercentage <= minimumHealthPercentage)
+        if (healthPercentage <= 0f)
         {
             return;
         }
 
-        float fillWidth = (healthBarRect.width - HealthBarPadding * paddingMultiplier) * healthPercentage;
+        float fillWidth = (healthBarRect.width - HealthBarPadding * 2f) * healthPercentage;
 
         Rect fillRect = new Rect(
             healthBarRect.x + HealthBarPadding,
             healthBarRect.y + HealthBarPadding,
             fillWidth,
-            healthBarRect.height - HealthBarPadding * paddingMultiplier
-        );
+            healthBarRect.height - HealthBarPadding * 2f);
 
         DrawRectangle(fillRect, Color.red);
     }
@@ -178,13 +149,13 @@ public sealed class BossHealthBar : MonoBehaviour
 
     private void DrawHealthText(Rect healthBarRect, int currentHealth)
     {
-        Rect textRect = new Rect(healthBarRect.x, healthBarRect.y - TextOffsetY, healthBarRect.width, TextOffsetY);
+        Rect textRect = new Rect(
+            healthBarRect.x,
+            healthBarRect.y - TextOffsetY,
+            healthBarRect.width,
+            TextOffsetY);
 
-        GUIStyle textStyle = CreateHealthTextStyle();
-
-        string healthText = $"{gameObject.name}: {currentHealth}/{_maxHealth}";
-
-        GUI.Label(textRect, healthText, textStyle);
+        GUI.Label(textRect, $"{gameObject.name}: {currentHealth}/{_maxHealth}", CreateHealthTextStyle());
     }
 
     private GUIStyle CreateHealthTextStyle()
@@ -192,7 +163,7 @@ public sealed class BossHealthBar : MonoBehaviour
         return new GUIStyle
         {
             normal = { textColor = Color.yellow },
-            fontSize = (int)FontSize,
+            fontSize = FontSize,
             fontStyle = FontStyle.Bold,
             alignment = TextAnchor.MiddleCenter
         };
@@ -200,23 +171,11 @@ public sealed class BossHealthBar : MonoBehaviour
 
     private void DrawRectangle(Rect rect, Color color)
     {
-        Texture2D texture = CreateSolidTexture(color);
+        Texture2D texture = Texture2D.whiteTexture;
+        Color previousColor = GUI.color;
 
+        GUI.color = color;
         GUI.DrawTexture(rect, texture);
-    }
-
-    private Texture2D CreateSolidTexture(Color color)
-    {
-         int textureWidth = 1;
-         int textureHeight = 1;
-
-         int pixelX = 0;
-         int pixelY = 0;
-
-        Texture2D texture = new Texture2D(textureWidth, textureHeight);
-        texture.SetPixel(pixelX, pixelY, color);
-        texture.Apply();
-
-        return texture;
+        GUI.color = previousColor;
     }
 }

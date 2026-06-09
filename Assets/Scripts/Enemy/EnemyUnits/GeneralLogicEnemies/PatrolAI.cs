@@ -8,7 +8,6 @@ namespace GeneralEnemyPatrolSystem
         private const float ArrivalThreshold = 0.3f;
         private const float ChaseSpeedMultiplier = 1.5f;
         private const float BoxRotationAngle = 0f;
-        private const int LayerNotFound = -1;
 
         [Header("Patrol Settings")]
         [SerializeField] private Transform _pointA;
@@ -31,7 +30,6 @@ namespace GeneralEnemyPatrolSystem
         private Rigidbody2D _rigidbody;
         private Transform _playerTransform;
         private HealthManager _playerHealthManager;
-
         private Vector3 _nextPatrolPoint;
         private bool _isPlayerDead;
 
@@ -43,9 +41,8 @@ namespace GeneralEnemyPatrolSystem
 
         private void Awake()
         {
-            _rigidbody = GetComponent<Rigidbody2D>();
-            _nextPatrolPoint = _pointB.position;
-            CurrentDirection = (_nextPatrolPoint - transform.position).normalized;
+            InitializeComponents();
+            InitializePatrolPoint();
         }
 
         private void Update()
@@ -53,6 +50,8 @@ namespace GeneralEnemyPatrolSystem
             if (_isPlayerDead)
             {
                 HandlePlayerDeadState();
+                NotifyStateChanges();
+
                 return;
             }
 
@@ -73,29 +72,55 @@ namespace GeneralEnemyPatrolSystem
             NotifyStateChanges();
         }
 
+        private void OnDestroy()
+        {
+            UnsubscribeFromPlayerDeath();
+        }
+
+        public void ResetPlayerState()
+        {
+            _isPlayerDead = false;
+        }
+
+        private void InitializeComponents()
+        {
+            _rigidbody = GetComponent<Rigidbody2D>();
+        }
+
+        private void InitializePatrolPoint()
+        {
+            if (_pointB != null)
+            {
+                _nextPatrolPoint = _pointB.position;
+                CurrentDirection = (_nextPatrolPoint - transform.position).normalized;
+
+                return;
+            }
+
+            _nextPatrolPoint = transform.position;
+            CurrentDirection = Vector2.zero;
+        }
+
         private void HandlePlayerDeadState()
         {
-            _playerTransform = null;
-            _playerHealthManager = null;
+            ClearPlayerReference();
+
             InAttackRange = false;
+
             Patrol();
         }
 
         private void HandlePlayerChase()
         {
             float distanceToPlayer = Vector2.Distance(transform.position, _playerTransform.position);
-            Vector2 attackCenter = CalculateAttackCenter(_attackOffset);
 
-            Collider2D playerInAttackRange = Physics2D.OverlapBox(
-                attackCenter, _attackSize, BoxRotationAngle, _playerLayerMask);
-
-            InAttackRange = playerInAttackRange != null;
+            InAttackRange = IsPlayerInAttackBox();
 
             if (distanceToPlayer > _loseRadius)
             {
-                _playerTransform = null;
-                _playerHealthManager = null;
+                ClearPlayerReference();
                 InAttackRange = false;
+
                 return;
             }
 
@@ -103,36 +128,34 @@ namespace GeneralEnemyPatrolSystem
             {
                 StopMovement();
                 CheckPlayerDeath();
-            }
-            else
-            {
-                MoveToward(_playerTransform.position, _patrolSpeed * ChaseSpeedMultiplier);
-            }
-        }
 
-        private Vector2 CalculateAttackCenter(Vector2 offset)
-        {
-            float directionSign = Mathf.Sign(transform.localScale.x);
-            return (Vector2)transform.position + new Vector2(directionSign * offset.x, offset.y);
+                return;
+            }
+
+            MoveToward(_playerTransform.position, _patrolSpeed * ChaseSpeedMultiplier);
         }
 
         private void HandlePatrolState()
         {
             InAttackRange = false;
-            Patrol();
-        }
 
-        private void NotifyStateChanges()
-        {
-            OnMoveDirectionChanged?.Invoke(CurrentDirection);
-            OnInAttackRange?.Invoke(InAttackRange);
+            Patrol();
         }
 
         private void Patrol()
         {
+            if (_pointA == null || _pointB == null)
+            {
+                StopMovement();
+
+                return;
+            }
+
             if (Vector2.Distance(transform.position, _nextPatrolPoint) < ArrivalThreshold)
             {
-                _nextPatrolPoint = _nextPatrolPoint == _pointA.position ? _pointB.position : _pointA.position;
+                _nextPatrolPoint = _nextPatrolPoint == _pointA.position
+                    ? _pointB.position
+                    : _pointA.position;
             }
 
             MoveToward(_nextPatrolPoint, _patrolSpeed);
@@ -140,11 +163,17 @@ namespace GeneralEnemyPatrolSystem
 
         private void MoveToward(Vector3 target, float speed)
         {
+            if (_rigidbody == null)
+            {
+                return;
+            }
+
             Vector2 direction = (target - transform.position).normalized;
 
-            if (TryInteractWithDoor(direction, out IOpenable door) && door.IsClosed)
+            if (TryOpenDoorInDirection(direction))
             {
-                door.Open();
+                StopMovement();
+
                 return;
             }
 
@@ -152,38 +181,117 @@ namespace GeneralEnemyPatrolSystem
             CurrentDirection = direction;
         }
 
-        private bool TryInteractWithDoor(Vector2 direction, out IOpenable door)
+        private bool TryOpenDoorInDirection(Vector2 direction)
         {
-            RaycastHit2D hit = Physics2D.Raycast(transform.position, direction, _doorCheckDistance, _doorLayerMask);
-            door = hit.collider?.GetComponent<IOpenable>();
-            return door != null;
+            if (direction == Vector2.zero)
+            {
+                return false;
+            }
+
+            RaycastHit2D hit = Physics2D.Raycast(
+                transform.position,
+                direction,
+                _doorCheckDistance,
+                _doorLayerMask);
+
+            IOpenable door = hit.collider != null
+                ? hit.collider.GetComponent<IOpenable>()
+                : null;
+
+            if (door == null || door.IsClosed == false)
+            {
+                return false;
+            }
+
+            door.Open();
+
+            return true;
         }
 
         private void StopMovement()
         {
-            _rigidbody.velocity = Vector2.zero;
+            if (_rigidbody != null)
+            {
+                _rigidbody.velocity = Vector2.zero;
+            }
+
             CurrentDirection = Vector2.zero;
         }
 
         private void SearchForPlayer()
         {
-            Collider2D hit = Physics2D.OverlapCircle(transform.position, _visionRadius, _playerLayerMask);
+            Collider2D hit = Physics2D.OverlapCircle(
+                transform.position,
+                _visionRadius,
+                _playerLayerMask);
 
-            if (hit != null)
+            if (hit == null)
             {
-                _playerTransform = hit.transform;
-                _playerHealthManager = _playerTransform.GetComponent<HealthManager>();
+                ClearPlayerReference();
 
-                if (_playerHealthManager != null)
-                {
-                    _playerHealthManager.OnDeath += HandlePlayerDeath;
-                }
+                return;
             }
-            else
+
+            SetPlayerReference(hit.transform);
+        }
+
+        private void SetPlayerReference(Transform playerTransform)
+        {
+            UnsubscribeFromPlayerDeath();
+
+            _playerTransform = playerTransform;
+            _playerHealthManager = _playerTransform.GetComponent<HealthManager>();
+
+            if (_playerHealthManager == null)
             {
-                _playerTransform = null;
-                _playerHealthManager = null;
+                _playerHealthManager = _playerTransform.GetComponentInParent<HealthManager>();
             }
+
+            if (_playerHealthManager != null)
+            {
+                _playerHealthManager.OnDeath += HandlePlayerDeath;
+            }
+        }
+
+        private void ClearPlayerReference()
+        {
+            UnsubscribeFromPlayerDeath();
+
+            _playerTransform = null;
+            _playerHealthManager = null;
+        }
+
+        private void UnsubscribeFromPlayerDeath()
+        {
+            if (_playerHealthManager != null)
+            {
+                _playerHealthManager.OnDeath -= HandlePlayerDeath;
+            }
+        }
+
+        private bool IsPlayerInAttackBox()
+        {
+            Vector2 attackCenter = CalculateAttackCenter(_attackOffset);
+
+            Collider2D playerInAttackRange = Physics2D.OverlapBox(
+                attackCenter,
+                _attackSize,
+                BoxRotationAngle,
+                _playerLayerMask);
+
+            return playerInAttackRange != null;
+        }
+
+        private Vector2 CalculateAttackCenter(Vector2 offset)
+        {
+            float directionSign = Mathf.Sign(transform.localScale.x);
+
+            if (Mathf.Approximately(directionSign, 0f))
+            {
+                directionSign = 1f;
+            }
+
+            return (Vector2)transform.position + new Vector2(directionSign * offset.x, offset.y);
         }
 
         private void CheckPlayerDeath()
@@ -197,26 +305,26 @@ namespace GeneralEnemyPatrolSystem
         private void HandlePlayerDeath()
         {
             _isPlayerDead = true;
-            _playerTransform = null;
 
-            if (_playerHealthManager != null)
-            {
-                _playerHealthManager.OnDeath -= HandlePlayerDeath;
-                _playerHealthManager = null;
-            }
+            ClearPlayerReference();
         }
 
-        public void ResetPlayerState()
+        private void NotifyStateChanges()
         {
-            _isPlayerDead = false;
+            OnMoveDirectionChanged?.Invoke(CurrentDirection);
+            OnInAttackRange?.Invoke(InAttackRange);
         }
 
-        private void OnDestroy()
+        private void OnDrawGizmosSelected()
         {
-            if (_playerHealthManager != null)
-            {
-                _playerHealthManager.OnDeath -= HandlePlayerDeath;
-            }
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireSphere(transform.position, _visionRadius);
+
+            Gizmos.color = Color.red;
+
+            Vector2 attackCenter = CalculateAttackCenter(_attackOffset);
+
+            Gizmos.DrawWireCube(attackCenter, _attackSize);
         }
     }
 }

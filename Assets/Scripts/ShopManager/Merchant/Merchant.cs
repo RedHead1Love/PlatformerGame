@@ -10,6 +10,7 @@ namespace NPC
         private const int StateIdle2 = 1;
         private const int StateTalk = 2;
         private const float DefaultInteractionRadius = 2f;
+        private const string PlayerTag = "Player";
 
         [Header("Input")]
         [SerializeField] private IInputProvider _inputProvider;
@@ -27,10 +28,12 @@ namespace NPC
         [SerializeField] private Transform _interactionPoint;
         [SerializeField] private GameObject _interactionHint;
 
-        private bool _hasInteracted = false;
-        private bool _isPlayerInRange = false;
-        private bool _isShopOpen = false;
         private readonly int _stateHash = Animator.StringToHash("state");
+
+        private Transform _playerTransform;
+        private bool _hasInteracted;
+        private bool _isPlayerInRange;
+        private bool _isShopOpen;
 
         public bool IsShopOpen => _isShopOpen;
 
@@ -38,11 +41,59 @@ namespace NPC
         {
             InitializeReferences();
             FindInputProvider();
+            FindPlayer();
+        }
+
+        private void Update()
+        {
+            FindPlayerIfNeeded();
+            UpdatePlayerRange();
+            HandlePlayerInput();
+        }
+
+        public void OpenShop()
+        {
+            _hasInteracted = true;
+            _isShopOpen = true;
+
+            SetAnimation(StateTalk);
+
+            if (_shopPanel != null)
+            {
+                _shopPanel.SetActive(true);
+            }
+
+            _shopManager?.OpenShop();
+        }
+
+        public void CloseShop()
+        {
+            _shopManager?.CloseShop();
+
+            if (_shopPanel != null)
+            {
+                _shopPanel.SetActive(false);
+            }
+
+            _isShopOpen = false;
+
+            if (_isPlayerInRange)
+            {
+                SetAnimation(StateIdle);
+            }
+        }
+
+        public void CloseShopExternal()
+        {
+            CloseShop();
         }
 
         private void InitializeReferences()
         {
-            _interactionPoint ??= transform;
+            if (_interactionPoint == null)
+            {
+                _interactionPoint = transform;
+            }
 
             if (_interactionHint != null)
             {
@@ -54,22 +105,60 @@ namespace NPC
                 _shopPanel.SetActive(false);
             }
 
-            _shopManager ??= _shopPanel?.GetComponent<ShopManager>();
+            if (_shopManager == null && _shopPanel != null)
+            {
+                _shopManager = _shopPanel.GetComponent<ShopManager>();
+            }
 
             SetAnimation(StateIdle2);
         }
 
-        private void Update()
+        private void FindInputProvider()
         {
-            CheckForPlayer();
-            HandlePlayerInput();
+            if (_inputProvider != null)
+            {
+                return;
+            }
+
+            _inputProvider = FindFirstObjectByType<AggregatedInputProvider>();
+
+            if (_inputProvider == null && YG2.envir.isDesktop)
+            {
+                _inputProvider = FindFirstObjectByType<OldInputProvider>();
+            }
+
+            if (_inputProvider == null && YG2.envir.isMobile)
+            {
+                _inputProvider = FindFirstObjectByType<JoystickInput>();
+            }
+
+            if (_inputProvider == null)
+            {
+                Debug.LogWarning("IInputProvider не найден");
+            }
         }
 
-        private void CheckForPlayer()
+        private void FindPlayer()
         {
-            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            GameObject player = GameObject.FindGameObjectWithTag(PlayerTag);
 
-            if (player == null)
+            if (player != null)
+            {
+                _playerTransform = player.transform;
+            }
+        }
+
+        private void FindPlayerIfNeeded()
+        {
+            if (_playerTransform == null)
+            {
+                FindPlayer();
+            }
+        }
+
+        private void UpdatePlayerRange()
+        {
+            if (_playerTransform == null)
             {
                 if (_isPlayerInRange)
                 {
@@ -79,55 +168,46 @@ namespace NPC
                 return;
             }
 
-            float distance = Vector2.Distance(_interactionPoint.position, player.transform.position);
-
+            float distance = Vector2.Distance(_interactionPoint.position, _playerTransform.position);
             bool playerInRange = distance <= _interactionRadius;
 
-            if (playerInRange && !_isPlayerInRange)
+            if (playerInRange && _isPlayerInRange == false)
             {
                 OnPlayerEnterRange();
             }
-            else if (!playerInRange && _isPlayerInRange)
+            else if (playerInRange == false && _isPlayerInRange)
             {
                 OnPlayerExitRange();
             }
         }
 
-        private void FindInputProvider()
-        {
-            if (_inputProvider == null)
-            {
-                if (YG2.envir.isDesktop)
-                {
-                    _inputProvider = FindObjectOfType<AggregatedInputProvider>();
-                }
-                else if (YG2.envir.isMobile)
-                {
-                    _inputProvider = FindObjectOfType<AggregatedInputProvider>();
-                }
-            }
-            
-            if (_inputProvider == null)
-                Debug.LogWarning("IInputProvider not found! Map toggle won't work with key.");
-        }
-
         private void HandlePlayerInput()
         {
+            if (_inputProvider == null)
+            {
+                return;
+            }
+
             if (_isPlayerInRange && _inputProvider.IsOpenShopOrChestPressed)
             {
-                if (!_isShopOpen)
-                {
-                    OpenShop();
-                }
-                else
-                {
-                    CloseShop();
-                }
+                ToggleShop();
             }
 
             if (_isShopOpen && _inputProvider.IsMenuPressed)
             {
                 CloseShop();
+            }
+        }
+
+        private void ToggleShop()
+        {
+            if (_isShopOpen)
+            {
+                CloseShop();
+            }
+            else
+            {
+                OpenShop();
             }
         }
 
@@ -155,59 +235,18 @@ namespace NPC
                 CloseShop();
             }
 
-            if (_hasInteracted && !_isShopOpen)
+            if (_hasInteracted && _isShopOpen == false)
             {
                 SetAnimation(StateIdle);
             }
-        }
-
-        public void OpenShop()
-        {
-            if (!_hasInteracted)
-            {
-                _hasInteracted = true;
-            }
-
-            SetAnimation(StateTalk);
-
-            if (_shopPanel != null)
-            {
-                _shopPanel.SetActive(true);
-                _isShopOpen = true;
-
-                _shopManager?.OpenShop();
-            }
-        }
-
-        public void CloseShop()
-        {
-            _shopManager?.CloseShop();
-
-            if (_shopPanel != null)
-            {
-                _shopPanel.SetActive(false);
-                _isShopOpen = false;
-            }
-
-            if (_isPlayerInRange)
-            {
-                SetAnimation(StateIdle);
-            }
-        }
-
-        public void CloseShopExternal()
-        {
-            CloseShop();
         }
 
         private void SetAnimation(int state)
         {
-            if (_animator == null)
+            if (_animator != null)
             {
-                return;
+                _animator.SetInteger(_stateHash, state);
             }
-
-            _animator.SetInteger(_stateHash, state);
         }
     }
 }

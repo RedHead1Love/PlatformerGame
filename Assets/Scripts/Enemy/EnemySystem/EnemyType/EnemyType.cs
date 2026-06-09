@@ -7,5 +7,5 @@ public enum EnemyType
     Spider = 4,
     Zombie = 5,
     Boss = 6,
-    Flying = 7,
+    Flying = 7
 }

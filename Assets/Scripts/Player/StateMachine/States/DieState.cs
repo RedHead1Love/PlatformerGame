@@ -1,59 +1,80 @@
-using Player;
-using Player.StateMachine;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using YG;
 
-public sealed class DieState : IState
+namespace Player.StateMachine
 {
-    private const string DieAnimationName = "Die";
-    private const float RestartAnimationThreshold = 0.55f;
-    private const float RestartDelay = 1f;
-
-    private readonly Hero _hero;
-    private readonly Animator _animator;
-    private bool _isRestarting;
-
-    public DieState(Hero hero)
+    public sealed class DieState : IState
     {
-        _hero = hero;
-        _animator = hero.GetComponent<Animator>();
-    }
+        private const float RestartDelay = 1.5f;
 
-    public void Enter()
-    {
-        _animator.SetInteger("state", (int)States.Hurt);
+        private readonly Hero _hero;
+        private readonly Rigidbody2D _rigidbody;
 
-        _isRestarting = false;
-    }
+        private bool _isRestarting;
+        private bool _wasAdShown;
 
-    public void Tick()
-    {
-        if (!_isRestarting && IsDieAnimationFinished())
+        public DieState(Hero hero)
         {
-            _isRestarting = true;
+            _hero = hero;
+            _rigidbody = hero.GetComponent<Rigidbody2D>();
+        }
 
+        public void Enter()
+        {
+            if (_isRestarting)
+            {
+                return;
+            }
+
+            _isRestarting = true;
+            _wasAdShown = false;
+
+            FreezeHero();
+            _hero.AnimationService.SetState(States.Die);
             _hero.StartCoroutine(RestartGame());
         }
-    }
 
-    public void FixedTick() { }
+        public void Tick() { }
 
-    public void Exit() { }
+        public void FixedTick() { }
 
-    private bool IsDieAnimationFinished()
-    {
-        AnimatorStateInfo stateInfo = _animator.GetCurrentAnimatorStateInfo(0);
-        YG2.InterstitialAdvShow();
+        public void Exit() { }
 
-        return stateInfo.IsName(DieAnimationName) && stateInfo.normalizedTime >= RestartAnimationThreshold;
-    }
+        private void FreezeHero()
+        {
+            if (_rigidbody == null)
+            {
+                return;
+            }
 
-    private IEnumerator RestartGame()
-    {
-        yield return new WaitForSeconds(RestartDelay);
+            _rigidbody.velocity = Vector2.zero;
+            _rigidbody.angularVelocity = 0f;
+            _rigidbody.gravityScale = 0f;
+            _rigidbody.constraints = RigidbodyConstraints2D.FreezeAll;
+        }
 
-        UnityEngine.SceneManagement.SceneManager.LoadScene(
-            UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
+        private IEnumerator RestartGame()
+        {
+            ShowInterstitialAdOnce();
+
+            yield return new WaitForSecondsRealtime(RestartDelay);
+
+            Time.timeScale = 1f;
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        }
+
+        private void ShowInterstitialAdOnce()
+        {
+            if (_wasAdShown)
+            {
+                return;
+            }
+
+            _wasAdShown = true;
+
+            YG2.InterstitialAdvShow();
+        }
     }
 }

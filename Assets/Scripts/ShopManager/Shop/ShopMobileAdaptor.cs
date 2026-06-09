@@ -1,9 +1,8 @@
-using System.Collections.Generic;
 using GameLogic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class ShopMobileAdapter : MonoBehaviour
+public sealed class ShopMobileAdapter : MonoBehaviour
 {
     [Header("Navigation Buttons")]
     [SerializeField] private Button _upButton;
@@ -19,9 +18,9 @@ public class ShopMobileAdapter : MonoBehaviour
     [SerializeField] private float _moveDelay = 0.2f;
 
     [SerializeField] private ShopNavigationController _navigation;
+
     private float _lastMoveTime;
 
-    // События для основного скрипта магазина
     public System.Action<IShopItem> OnItemSelected;
     public System.Action<WalletManager.CoinType> OnCurrencyChanged;
     public System.Action OnBuyRequested;
@@ -39,48 +38,69 @@ public class ShopMobileAdapter : MonoBehaviour
         SubscribeButtons();
     }
 
+    private void OnDestroy()
+    {
+        UnsubscribeButtons();
+    }
+
     private void SubscribeButtons()
     {
-        // Навигационные кнопки
-        if (_upButton != null)
-            _upButton.onClick.AddListener(() => Navigate(Vector2.up));
+        _upButton?.onClick.AddListener(NavigateUp);
+        _downButton?.onClick.AddListener(NavigateDown);
+        _leftButton?.onClick.AddListener(NavigateLeft);
+        _rightButton?.onClick.AddListener(NavigateRight);
+        _buyButton?.onClick.AddListener(RequestBuy);
+        _closeButton?.onClick.AddListener(RequestClose);
+    }
 
-        if (_downButton != null)
-            _downButton.onClick.AddListener(() => Navigate(Vector2.down));
+    private void UnsubscribeButtons()
+    {
+        _upButton?.onClick.RemoveListener(NavigateUp);
+        _downButton?.onClick.RemoveListener(NavigateDown);
+        _leftButton?.onClick.RemoveListener(NavigateLeft);
+        _rightButton?.onClick.RemoveListener(NavigateRight);
+        _buyButton?.onClick.RemoveListener(RequestBuy);
+        _closeButton?.onClick.RemoveListener(RequestClose);
+    }
 
-        if (_leftButton != null)
-            _leftButton.onClick.AddListener(() => Navigate(Vector2.left));
+    private void NavigateUp() => Navigate(Vector2.up);
+    private void NavigateDown() => Navigate(Vector2.down);
+    private void NavigateLeft() => Navigate(Vector2.left);
+    private void NavigateRight() => Navigate(Vector2.right);
 
-        if (_rightButton != null)
-            _rightButton.onClick.AddListener(() => Navigate(Vector2.right));
+    private void RequestBuy()
+    {
+        OnBuyRequested?.Invoke();
+    }
 
-        // Действия
-        if (_buyButton != null)
-            _buyButton.onClick.AddListener(() => OnBuyRequested?.Invoke());
-
-        if (_closeButton != null)
-            _closeButton.onClick.AddListener(() => OnCloseRequested?.Invoke());
+    private void RequestClose()
+    {
+        OnCloseRequested?.Invoke();
     }
 
     private void Navigate(Vector2 direction)
     {
         if (Time.time - _lastMoveTime < _moveDelay)
-            return;
-
-        bool moved = _navigation.TryMove(direction);
-
-        if (moved)
         {
-            _lastMoveTime = Time.time;
+            return;
+        }
 
-            // Уведомляем об изменениях
-            var currentItem = _navigation.GetCurrentItem();
-            var currentCurrency = _navigation.CurrentCurrency;
+        if (_navigation.TryMove(direction) == false)
+        {
+            return;
+        }
 
-            if (currentItem != null)
-                OnItemSelected?.Invoke(currentItem);
-            else
-                OnCurrencyChanged?.Invoke(currentCurrency);
+        _lastMoveTime = Time.time;
+
+        IShopItem currentItem = _navigation.GetCurrentItem();
+
+        if (currentItem != null)
+        {
+            OnItemSelected?.Invoke(currentItem);
+        }
+        else
+        {
+            OnCurrencyChanged?.Invoke(_navigation.CurrentCurrency);
         }
     }
 }

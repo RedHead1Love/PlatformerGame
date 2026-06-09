@@ -5,9 +5,13 @@ namespace GameLogic
 {
     public sealed class Coin : MonoBehaviour, ICoin
     {
+        private const string PlayerTag = "Player";
         private const float DefaultFloatHeight = 0.1f;
         private const float DefaultFloatSpeed = 2f;
         private const float DefaultCollectableDelay = 1f;
+        private const float StopVelocityThreshold = 0.5f;
+        private const float RetryDelay = 0.5f;
+        private const float GizmoRadius = 0.3f;
 
         [Header("Coin Settings")]
         [SerializeField] private WalletManager.CoinType _coinType = WalletManager.CoinType.Bronze;
@@ -19,11 +23,10 @@ namespace GameLogic
         [SerializeField] private float _floatHeight = DefaultFloatHeight;
         [SerializeField] private float _floatSpeed = DefaultFloatSpeed;
 
-        private bool _isCollectable = false;
-
-        private SpriteRenderer _spriteRenderer;
+        private bool _isCollectable;
         private Vector3 _originalPosition;
         private Rigidbody2D _rigidbody;
+        private Coroutine _floatCoroutine;
 
         public WalletManager.CoinType CoinType => _coinType;
         public int CoinValue => _coinValue;
@@ -31,9 +34,7 @@ namespace GameLogic
 
         private void Awake()
         {
-            _spriteRenderer = GetComponent<SpriteRenderer>();
             _rigidbody = GetComponent<Rigidbody2D>();
-
             _originalPosition = transform.position;
         }
 
@@ -42,34 +43,86 @@ namespace GameLogic
             Invoke(nameof(EnableCollection), _collectableDelay);
         }
 
-        public void EnableCollection()
+        private void OnTriggerEnter2D(Collider2D other)
         {
-            _isCollectable = true;
-
-            float velocityThreshold = 0.5f;
-            float retryDelay = 0.5f;
-
-            if (_rigidbody != null && _rigidbody.bodyType == RigidbodyType2D.Dynamic)
+            if (_isCollectable == false || other.CompareTag(PlayerTag) == false)
             {
-                if (_rigidbody.velocity.magnitude < velocityThreshold)
-                {
-                    _rigidbody.bodyType = RigidbodyType2D.Kinematic;
-                    _rigidbody.velocity = Vector2.zero;
-
-                    if (TryGetComponent<Collider2D>(out var collider))
-                    {
-                        collider.isTrigger = true;
-                    }
-                }
-                else
-                {
-                    Invoke(nameof(EnableCollection), retryDelay);
-
-                    return;
-                }
+                return;
             }
 
-            StartCoroutine(FloatAnimation());
+            Collect();
+        }
+
+        private void OnDrawGizmos()
+        {
+            if (_isCollectable == false)
+            {
+                return;
+            }
+
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireSphere(transform.position, GizmoRadius);
+        }
+
+        public void EnableCollection()
+        {
+            if (_isCollectable)
+            {
+                return;
+            }
+
+            if (TryStopDynamicPhysics() == false)
+            {
+                Invoke(nameof(EnableCollection), RetryDelay);
+
+                return;
+            }
+
+            _isCollectable = true;
+            _originalPosition = transform.position;
+
+            StartFloatAnimation();
+        }
+
+        public void Collect()
+        {
+            AddCoinToWallets();
+            PlayCollectSound();
+
+            Destroy(gameObject);
+        }
+
+        private bool TryStopDynamicPhysics()
+        {
+            if (_rigidbody == null || _rigidbody.bodyType != RigidbodyType2D.Dynamic)
+            {
+                return true;
+            }
+
+            if (_rigidbody.velocity.magnitude >= StopVelocityThreshold)
+            {
+                return false;
+            }
+
+            _rigidbody.bodyType = RigidbodyType2D.Kinematic;
+            _rigidbody.velocity = Vector2.zero;
+
+            if (TryGetComponent(out Collider2D coinCollider))
+            {
+                coinCollider.isTrigger = true;
+            }
+
+            return true;
+        }
+
+        private void StartFloatAnimation()
+        {
+            if (_floatCoroutine != null)
+            {
+                StopCoroutine(_floatCoroutine);
+            }
+
+            _floatCoroutine = StartCoroutine(FloatAnimation());
         }
 
         private IEnumerator FloatAnimation()
@@ -78,49 +131,30 @@ namespace GameLogic
             {
                 float yOffset = Mathf.Sin(Time.time * _floatSpeed) * _floatHeight;
 
-                transform.position = _originalPosition + new Vector3(0, yOffset, 0);
+                transform.position = _originalPosition + new Vector3(0f, yOffset, 0f);
 
                 yield return null;
             }
         }
 
-        private void OnTriggerEnter2D(Collider2D other)
+        private void AddCoinToWallets()
         {
-            if (!_isCollectable || !other.CompareTag("Player"))
+            WalletManager.Instance?.AddCoins(_coinType, _coinValue);
+
+            if (PersistentWallet.Instance != null)
+            {
+                PersistentWallet.Instance.AddCoins(_coinType.ToString(), _coinValue);
+            }
+        }
+
+        private void PlayCollectSound()
+        {
+            if (_collectSound == null)
             {
                 return;
             }
 
-            Collect();
-        }
-
-        public void Collect()
-        {
-            if (WalletManager.Instance != null)
-            {
-                WalletManager.Instance.AddCoins(_coinType, _coinValue);
-            }
-
-            if (_collectSound != null)
-            {
-                AudioSource.PlayClipAtPoint(_collectSound, transform.position);
-            }
-
-            Destroy(gameObject);
-        }
-
-        private void OnDrawGizmos()
-        {
-            if (_isCollectable)
-            {
-                Gizmos.color = Color.green;
-
-                float gizmoRadius = 0.3f;
-
-                Vector3 sphereCenter = transform.position;
-
-                Gizmos.DrawWireSphere(sphereCenter, gizmoRadius);
-            }
+            AudioSource.PlayClipAtPoint(_collectSound, transform.position);
         }
     }
 }

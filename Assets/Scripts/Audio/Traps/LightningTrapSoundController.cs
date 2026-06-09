@@ -7,6 +7,7 @@ namespace Traps
     public sealed class LightningTrapSoundController : MonoBehaviour
     {
         private const string PlayerTag = "Player";
+        private const float DefaultVolume = 1f;
 
         [Header("Sound Configuration")]
         [SerializeField] private AudioClip _lightningStrikeSound;
@@ -30,14 +31,39 @@ namespace Traps
             InitializeDistanceChecker();
         }
 
+        public void PlayLightningStrikeSound()
+        {
+            if (_lightningStrikeSound == null || ShouldPlaySound() == false)
+            {
+                return;
+            }
+
+            _audioPlayer.PlayOneShot(_lightningStrikeSound, GetSoundVolume());
+        }
+
+        public void StopSound()
+        {
+            _audioPlayer.Stop();
+        }
+
+        public void SetLightningSound(AudioClip clip)
+        {
+            _lightningStrikeSound = clip;
+        }
+
+        public void SetMaxDistance(float distance)
+        {
+            _maxSoundDistance = Mathf.Max(0f, distance);
+        }
+
+        public void SetAudioController(AudioController controller)
+        {
+            _audioController = controller;
+        }
+
         private void InitializeAudioPlayer()
         {
             AudioSource audioSource = GetComponent<AudioSource>();
-
-            if (audioSource == null)
-            {
-                audioSource = gameObject.AddComponent<AudioSource>();
-            }
 
             audioSource.playOnAwake = false;
             audioSource.loop = false;
@@ -68,60 +94,27 @@ namespace Traps
             _distanceChecker = new DistanceChecker();
         }
 
-        public void PlayLightningStrikeSound()
-        {
-            if (_lightningStrikeSound == null)
-            {
-                return;
-            }
-
-            if (!ShouldPlaySound())
-            {
-                return;
-            }
-
-            float volume = GetSoundVolume();
-            _audioPlayer.PlayOneShot(_lightningStrikeSound, volume);
-        }
-
         private bool ShouldPlaySound()
         {
-            if (!_enableDistanceCheck || _playerTransform == null)
+            if (_enableDistanceCheck == false || _playerTransform == null)
             {
                 return true;
             }
 
-            return _distanceChecker.IsWithinDistance(transform.position, _playerTransform.position, _maxSoundDistance);
+            return _distanceChecker.IsWithinDistance(
+                transform.position,
+                _playerTransform.position,
+                _maxSoundDistance);
         }
 
         private float GetSoundVolume()
         {
-            if (_audioController != null)
+            if (_audioController == null)
             {
-                return _audioController.SoundEffectsVolume;
+                return DefaultVolume;
             }
 
-            return 1f;
-        }
-
-        public void StopSound()
-        {
-            _audioPlayer.Stop();
-        }
-
-        public void SetLightningSound(AudioClip clip)
-        {
-            _lightningStrikeSound = clip;
-        }
-
-        public void SetMaxDistance(float distance)
-        {
-            _maxSoundDistance = distance;
-        }
-
-        public void SetAudioController(AudioController controller)
-        {
-            _audioController = controller;
+            return _audioController.SoundEffectsVolume;
         }
     }
 }

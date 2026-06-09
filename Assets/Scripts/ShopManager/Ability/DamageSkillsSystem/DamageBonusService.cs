@@ -3,6 +3,12 @@ using UnityEngine;
 
 public sealed class DamageBonusService
 {
+    private const float NeutralMultiplier = 1f;
+    private const int MinimumBonusDamage = 1;
+    private const float EffectVerticalOffset = 1.5f;
+    private const float EffectDestroyDelay = 1f;
+    private const int EffectFontSize = 20;
+
     private readonly AbilityManager _abilityManager;
 
     public DamageBonusService(AbilityManager abilityManager)
@@ -12,9 +18,6 @@ public sealed class DamageBonusService
 
     public int CalculateDamageWithBonuses(int baseDamage, GameObject target)
     {
-        float neutralMultiplier = 1f;
-        int minimumBonusDamage = 1;
-
         if (_abilityManager == null || target == null)
         {
             return baseDamage;
@@ -22,38 +25,37 @@ public sealed class DamageBonusService
 
         float multiplier = _abilityManager.GetDamageMultiplierForEnemy(target);
 
-        if (multiplier > neutralMultiplier)
+        if (multiplier <= NeutralMultiplier)
         {
-            int finalDamage = Mathf.CeilToInt(baseDamage * multiplier);
-
-            if (finalDamage <= baseDamage)
-            {
-                finalDamage = baseDamage + minimumBonusDamage;
-            }
-
-            ShowEffect(target, multiplier);
-
-            return finalDamage;
+            return baseDamage;
         }
 
-        return baseDamage;
+        int finalDamage = Mathf.CeilToInt(baseDamage * multiplier);
+
+        if (finalDamage <= baseDamage)
+        {
+            finalDamage = baseDamage + MinimumBonusDamage;
+        }
+
+        ShowEffect(target, multiplier);
+
+        return finalDamage;
     }
 
     private void ShowEffect(GameObject target, float multiplier)
     {
-        float verticalOffset = 1.5f;
-        string effectObjectName = "BonusEffect";
-        int fontSize = 20;
-        float destroyDelay = 1f;
+        GameObject textObject = new GameObject("BonusEffect");
 
-        GameObject textObj = new GameObject(effectObjectName);
-        textObj.transform.position = target.transform.position + Vector3.up * verticalOffset;
+        textObject.transform.position = target.transform.position + Vector3.up * EffectVerticalOffset;
 
-        TextMesh textMesh = textObj.AddComponent<TextMesh>();
+        TextMesh textMesh = textObject.AddComponent<TextMesh>();
+
         textMesh.text = $"x{multiplier}!";
         textMesh.color = Color.red;
-        textMesh.fontSize = fontSize;
+        textMesh.fontSize = EffectFontSize;
+        textMesh.anchor = TextAnchor.MiddleCenter;
+        textMesh.fontStyle = FontStyle.Bold;
 
-        Object.Destroy(textObj, destroyDelay);
+        Object.Destroy(textObject, EffectDestroyDelay);
     }
 }

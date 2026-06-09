@@ -1,12 +1,14 @@
 ﻿using GameLogic;
 using Player.Input;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
 public sealed class ShopManager : MonoBehaviour
 {
+    private const string HorizontalAxisName = "Horizontal";
+    private const string VerticalAxisName = "Vertical";
+
     [Header("UI Manager")]
     [SerializeField] private ShopUIManager _uiManager;
 
@@ -23,27 +25,10 @@ public sealed class ShopManager : MonoBehaviour
     [Header("Shop Items")]
     [SerializeField] private List<ShopItemData> _shopItems = new List<ShopItemData>();
 
-    private const string CommandUnlockMap = "1";
-    private const string CommandUnlockDash = "2";
-    private const string CommandUnlockAnatomy = "3";
-    private const string CommandUnlockArmor = "4";
-    private const string CommandUnlockSwampDamageBonus = "5";
-    private const string CommandActiveLastChance = "6";
-    private const string CommandUnlockedArmor = "7";
-    private const string CommandUnlockSkeletonDamageBonus = "8";
-    private const string CommandUnlockDemonDamageBonus = "9";
-    private const string CommandUnlockSpiderDamageBonus = "10";
-    private const string CommandUnlockZombieDamageBonus = "11";
-    private const string CommandUnlockPassiveHealthRegeneration = "12";
-    private const string CommandUnlockRobocopRegeneration = "13";
-    private const string CommandUnlockVampireAbility = "14";
-    private const string CommandUnlockOnePunchManAbility = "15";
-    private const string CommandUnlockBossDamageBonus = "16";
-
     private ShopNavigationController _navigationController;
-    public List<ShopItemData> ShopItems => _shopItems;
+    private bool _isShopOpen;
 
-    private bool _isShopOpen = false;
+    public List<ShopItemData> ShopItems => _shopItems;
 
     private void Start()
     {
@@ -52,13 +37,136 @@ public sealed class ShopManager : MonoBehaviour
         InitializeShopSaveManager();
     }
 
+    private void Update()
+    {
+        if (_isShopOpen == false)
+        {
+            return;
+        }
+
+        HandleShopInput();
+    }
+
+    private void OnDestroy()
+    {
+        if (_closeButton != null)
+        {
+            _closeButton.onClick.RemoveListener(CloseShop);
+        }
+    }
+
+    public void OpenShop()
+    {
+        _isShopOpen = true;
+
+        gameObject.SetActive(true);
+
+        EnsureInitialized();
+
+        _navigationController.Reset();
+
+        SetShopInputMode(true);
+        UpdateUI();
+        UpdateDescription();
+    }
+
+    public void CloseShop()
+    {
+        _isShopOpen = false;
+
+        SetShopInputMode(false);
+
+        gameObject.SetActive(false);
+    }
+
+    public void NavigateUp()
+    {
+        HandleShopInput(Vector2.up);
+    }
+
+    public void NavigateDown()
+    {
+        HandleShopInput(Vector2.down);
+    }
+
+    public void NavigateLeft()
+    {
+        HandleShopInput(Vector2.left);
+    }
+
+    public void NavigateRight()
+    {
+        HandleShopInput(Vector2.right);
+    }
+
+    public void ConfirmPurchase()
+    {
+        TryPurchaseSelectedItem();
+    }
+
+    private void Initialize()
+    {
+        if (_closeButton != null)
+        {
+            _closeButton.onClick.RemoveListener(CloseShop);
+            _closeButton.onClick.AddListener(CloseShop);
+        }
+
+        if (_uiManager == null)
+        {
+            _uiManager = GetComponentInChildren<ShopUIManager>(true);
+        }
+
+        Hero hero = FindFirstObjectByType<Hero>();
+        ArmorManager armorManager = FindFirstObjectByType<ArmorManager>();
+
+        _purchaseHandler = new ShopItemPurchaseHandler(hero, armorManager, this);
+
+        FindInputProvider();
+        InitializeNavigation();
+        InitializeItemViews();
+    }
+
+    private void EnsureInitialized()
+    {
+        if (_navigationController == null)
+        {
+            InitializeNavigation();
+        }
+
+        if (_uiManager == null)
+        {
+            _uiManager = GetComponentInChildren<ShopUIManager>(true);
+        }
+
+        if (_purchaseHandler == null)
+        {
+            Hero hero = FindFirstObjectByType<Hero>();
+            ArmorManager armorManager = FindFirstObjectByType<ArmorManager>();
+
+            _purchaseHandler = new ShopItemPurchaseHandler(hero, armorManager, this);
+        }
+
+        FindInputProvider();
+    }
+
+    private void FindInputProvider()
+    {
+        if (_inputProvider == null)
+        {
+            _inputProvider = FindFirstObjectByType<AggregatedInputProvider>();
+        }
+
+        _input = _inputProvider;
+    }
+
     private void InitializeShopSaveManager()
     {
         if (ShopSaveManager.Instance == null)
         {
             GameObject managerObject = new GameObject("ShopSaveManager");
-            managerObject.AddComponent<ShopSaveManager>();
 
+            managerObject.AddComponent<ShopSaveManager>();
             DontDestroyOnLoad(managerObject);
         }
 
@@ -72,132 +180,32 @@ public sealed class ShopManager : MonoBehaviour
             return;
         }
 
-        if (SaveSystem.Instance.CurrentSave.purchasedItemIds != null)
-        {
-            foreach (var itemId in SaveSystem.Instance.CurrentSave.purchasedItemIds)
-            {
-                var item = _shopItems.Find(i => i.ItemId == itemId);
-
-                if (item != null && itemId != CommandActiveLastChance && itemId != CommandUnlockedArmor)
-                {
-                    item.IsSold = true;
-
-                    ApplyItemEffectOnLoad(itemId);
-                }
-            }
-        }
-
-        if (_uiManager != null)
-        {
-            _uiManager.RefreshItemViews();
-        }
-    }
-
-
-    private void ApplyItemEffectOnLoad(string itemId)
-    {
-        var hero = FindObjectOfType<Hero>();
-
-        if (hero == null || hero.AbilityManager == null)
+        if (SaveSystem.Instance.CurrentSave.purchasedItemIds == null)
         {
             return;
         }
 
-        var armorManager = FindObjectOfType<ArmorManager>();
-
-        var purchaseHandler = new ShopItemPurchaseHandler(hero, armorManager);
-
-        switch (itemId)
+        foreach (string itemId in SaveSystem.Instance.CurrentSave.purchasedItemIds)
         {
-            case CommandUnlockMap: hero.AbilityManager.UnlockMap();
-                
-                break;
+            ShopItemData item = _shopItems.Find(shopItem => shopItem.ItemId == itemId);
 
-            case CommandUnlockDash: hero.AbilityManager.UnlockDash();
-                
-                break;
-
-            case CommandUnlockAnatomy: hero.AbilityManager.UnlockAnatomy();
-                
-                break;
-
-            case CommandUnlockArmor:
-                hero.AbilityManager.UnlockArmor();
-                armorManager?.UnlockArmorAbility();
-
-                break;
-
-            case CommandUnlockSwampDamageBonus: hero.AbilityManager.UnlockSwampDamageBonus(); 
-                
-                break;
-
-            case CommandUnlockSkeletonDamageBonus: hero.AbilityManager.UnlockSkeletonDamageBonus();
-                
-                break;
-
-            case CommandUnlockDemonDamageBonus: hero.AbilityManager.UnlockDemonDamageBonus();
-                
-                break;
-
-            case CommandUnlockSpiderDamageBonus: hero.AbilityManager.UnlockSpiderDamageBonus();
-                
-                break;
-
-            case CommandUnlockZombieDamageBonus: hero.AbilityManager.UnlockZombieDamageBonus();
-                
-                break;
-
-            case CommandUnlockPassiveHealthRegeneration: hero.AbilityManager.UnlockPassiveHealthRegeneration();
-                
-                break;
-
-            case CommandUnlockRobocopRegeneration: hero.AbilityManager.UnlockRobocopRegeneration();
-                
-                break;
-
-            case CommandUnlockVampireAbility: hero.AbilityManager.UnlockVampireAbility(); 
-                
-                break;
-
-            case CommandUnlockOnePunchManAbility: hero.AbilityManager.UnlockOnePunchManAbility();
-                
-                break;
-
-            case CommandUnlockBossDamageBonus: hero.AbilityManager.UnlockBossDamageBonus();
-                
-                break;
-        }
-    }
-
-    private void Initialize()
-    {
-
-        if (_closeButton)
-        {
-            _closeButton.onClick.AddListener(CloseShop);
+            if (item != null && itemId != ShopItemIds.ActivateLastChance && itemId != ShopItemIds.RestoreArmor)
+            {
+                item.IsSold = true;
+            }
         }
 
-        var hero = FindObjectOfType<Hero>();
-        var armorManager = FindObjectOfType<ArmorManager>();
-
-        _purchaseHandler = new ShopItemPurchaseHandler(hero, armorManager);
-
-        _inputProvider = FindObjectOfType<AggregatedInputProvider>();
-        _input = _inputProvider as IInputProvider;
-
-        _navigationController = new ShopNavigationController();
-
-        InitializeNavigation();
+        _uiManager?.RefreshItemViews();
     }
-
 
     private void InitializeNavigation()
     {
-        Dictionary<WalletManager.CoinType, List<IShopItem>> itemsByCurrency = new Dictionary<WalletManager.CoinType, List<IShopItem>>();
+        Dictionary<WalletManager.CoinType, List<IShopItem>> itemsByCurrency =
+            new Dictionary<WalletManager.CoinType, List<IShopItem>>();
 
-        foreach (var item in _shopItems)
+        foreach (ShopItemData item in _shopItems)
         {
-            if (!itemsByCurrency.ContainsKey(item.CurrencyType))
+            if (itemsByCurrency.ContainsKey(item.CurrencyType) == false)
             {
                 itemsByCurrency[item.CurrencyType] = new List<IShopItem>();
             }
@@ -207,41 +215,41 @@ public sealed class ShopManager : MonoBehaviour
 
         _navigationController = new ShopNavigationController();
 
-        foreach (var kvp in itemsByCurrency)
+        foreach (KeyValuePair<WalletManager.CoinType, List<IShopItem>> pair in itemsByCurrency)
         {
-            _navigationController.AddItems(kvp.Key, kvp.Value);
+            _navigationController.AddItems(pair.Key, pair.Value);
         }
     }
 
-    private void Update()
+    private void InitializeItemViews()
     {
-        if (!_isShopOpen)
+        if (_uiManager == null)
         {
             return;
         }
 
-        HandleShopInput();
+        foreach (ShopItemData item in _shopItems)
+        {
+            ShopItemView itemView = _uiManager.GetItemViewById(item.CurrencyType, item.ItemId);
+
+            itemView?.Initialize(item);
+        }
     }
 
     private void HandleShopInput()
     {
         Vector2 input = new Vector2(
-            UnityEngine.Input.GetAxisRaw("Horizontal"),
-            UnityEngine.Input.GetAxisRaw("Vertical")
-        );
+            Input.GetAxisRaw(HorizontalAxisName),
+            Input.GetAxisRaw(VerticalAxisName));
 
-        if (_navigationController.TryMove(input))
-        {
-            OnNavigationChanged();
-        }
+        HandleShopInput(input);
 
-        if (UnityEngine.Input.GetKeyDown(KeyCode.Space) ||
-            UnityEngine.Input.GetKeyDown(KeyCode.Return))
+        if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return))
         {
             TryPurchaseSelectedItem();
         }
 
-        if (UnityEngine.Input.GetKeyDown(KeyCode.Escape))
+        if ((_input != null && _input.IsMenuPressed) || Input.GetKeyDown(KeyCode.Escape))
         {
             CloseShop();
         }
@@ -249,20 +257,14 @@ public sealed class ShopManager : MonoBehaviour
 
     private void HandleShopInput(Vector2 input)
     {
+        if (_navigationController == null)
+        {
+            return;
+        }
+
         if (_navigationController.TryMove(input))
         {
             OnNavigationChanged();
-        }
-
-        if (UnityEngine.Input.GetKeyDown(KeyCode.Space) ||
-            UnityEngine.Input.GetKeyDown(KeyCode.Return))
-        {
-            TryPurchaseSelectedItem();
-        }
-
-        if (UnityEngine.Input.GetKeyDown(KeyCode.Escape))
-        {
-            CloseShop();
         }
     }
 
@@ -274,99 +276,103 @@ public sealed class ShopManager : MonoBehaviour
 
     private void UpdateUI()
     {
-        var currency = _navigationController.CurrentCurrency;
+        if (_uiManager == null || _navigationController == null)
+        {
+            return;
+        }
+
+        WalletManager.CoinType currency = _navigationController.CurrentCurrency;
 
         _uiManager.SwitchCurrency(currency);
-
         _uiManager.UpdateItemSelection(currency, _navigationController.CurrentItemIndex);
     }
 
     private void UpdateDescription()
     {
-        if (_navigationController.CurrentItemIndex >= 0)
-        {
-            var item = _navigationController.GetCurrentItem();
-
-            if (item != null)
-            {
-                string status = item.IsSold ? "<color=green>[Куплено]</color>\n" : "";
-
-                _uiManager.UpdateDescription(status + item.Description);
-            }
-        }
-        else
-        {
-            string description = GetCurrencyDescription(_navigationController.CurrentCurrency);
-            _uiManager.UpdateDescription(description);
-        }
-    }
-
-    private void TryPurchaseSelectedItem()
-    {
-        if (_navigationController.CurrentItemIndex < 0)
+        if (_uiManager == null || _navigationController == null)
         {
             return;
         }
 
-        var item = _navigationController.GetCurrentItem();
+        IShopItem item = _navigationController.GetCurrentItem();
+
+        if (item != null)
+        {
+            string status = item.IsSold && item.ItemId != ShopItemIds.RestoreArmor
+                ? "<color=green>[Куплено]</color>\n"
+                : string.Empty;
+
+            _uiManager.UpdateDescription(status + item.Description);
+
+            return;
+        }
+
+        _uiManager.UpdateDescription(GetCurrencyDescription(_navigationController.CurrentCurrency));
+    }
+
+    private void TryPurchaseSelectedItem()
+    {
+        IShopItem item = _navigationController?.GetCurrentItem();
 
         if (item == null)
         {
             return;
         }
 
-        if (!item.CanBePurchased())
+        if (item.CanBePurchased() == false)
         {
-            if (item.IsSold)
-            {
-                _uiManager.ShowPurchaseMessage("<color=yellow>этот предмет уже куплен</color>");
-            }
-            else
-            {
-                _uiManager.ShowPurchaseMessage("<color=red>Недостаточно средств</color>");
-            }
+            ShowCannotPurchaseMessage(item);
 
             return;
         }
 
         bool success = _purchaseHandler.TryPurchaseItem(item.ItemId);
 
-        if (success)
+        if (success == false)
         {
-            item.Purchase();
+            _uiManager?.ShowPurchaseMessage("<color=red>Не удалось купить предмет</color>");
 
-            _uiManager.ShowPurchaseMessage("Покупка успешна!");
+            return;
+        }
 
-            _uiManager.UpdateItemSelection(_navigationController.CurrentCurrency,
-                _navigationController.CurrentItemIndex);
+        item.Purchase();
 
-            string status = item.IsSold ? "<color=green>[Куплено]</color>\n" : "";
+        _uiManager?.ShowPurchaseMessage("Покупка успешна");
+        _uiManager?.RefreshLastChanceItems();
 
-            _uiManager.UpdateDescription(status + item.Description);
+        UpdateUI();
+        UpdateDescription();
+        SaveGameImmediately();
+    }
 
-            SaveGameImmediately();
+    private void ShowCannotPurchaseMessage(IShopItem item)
+    {
+        if (item.IsSold && item.ItemId != ShopItemIds.RestoreArmor)
+        {
+            _uiManager?.ShowPurchaseMessage("<color=yellow>этот предмет уже куплен</color>");
         }
         else
         {
-            _uiManager.ShowPurchaseMessage("<color=red>Не удалось купить предмет!</color>");
+            _uiManager?.ShowPurchaseMessage("<color=red>Недостаточно средств или покупка недоступна</color>");
         }
     }
 
     private void SaveGameImmediately()
     {
-        var hero = FindObjectOfType<Hero>();
+        Hero hero = FindFirstObjectByType<Hero>();
 
-        if (hero != null && SaveSystem.Instance != null)
+        if (hero == null || SaveSystem.Instance == null)
         {
-            if (hero.AbilityManager != null)
-            {
-                SaveSystem.Instance.UpdateAbilityData(hero.AbilityManager);
-            }
-
-            SaveSystem.Instance.SaveGame("", hero.transform.position);
+            return;
         }
-    }
 
+        if (hero.AbilityManager != null)
+        {
+            SaveSystem.Instance.UpdateAbilityData(hero.AbilityManager);
+        }
+
+        SaveSystem.Instance.SaveGame(string.Empty, hero.transform.position);
+    }
 
     private string GetCurrencyDescription(WalletManager.CoinType coinType)
     {
@@ -374,70 +380,18 @@ public sealed class ShopManager : MonoBehaviour
         {
             WalletManager.CoinType.Bronze => "Бронзовые монеты - базовая валюта\n↓ Выбрать предмет",
             WalletManager.CoinType.Silver => "Серебряные монеты - редкая валюта\n↓ Выбрать предмет",
-            WalletManager.CoinType.Gold => "3олотые монеты - ценная валюта\n↓ Выбрать предмет",
+            WalletManager.CoinType.Gold => "Золотые монеты - ценная валюта\n↓ Выбрать предмет",
+            _ => string.Empty
         };
     }
 
-    public void OpenShop()
+    private void SetShopInputMode(bool isShopOpen)
     {
-        _isShopOpen = true;
-
-        gameObject.SetActive(true);
-
-        if (_uiManager != null)
+        if (_inputProvider == null)
         {
-            _uiManager.LogCurrentState();
-        }
-        else
-        {
-            _uiManager = GetComponentInChildren<ShopUIManager>(true);
-
-            if (_uiManager == null)
-            {
-                return; 
-            }
+            _inputProvider = FindFirstObjectByType<AggregatedInputProvider>();
         }
 
-        if (_navigationController == null)
-        {
-            InitializeNavigation();
-        }
-
-        _navigationController.Reset();
-
-        if (_inputProvider != null)
-        {
-            _inputProvider.SetShopMode(true);
-        }
-        else
-        {
-            _inputProvider = FindObjectOfType<AggregatedInputProvider>();
-
-            if (_inputProvider != null)
-            {
-                _inputProvider.SetShopMode(true);
-            }
-        }
-
-        UpdateUI();
-        UpdateDescription();
+        _inputProvider?.SetShopMode(isShopOpen);
     }
-
-    public void CloseShop()
-    {
-        _isShopOpen = false;
-
-        gameObject.SetActive(false);
-
-        if (_inputProvider != null)
-        {
-            _inputProvider.SetShopMode(false);
-        }
-    }
-
-    public void NavigateUp() => HandleShopInput(Vector2.up);
-    public void NavigateDown() => HandleShopInput(Vector2.down);
-    public void NavigateLeft() => HandleShopInput(Vector2.left);
-    public void NavigateRight() => HandleShopInput(Vector2.right);
-    public void ConfirmPurchase() => TryPurchaseSelectedItem();
 }

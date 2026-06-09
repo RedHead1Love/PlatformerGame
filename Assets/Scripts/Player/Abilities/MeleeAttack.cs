@@ -6,18 +6,27 @@ namespace Player.Abilities
     public sealed class MeleeAttack
     {
         private const float AngleMultiplier = 0.5f;
+        private const int InstakillDamage = 9999;
+        private const float DefaultMultiplier = 1f;
+        private const int MinimumBonusDamage = 1;
 
         private readonly Transform _attackOrigin;
         private readonly LayerMask _enemyLayerMask;
         private readonly float _attackRange;
         private readonly float _attackAngleHalf;
         private readonly Hero _hero;
-        private OnePunchManSystem _onePunchSystem;
-        private bool _onePunchSystemChecked = false;
-        private DamageBonusService _damageBonusService;
-        private bool _serviceInitialized = false;
 
-        public MeleeAttack(Transform attackOrigin, float attackRange, float attackAngle, LayerMask enemyLayerMask, Hero hero)
+        private OnePunchManSystem _onePunchSystem;
+        private DamageBonusService _damageBonusService;
+        private bool _onePunchSystemChecked;
+        private bool _damageBonusServiceInitialized;
+
+        public MeleeAttack(
+            Transform attackOrigin,
+            float attackRange,
+            float attackAngle,
+            LayerMask enemyLayerMask,
+            Hero hero)
         {
             _attackOrigin = attackOrigin;
             _attackRange = attackRange;
@@ -26,187 +35,175 @@ namespace Player.Abilities
             _hero = hero;
         }
 
-        private void InitializeDamageBonusService()
-        {
-            if (_serviceInitialized)
-            {
-                return;
-            }
-
-
-            if (_hero == null)
-            {
-                return;
-            }
-
-            if (_hero.AbilityManager == null)
-            {
-
-                var abilityManager = _hero.GetComponent<AbilityManager>() ?? _hero.AbilityManager;
-
-                if (abilityManager == null)
-                {
-                    return;
-                }
-            }
-
-            if (_hero.AbilityManager != null)
-            {
-                _damageBonusService = new DamageBonusService(_hero.AbilityManager);
-
-                _serviceInitialized = true;
-            }
-            else
-            {
-            }
-        }
-
-        private OnePunchManSystem GetOnePunchSystem()
-        {
-            if (!_onePunchSystemChecked && _hero != null)
-            {
-                _onePunchSystem = _hero.GetComponent<OnePunchManSystem>();
-
-                _onePunchSystemChecked = true;
-            }
-
-            return _onePunchSystem;
-        }
-
         public bool Perform(int baseDamage, Vector2 attackDirection)
         {
+            if (_attackOrigin == null)
+            {
+                return false;
+            }
+
             InitializeDamageBonusService();
 
-            Collider2D[] hitColliders = Physics2D.OverlapCircleAll(_attackOrigin.position, _attackRange, _enemyLayerMask);
+            Collider2D[] hitColliders = Physics2D.OverlapCircleAll(
+                _attackOrigin.position,
+                _attackRange,
+                _enemyLayerMask);
 
             bool hitConnected = false;
-
             OnePunchManSystem onePunchSystem = GetOnePunchSystem();
 
-            foreach (Collider2D collider in hitColliders)
+            foreach (Collider2D hitCollider in hitColliders)
             {
-                if (IsWithinAttackAngle(collider.transform.position, attackDirection))
+                if (hitCollider == null || IsWithinAttackAngle(hitCollider.transform.position, attackDirection) == false)
                 {
-                    GameObject enemyObject = collider.gameObject;
-
-                    Entity enemyEntity = enemyObject.GetComponent<Entity>();
-
-                    if (enemyEntity == null)
-                    {
-                        continue;
-                    }
-
-                    bool wasInstakill = false;
-
-                    if (onePunchSystem != null && onePunchSystem.IsActive)
-                    {
-                        wasInstakill = onePunchSystem.CheckForInstakill(enemyEntity);
-                    }
-
-                    if (wasInstakill)
-                    {
-                        enemyEntity.TakeDamage(9999);
-                    }
-                    else
-                    {
-                        int finalDamage = CalculateFinalDamage(baseDamage, enemyObject);
-
-                        enemyEntity.TakeDamage(finalDamage);
-                    }
-
-                    hitConnected = true;
+                    continue;
                 }
+
+                Entity enemyEntity = hitCollider.GetComponent<Entity>();
+
+                if (enemyEntity == null)
+                {
+                    enemyEntity = hitCollider.GetComponentInParent<Entity>();
+                }
+
+                if (enemyEntity == null)
+                {
+                    continue;
+                }
+
+                ApplyDamageToEnemy(enemyEntity, hitCollider.gameObject, baseDamage, onePunchSystem);
+
+                hitConnected = true;
             }
 
             return hitConnected;
         }
 
-        private int CalculateFinalDamage(int baseDamage, GameObject enemyObject)
+        public void DrawGizmos()
         {
-            if (!_serviceInitialized || _damageBonusService == null)
+            if (_attackOrigin == null)
             {
-                return CalculateDamageDirectly(baseDamage, enemyObject);
+                return;
             }
 
-            return _damageBonusService.CalculateDamageWithBonuses(baseDamage, enemyObject);
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(_attackOrigin.position, _attackRange);
+        }
+
+        private void ApplyDamageToEnemy(
+            Entity enemyEntity,
+            GameObject enemyObject,
+            int baseDamage,
+            OnePunchManSystem onePunchSystem)
+        {
+            bool wasInstakill = onePunchSystem != null &&
+                                onePunchSystem.IsActive &&
+                                onePunchSystem.CheckForInstakill(enemyEntity);
+
+            if (wasInstakill)
+            {
+                enemyEntity.TakeDamage(InstakillDamage);
+
+                return;
+            }
+
+            int finalDamage = CalculateFinalDamage(baseDamage, enemyObject);
+
+            enemyEntity.TakeDamage(finalDamage);
+        }
+
+        private void InitializeDamageBonusService()
+        {
+            if (_damageBonusServiceInitialized || _hero == null || _hero.AbilityManager == null)
+            {
+                return;
+            }
+
+            _damageBonusService = new DamageBonusService(_hero.AbilityManager);
+            _damageBonusServiceInitialized = true;
+        }
+
+        private OnePunchManSystem GetOnePunchSystem()
+        {
+            if (_onePunchSystemChecked)
+            {
+                return _onePunchSystem;
+            }
+
+            if (_hero != null)
+            {
+                _onePunchSystem = _hero.GetComponent<OnePunchManSystem>();
+            }
+
+            _onePunchSystemChecked = true;
+
+            return _onePunchSystem;
+        }
+
+        private int CalculateFinalDamage(int baseDamage, GameObject enemyObject)
+        {
+            if (_damageBonusServiceInitialized && _damageBonusService != null)
+            {
+                return _damageBonusService.CalculateDamageWithBonuses(baseDamage, enemyObject);
+            }
+
+            return CalculateDamageDirectly(baseDamage, enemyObject);
         }
 
         private int CalculateDamageDirectly(int baseDamage, GameObject enemyObject)
         {
-            float defaultMultiplier = 1f;
-            int minimumBonusDamage = 1;
-
-            if (_hero == null || _hero.AbilityManager == null)
-            {
-                return baseDamage;
-            }
-
-            var enemyTypeComponent = enemyObject.GetComponent<EnemyTypeComponent>() ??
-                                   enemyObject.GetComponentInParent<EnemyTypeComponent>();
-
-            if (enemyTypeComponent == null)
+            if (_hero == null || _hero.AbilityManager == null || enemyObject == null)
             {
                 return baseDamage;
             }
 
             float multiplier = _hero.AbilityManager.GetDamageMultiplierForEnemy(enemyObject);
 
-            if (multiplier > defaultMultiplier)
+            if (multiplier <= DefaultMultiplier)
             {
-                int finalDamage = Mathf.CeilToInt(baseDamage * multiplier);
-
-                if (finalDamage == baseDamage)
-                {
-                    finalDamage = baseDamage + minimumBonusDamage;
-                }
-
-                CreateBonusEffect(enemyObject, multiplier);
-
-                return finalDamage;
+                return baseDamage;
             }
 
-            return baseDamage;
+            int finalDamage = Mathf.CeilToInt(baseDamage * multiplier);
+
+            if (finalDamage <= baseDamage)
+            {
+                finalDamage = baseDamage + MinimumBonusDamage;
+            }
+
+            CreateBonusEffect(enemyObject, multiplier);
+
+            return finalDamage;
         }
 
         private void CreateBonusEffect(GameObject target, float multiplier)
         {
-            float verticalOffset = 1.5f;
-            string effectName = "DirectBonusEffect";
-            float destroyDelay = 1f;
-            int fontSize = 24;
+            const float verticalOffset = 1.5f;
+            const string effectName = "DirectBonusEffect";
+            const float destroyDelay = 1f;
+            const int fontSize = 24;
 
-            GameObject textObj = new GameObject(effectName);
+            GameObject textObject = new GameObject(effectName);
 
-            textObj.transform.position = target.transform.position + Vector3.up * verticalOffset;
+            textObject.transform.position = target.transform.position + Vector3.up * verticalOffset;
 
-            TextMesh textMesh = textObj.AddComponent<TextMesh>();
+            TextMesh textMesh = textObject.AddComponent<TextMesh>();
 
             textMesh.text = $"x{multiplier}!";
-
             textMesh.color = Color.magenta;
             textMesh.fontSize = fontSize;
             textMesh.anchor = TextAnchor.MiddleCenter;
             textMesh.fontStyle = FontStyle.Bold;
 
-            Object.Destroy(textObj, destroyDelay);
+            Object.Destroy(textObject, destroyDelay);
         }
 
         private bool IsWithinAttackAngle(Vector3 enemyPosition, Vector2 attackDirection)
         {
             Vector2 directionToEnemy = (enemyPosition - _attackOrigin.position).normalized;
-
             float angle = Vector2.Angle(attackDirection, directionToEnemy);
 
             return angle <= _attackAngleHalf;
-        }
-
-        public void DrawGizmos()
-        {
-            if (_attackOrigin != null)
-            {
-                Gizmos.color = Color.red;
-                Gizmos.DrawWireSphere(_attackOrigin.position, _attackRange);
-            }
         }
     }
 }

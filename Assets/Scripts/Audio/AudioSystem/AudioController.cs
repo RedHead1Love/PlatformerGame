@@ -39,9 +39,10 @@ public sealed class AudioController : MonoBehaviour
     [SerializeField] private bool _loopFootstepSound = true;
 
     [Header("Volume Settings")]
-    [Range(0, 1)]
+    [Range(0f, 1f)]
     [SerializeField] private float _musicVolume = 0.5f;
-    [Range(0, 1)]
+
+    [Range(0f, 1f)]
     [SerializeField] private float _soundEffectsVolume = 1f;
 
     [Header("Door Sounds")]
@@ -53,7 +54,6 @@ public sealed class AudioController : MonoBehaviour
     [SerializeField] private AudioClip _armorBreakSound;
     [SerializeField] private float _armorSoundVolumeMultiplier = 1f;
 
-    private AudioSource _soundEffectsAudioSource;
     private IAudioPlayer _soundEffectsPlayer;
     private IAudioPlayer _musicPlayer;
     private IMusicPlaylist _musicPlaylist;
@@ -62,7 +62,7 @@ public sealed class AudioController : MonoBehaviour
 
     public float MusicVolume => _musicVolume;
     public float SoundEffectsVolume => _soundEffectsVolume;
-    public bool IsPlayingFootsteps => _footstepManager.IsPlaying;
+    public bool IsPlayingFootsteps => _footstepManager != null && _footstepManager.IsPlaying;
 
     private void Awake()
     {
@@ -77,20 +77,225 @@ public sealed class AudioController : MonoBehaviour
         _musicManager?.Update();
     }
 
-    #region Initialization
+    public void SetMusicVolume(float volume)
+    {
+        _musicVolume = Mathf.Clamp(volume, MinimumVolume, MaximumVolume);
+
+        _musicPlayer.SetVolume(_musicVolume);
+    }
+
+    public void SetSoundEffectsVolume(float volume)
+    {
+        _soundEffectsVolume = Mathf.Clamp(volume, MinimumVolume, MaximumVolume);
+
+        _soundEffectsPlayer.SetVolume(_soundEffectsVolume);
+        UpdateFootstepVolume();
+    }
+
+    public void StartFootsteps()
+    {
+        _footstepManager?.Start();
+    }
+
+    public void StopFootsteps()
+    {
+        _footstepManager?.Stop();
+    }
+
+    public void PauseFootsteps()
+    {
+        _footstepManager?.Pause();
+    }
+
+    public void ResumeFootsteps()
+    {
+        _footstepManager?.Resume();
+    }
+
+    public void SetFootstepSound(AudioClip newClip, bool playImmediately = false)
+    {
+        _footstepManager?.SetSound(newClip, playImmediately);
+    }
+
+    public void SetFootstepVolumeMultiplier(float multiplier)
+    {
+        _footstepVolumeMultiplier = Mathf.Clamp01(multiplier);
+
+        UpdateFootstepVolume();
+    }
+
+    public void PlayAttack1HitSound()
+    {
+        PlaySoundWithDelay(_soundConfiguration?.Attack1HitSound, _soundConfiguration != null ? _soundConfiguration.Attack1SoundDelay : 0f);
+    }
+
+    public void PlayAttack2HitSound()
+    {
+        PlaySoundWithDelay(_soundConfiguration?.Attack2HitSound, _soundConfiguration != null ? _soundConfiguration.Attack2SoundDelay : 0f);
+    }
+
+    public void PlayAttack3HitSound()
+    {
+        PlaySoundWithDelay(_soundConfiguration?.Attack3HitSound, _soundConfiguration != null ? _soundConfiguration.Attack3SoundDelay : 0f);
+    }
+
+    public void PlayAirAttackHitSound()
+    {
+        PlaySoundWithDelay(_soundConfiguration?.AirAttackHitSound, _soundConfiguration != null ? _soundConfiguration.AirAttackSoundDelay : 0f);
+    }
+
+    public void PlayAttack1MissSound()
+    {
+        PlaySoundWithDelay(_soundConfiguration?.Attack1MissSound, _soundConfiguration != null ? _soundConfiguration.Attack1SoundDelay : 0f);
+    }
+
+    public void PlayAttack2MissSound()
+    {
+        PlaySoundWithDelay(_soundConfiguration?.Attack2MissSound, _soundConfiguration != null ? _soundConfiguration.Attack2SoundDelay : 0f);
+    }
+
+    public void PlayAttack3MissSound()
+    {
+        PlaySoundWithDelay(_soundConfiguration?.Attack3MissSound, _soundConfiguration != null ? _soundConfiguration.Attack3SoundDelay : 0f);
+    }
+
+    public void PlayAirAttackMissSound()
+    {
+        PlaySoundWithDelay(_soundConfiguration?.AirAttackMissSound, _soundConfiguration != null ? _soundConfiguration.AirAttackSoundDelay : 0f);
+    }
+
+    public void PlayTakeDamageSound()
+    {
+        PlaySound(_takeDamageSound);
+    }
+
+    public void PlayDeathSound()
+    {
+        PlaySound(_deathSound);
+    }
+
+    public void PlayHealSound()
+    {
+        PlaySound(_healSound);
+    }
+
+    public void PlayVictorySound()
+    {
+        PlaySound(_victorySound);
+    }
+
+    public void PlayButtonClickSound()
+    {
+        PlaySound(_buttonClickSound);
+    }
+
+    public void PlayEnemyDetectedSound()
+    {
+        PlaySound(_enemyDetectedSound);
+    }
+
+    public void PlayBossDoorOpenSound()
+    {
+        PlaySound(_soundConfiguration?.BossDoorOpenSound);
+    }
+
+    public void PlayLightningTrapActivationSound()
+    {
+        PlaySound(_lightningTrapActivationSound);
+    }
+
+    public void PlayLightningTrapDamageSound()
+    {
+        PlaySound(_lightningTrapDamageSound);
+    }
+
+    public void PlayLightningTrapDeactivationSound()
+    {
+        PlaySound(_lightningTrapDeactivationSound);
+    }
+
+    public void PlayDefaultDoorOpenSound()
+    {
+        PlaySound(_defaultDoorOpenSound);
+    }
+
+    public void PlayDefaultDoorCloseSound()
+    {
+        PlaySound(_defaultDoorCloseSound);
+    }
+
+    public void PlayArmorDamageSound()
+    {
+        PlayOneShotWithVolume(_armorDamageSound, _armorSoundVolumeMultiplier);
+    }
+
+    public void PlayArmorBreakSound()
+    {
+        PlayOneShotWithVolume(_armorBreakSound, _armorSoundVolumeMultiplier);
+    }
+
+    public AudioClip GetLightningTrapActivationSound()
+    {
+        return _lightningTrapActivationSound;
+    }
+
+    public void PlayOneShot(AudioClip clip)
+    {
+        PlayOneShotWithVolume(clip);
+    }
+
+    public void PlayOneShotWithVolume(AudioClip clip, float volumeMultiplier = 1f)
+    {
+        if (clip == null)
+        {
+            return;
+        }
+
+        float volume = Mathf.Clamp(_soundEffectsVolume * volumeMultiplier, MinimumVolume, MaximumVolume);
+
+        _soundEffectsPlayer.PlayOneShot(clip, volume);
+    }
+
+    public void PlayBossMusic(AudioClip bossMusic)
+    {
+        _musicManager?.PlayBossMusic(bossMusic);
+    }
+
+    public void StopBossMusic()
+    {
+        _musicManager?.StopBossMusic();
+    }
+
+    public void PauseBackgroundMusic()
+    {
+        _musicManager?.PauseBackgroundMusic();
+    }
+
+    public void ResumeBackgroundMusic()
+    {
+        _musicManager?.ResumeBackgroundMusic();
+    }
+
+    public void SkipCurrentTrack()
+    {
+        _musicManager?.PlayNextTrack();
+    }
 
     private void InitializeAudioSources()
     {
-        _soundEffectsAudioSource = GetComponent<AudioSource>();
+        AudioSource soundEffectsAudioSource = GetComponent<AudioSource>();
 
-        if (_soundEffectsAudioSource == null)
+        if (soundEffectsAudioSource == null)
         {
-            _soundEffectsAudioSource = gameObject.AddComponent<AudioSource>();
+            soundEffectsAudioSource = gameObject.AddComponent<AudioSource>();
         }
 
-        _soundEffectsPlayer = new AudioPlayer(_soundEffectsAudioSource);
+        soundEffectsAudioSource.playOnAwake = false;
+
+        _soundEffectsPlayer = new AudioPlayer(soundEffectsAudioSource);
 
         AudioSource musicSource = gameObject.AddComponent<AudioSource>();
+
         musicSource.loop = false;
         musicSource.playOnAwake = false;
 
@@ -101,6 +306,7 @@ public sealed class AudioController : MonoBehaviour
     {
         _musicPlaylist = new MusicPlaylist();
         _musicPlaylist.Initialize(_backgroundMusicTracks);
+
         _musicManager = new MusicManager(_musicPlayer, _musicPlaylist);
 
         SetMusicVolume(_musicVolume);
@@ -109,113 +315,23 @@ public sealed class AudioController : MonoBehaviour
     private void InitializeFootstepManager()
     {
         _footstepManager = new FootstepManager(_footstepSound, _loopFootstepSound);
+
         UpdateFootstepVolume();
     }
 
     private void UpdateFootstepVolume()
     {
+        if (_footstepManager == null)
+        {
+            return;
+        }
+
         _footstepManager.SetVolume(_soundEffectsVolume * _footstepVolumeMultiplier);
-    }
-
-    #endregion
-
-    #region Volume Control
-
-    public void SetMusicVolume(float volume)
-    {
-        _musicVolume = Mathf.Clamp(volume, MinimumVolume, MaximumVolume);
-        _musicPlayer.SetVolume(_musicVolume);
-    }
-
-    public void SetSoundEffectsVolume(float volume)
-    {
-        _soundEffectsVolume = Mathf.Clamp(volume, MinimumVolume, MaximumVolume);
-        _soundEffectsPlayer.SetVolume(_soundEffectsVolume);
-        UpdateFootstepVolume();
-    }
-
-    #endregion
-
-    #region Footsteps
-
-    public void StartFootsteps() => _footstepManager.Start();
-    public void StopFootsteps() => _footstepManager.Stop();
-    public void PauseFootsteps() => _footstepManager.Pause();
-    public void ResumeFootsteps() => _footstepManager.Resume();
-
-    public void SetFootstepSound(AudioClip newClip, bool playImmediately = false)
-    {
-        _footstepManager.SetSound(newClip, playImmediately);
-    }
-
-    public void SetFootstepVolumeMultiplier(float multiplier)
-    {
-        _footstepVolumeMultiplier = Mathf.Clamp01(multiplier);
-        UpdateFootstepVolume();
-    }
-
-    #endregion
-
-    #region Attack Sounds (с задержкой)
-
-    public void PlayAttack1HitSound() => PlaySoundWithDelay(_soundConfiguration.Attack1HitSound, _soundConfiguration.Attack1SoundDelay);
-    public void PlayAttack2HitSound() => PlaySoundWithDelay(_soundConfiguration.Attack2HitSound, _soundConfiguration.Attack2SoundDelay);
-    public void PlayAttack3HitSound() => PlaySoundWithDelay(_soundConfiguration.Attack3HitSound, _soundConfiguration.Attack3SoundDelay);
-    public void PlayAirAttackHitSound() => PlaySoundWithDelay(_soundConfiguration.AirAttackHitSound, _soundConfiguration.AirAttackSoundDelay);
-
-    public void PlayAttack1MissSound() => PlaySoundWithDelay(_soundConfiguration.Attack1MissSound, _soundConfiguration.Attack1SoundDelay);
-    public void PlayAttack2MissSound() => PlaySoundWithDelay(_soundConfiguration.Attack2MissSound, _soundConfiguration.Attack2SoundDelay);
-    public void PlayAttack3MissSound() => PlaySoundWithDelay(_soundConfiguration.Attack3MissSound, _soundConfiguration.Attack3SoundDelay);
-    public void PlayAirAttackMissSound() => PlaySoundWithDelay(_soundConfiguration.AirAttackMissSound, _soundConfiguration.AirAttackSoundDelay);
-
-    #endregion
-
-    #region Common Sounds
-
-    public void PlayTakeDamageSound() => PlaySound(_takeDamageSound);
-    public void PlayDeathSound() => PlaySound(_deathSound);
-    public void PlayHealSound() => PlaySound(_healSound);
-    public void PlayVictorySound() => PlaySound(_victorySound);
-    public void PlayButtonClickSound() => PlaySound(_buttonClickSound);
-    public void PlayEnemyDetectedSound() => PlaySound(_enemyDetectedSound);
-
-    public void PlayBossDoorOpenSound() => PlaySound(_soundConfiguration.BossDoorOpenSound);
-    public void PlayLightningTrapActivationSound() => PlaySound(_lightningTrapActivationSound);
-    public void PlayDefaultDoorOpenSound() => PlaySound(_defaultDoorOpenSound);
-    public void PlayDefaultDoorCloseSound() => PlaySound(_defaultDoorCloseSound);
-
-    public void PlayArmorDamageSound() => PlayOneShotWithVolume(_armorDamageSound, _armorSoundVolumeMultiplier);
-    public void PlayArmorBreakSound() => PlayOneShotWithVolume(_armorBreakSound, _armorSoundVolumeMultiplier);
-
-    public AudioClip GetLightningTrapActivationSound() => _lightningTrapActivationSound;
-
-    #endregion
-
-    #region Playback Helpers
-
-    public void PlayOneShot(AudioClip clip)
-    {
-        if (clip != null)
-        {
-            _soundEffectsPlayer.PlayOneShot(clip, _soundEffectsVolume);
-        }
-    }
-
-    public void PlayOneShotWithVolume(AudioClip clip, float volumeMultiplier = 1f)
-    {
-        if (clip != null)
-        {
-            float volume = Mathf.Clamp(_soundEffectsVolume * volumeMultiplier, MinimumVolume, MaximumVolume);
-            _soundEffectsPlayer.PlayOneShot(clip, volume);
-        }
     }
 
     private void PlaySound(AudioClip clip)
     {
-        if (clip != null)
-        {
-            _soundEffectsPlayer.PlayOneShot(clip, _soundEffectsVolume);
-        }
+        PlayOneShotWithVolume(clip);
     }
 
     private void PlaySoundWithDelay(AudioClip clip, float delay)
@@ -228,30 +344,22 @@ public sealed class AudioController : MonoBehaviour
         if (delay <= Mathf.Epsilon)
         {
             PlaySound(clip);
+
+            return;
         }
-        else
-        {
-            StartCoroutine(PlayDelayedSoundCoroutine(clip, delay));
-        }
+
+        StartCoroutine(PlayDelayedSoundCoroutine(clip, delay));
     }
 
     private IEnumerator PlayDelayedSoundCoroutine(AudioClip clip, float delay)
     {
         yield return new WaitForSeconds(delay);
+
         PlaySound(clip);
     }
 
-    #endregion
-
-    #region Music Control
-
-    public void PlayBossMusic(AudioClip bossMusic) => _musicManager?.PlayBossMusic(bossMusic);
-    public void StopBossMusic() => _musicManager?.StopBossMusic();
-    public void PauseBackgroundMusic() => _musicManager?.PauseBackgroundMusic();
-    public void ResumeBackgroundMusic() => _musicManager?.ResumeBackgroundMusic();
-    public void SkipCurrentTrack() => _musicManager?.PlayNextTrack();
-
-    private void StartBackgroundMusic() => _musicManager?.StartBackgroundMusic();
-
-    #endregion
+    private void StartBackgroundMusic()
+    {
+        _musicManager?.StartBackgroundMusic();
+    }
 }

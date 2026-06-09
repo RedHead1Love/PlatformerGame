@@ -1,17 +1,20 @@
+using GameLogic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
-using GameLogic;
 
-public class UICoinDisplay : MonoBehaviour
+public sealed class UICoinDisplay : MonoBehaviour
 {
+    private const int HighAmountThreshold = 100;
+    private const int MediumAmountThreshold = 50;
+
     [System.Serializable]
-    public class CoinDisplay
+    public sealed class CoinDisplay
     {
         public WalletManager.CoinType coinType;
         public Image coinIcon;
         public TMP_Text coinText;
-        public string displayFormat = "{0}"; 
+        public string displayFormat = "{0}";
     }
 
     [Header("UI Elements")]
@@ -21,25 +24,36 @@ public class UICoinDisplay : MonoBehaviour
     {
         if (WalletManager.Instance == null)
         {
-            var walletObject = GameObject.FindObjectOfType<WalletManager>();
-
-            if (walletObject == null)
-            {
-                return;
-            }
+            return;
         }
-        else
-        {
-            WalletManager.Instance.OnCoinsChanged += OnCoinsChanged;
 
-            InitializeDisplay();
+        WalletManager.Instance.OnCoinsChanged += OnCoinsChanged;
+
+        InitializeDisplay();
+    }
+
+    private void OnDestroy()
+    {
+        if (WalletManager.Instance != null)
+        {
+            WalletManager.Instance.OnCoinsChanged -= OnCoinsChanged;
         }
     }
 
     private void InitializeDisplay()
     {
-        foreach (var display in _coinDisplays)
+        if (_coinDisplays == null || WalletManager.Instance == null)
         {
+            return;
+        }
+
+        foreach (CoinDisplay display in _coinDisplays)
+        {
+            if (display == null)
+            {
+                continue;
+            }
+
             int currentCoins = WalletManager.Instance.GetCoins(display.coinType);
 
             UpdateCoinDisplay(display, currentCoins);
@@ -48,73 +62,71 @@ public class UICoinDisplay : MonoBehaviour
 
     private void OnCoinsChanged(WalletManager.CoinType coinType, int newAmount)
     {
-        foreach (var display in _coinDisplays)
+        if (_coinDisplays == null)
         {
-            if (display.coinType == coinType)
-            {
-                UpdateCoinDisplay(display, newAmount);
+            return;
+        }
 
-                break;
+        foreach (CoinDisplay display in _coinDisplays)
+        {
+            if (display == null || display.coinType != coinType)
+            {
+                continue;
             }
+
+            UpdateCoinDisplay(display, newAmount);
+
+            break;
         }
     }
 
     private void UpdateCoinDisplay(CoinDisplay display, int amount)
     {
-        if (display.coinText != null)
-        {
-            display.coinText.text = amount.ToString();
-
-            if (!string.IsNullOrEmpty(display.displayFormat))
-            {
-                try
-                {
-                    display.coinText.text = string.Format(display.displayFormat, amount);
-                }
-                catch (System.Exception except)
-                {
-                    display.coinText.text = amount.ToString(); 
-                }
-            }
-            else
-            {
-                display.coinText.text = amount.ToString();
-            }
-
-        }
-
-        UpdateDisplayColor(display, amount);
-    }
-
-    private void UpdateDisplayColor(CoinDisplay display, int amount)
-    {
-         int highThreshold = 100;
-         int mediumThreshold = 50;
-
         if (display.coinText == null)
         {
             return;
         }
 
-        if (amount >= highThreshold)
+        display.coinText.text = FormatCoinAmount(display.displayFormat, amount);
+
+        UpdateDisplayColor(display, amount);
+    }
+
+    private string FormatCoinAmount(string displayFormat, int amount)
+    {
+        if (string.IsNullOrEmpty(displayFormat))
+        {
+            return amount.ToString();
+        }
+
+        try
+        {
+            return string.Format(displayFormat, amount);
+        }
+        catch (System.FormatException)
+        {
+            return amount.ToString();
+        }
+    }
+
+    private void UpdateDisplayColor(CoinDisplay display, int amount)
+    {
+        if (display.coinText == null)
+        {
+            return;
+        }
+
+        if (amount >= HighAmountThreshold)
         {
             display.coinText.color = Color.yellow;
         }
-        else if (amount >= mediumThreshold)
+        else if (amount >= MediumAmountThreshold)
         {
             display.coinText.color = Color.white;
         }
         else
         {
             display.coinText.color = Color.gray;
-        }
-    }
-
-    private void OnDestroy()
-    {
-        if (WalletManager.Instance != null)
-        {
-            WalletManager.Instance.OnCoinsChanged -= OnCoinsChanged;
         }
     }
 }

@@ -10,19 +10,35 @@ namespace Shared.Sensors
         [SerializeField] private float _checkRadius = DefaultCheckRadius;
         [SerializeField] private LayerMask _groundLayerMask;
 
-        public void SetLayers(LayerMask layerMask) => _groundLayerMask = layerMask;
+        public bool IsGrounded
+        {
+            get
+            {
+                Transform point = _checkPoint != null ? _checkPoint : transform;
 
-        public bool IsGrounded => Physics2D.OverlapCircle(_checkPoint.position, _checkRadius, _groundLayerMask);
+                return Physics2D.OverlapCircle(point.position, _checkRadius, _groundLayerMask);
+            }
+        }
 
-        private void OnDrawGizmosSelected()
+        private void Awake()
         {
             if (_checkPoint == null)
             {
-                return;
+                _checkPoint = transform;
             }
+        }
+
+        public void SetLayers(LayerMask layerMask)
+        {
+            _groundLayerMask = layerMask;
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            Transform point = _checkPoint != null ? _checkPoint : transform;
 
             Gizmos.color = Color.green;
-            Gizmos.DrawWireSphere(_checkPoint.position, _checkRadius);
+            Gizmos.DrawWireSphere(point.position, _checkRadius);
         }
     }
 }

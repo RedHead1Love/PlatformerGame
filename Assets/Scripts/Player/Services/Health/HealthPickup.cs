@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public sealed class HealthPickup : MonoBehaviour
@@ -5,6 +6,9 @@ public sealed class HealthPickup : MonoBehaviour
     private const string PlayerTag = "Player";
     private const float DestroyDelay = 2f;
     private const float GizmoRadius = 0.5f;
+    private const float FlashDuration = 0.2f;
+    private const int SmallHealAmount = 2;
+    private const int FrameCheckInterval = 60;
 
     [Header("Health Settings")]
     [SerializeField] private bool _isFullHeal = true;
@@ -16,58 +20,50 @@ public sealed class HealthPickup : MonoBehaviour
     [SerializeField] private Color _lockedColor = new Color(0.3f, 0.3f, 0.3f, 0.5f);
     [SerializeField] private Color _collectedColor = new Color(0.3f, 0.3f, 0.3f, 0.3f);
 
-    private bool _isCollected = false;
+    private bool _isCollected;
+    private bool _hasValidId;
+    private bool _canPickup;
 
     private SpriteRenderer _spriteRenderer;
     private Collider2D _collider;
     private Hero _playerHero;
-
-    private bool _hasValidId = false;
-    private bool _canPickup = false;
-
     private Color _originalColor;
 
     private void Start()
     {
         InitializeComponents();
+        EnsurePickupId();
         LoadCollectionState();
         FindPlayerHero();
-
-        if (string.IsNullOrEmpty(_pickupId))
-        {
-            _pickupId = GenerateUniqueId();
-
-            _hasValidId = true;
-        }
-        else
-        {
-            _hasValidId = true;
-        }
-
         UpdatePickupState();
     }
 
     private void Update()
     {
-         int frameCheckInterval = 60;
-         int frameModuloZero = 0;
-
-        if (!_isCollected && _requiresAnatomyAbility && Time.frameCount % frameCheckInterval == frameModuloZero)
+        if (_isCollected || _requiresAnatomyAbility == false)
         {
-            bool newCanPickup = CheckPickupAbility();
-
-            if (newCanPickup != _canPickup)
-            {
-                _canPickup = newCanPickup;
-
-                UpdateVisualState();
-            }
+            return;
         }
+
+        if (Time.frameCount % FrameCheckInterval != 0)
+        {
+            return;
+        }
+
+        bool canPickup = CheckPickupAbility();
+
+        if (canPickup == _canPickup)
+        {
+            return;
+        }
+
+        _canPickup = canPickup;
+        UpdateVisualState();
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (_isCollected || !other.CompareTag(PlayerTag))
+        if (_isCollected || other.CompareTag(PlayerTag) == false)
         {
             return;
         }
@@ -75,10 +71,14 @@ public sealed class HealthPickup : MonoBehaviour
         CollectHealth(other.gameObject);
     }
 
-    private void OnDrawGizmos()
+    private void OnTriggerStay2D(Collider2D other)
     {
-        Gizmos.color = _isCollected ? Color.red : (_canPickup ? Color.green : Color.yellow);
-        Gizmos.DrawWireSphere(transform.position, GizmoRadius);
+        if (_isCollected || other.CompareTag(PlayerTag) == false)
+        {
+            return;
+        }
+
+        UpdatePickupState();
     }
 
     private void OnValidate()
@@ -86,9 +86,30 @@ public sealed class HealthPickup : MonoBehaviour
         if (string.IsNullOrEmpty(_pickupId))
         {
             _pickupId = GenerateUniqueId();
-
             _hasValidId = true;
         }
+    }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = _isCollected ? Color.red : _canPickup ? Color.green : Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, GizmoRadius);
+    }
+
+    public void OnAnatomyAbilityPurchased()
+    {
+        if (_isCollected)
+        {
+            return;
+        }
+
+        UpdatePickupState();
+    }
+
+    public void RefreshPickupState()
+    {
+        FindPlayerHero();
+        UpdatePickupState();
     }
 
     private void InitializeComponents()
@@ -105,6 +126,16 @@ public sealed class HealthPickup : MonoBehaviour
         {
             _originalColor = _spriteRenderer.color;
         }
+    }
+
+    private void EnsurePickupId()
+    {
+        if (string.IsNullOrEmpty(_pickupId))
+        {
+            _pickupId = GenerateUniqueId();
+        }
+
+        _hasValidId = string.IsNullOrEmpty(_pickupId) == false;
     }
 
     private void FindPlayerHero()
@@ -124,37 +155,42 @@ public sealed class HealthPickup : MonoBehaviour
             return;
         }
 
-        if (SaveSystem.Instance != null && SaveSystem.Instance.HasSave())
+        if (SaveSystem.Instance == null || SaveSystem.Instance.HasSave() == false)
         {
-            var saveData = SaveSystem.Instance.CurrentSave;
-
-            if (saveData.collectedHealthPickups != null)
-            {
-                if (saveData.collectedHealthPickups.Contains(_pickupId))
-                {
-                    _isCollected = true;
-
-                    HidePickup();
-                }
-            }
+            return;
         }
+
+        GameSaveData saveData = SaveSystem.Instance.CurrentSave;
+
+        if (saveData?.collectedHealthPickups == null)
+        {
+            return;
+        }
+
+        if (saveData.collectedHealthPickups.Contains(_pickupId) == false)
+        {
+            return;
+        }
+
+        _isCollected = true;
+        HidePickup();
     }
 
     private string GenerateUniqueId()
     {
         string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
 
-        float posX = Mathf.Round(transform.position.x * 100f) / 100f;
-        float posY = Mathf.Round(transform.position.y * 100f) / 100f;
+        float positionX = Mathf.Round(transform.position.x * 100f) / 100f;
+        float positionY = Mathf.Round(transform.position.y * 100f) / 100f;
 
-        return $"health_{sceneName}_{gameObject.GetInstanceID()}_{posX}_{posY}";
+        return $"health_{sceneName}_{gameObject.GetInstanceID()}_{positionX}_{positionY}";
     }
 
     private void CollectHealth(GameObject player)
     {
-        UpdatePickupState(); 
+        UpdatePickupState();
 
-        if (_requiresAnatomyAbility && !_canPickup)
+        if (_requiresAnatomyAbility && _canPickup == false)
         {
             ShowLockedMessage();
 
@@ -163,7 +199,7 @@ public sealed class HealthPickup : MonoBehaviour
 
         _isCollected = true;
 
-        if (_hasValidId && !string.IsNullOrEmpty(_pickupId))
+        if (_hasValidId)
         {
             SaveSystem.Instance?.MarkHealthPickupCollected(_pickupId);
         }
@@ -177,7 +213,7 @@ public sealed class HealthPickup : MonoBehaviour
 
     private bool CheckPickupAbility()
     {
-        if (!_requiresAnatomyAbility)
+        if (_requiresAnatomyAbility == false)
         {
             return true;
         }
@@ -187,7 +223,9 @@ public sealed class HealthPickup : MonoBehaviour
             FindPlayerHero();
         }
 
-        return _playerHero != null && _playerHero.AbilityManager != null && _playerHero.AbilityManager.HasAnatomy;
+        return _playerHero != null &&
+               _playerHero.AbilityManager != null &&
+               _playerHero.AbilityManager.HasAnatomy;
     }
 
     private void UpdatePickupState()
@@ -195,7 +233,6 @@ public sealed class HealthPickup : MonoBehaviour
         if (_isCollected)
         {
             _canPickup = false;
-
             UpdateVisualState();
 
             return;
@@ -220,14 +257,9 @@ public sealed class HealthPickup : MonoBehaviour
             return;
         }
 
-        if (!_canPickup && _requiresAnatomyAbility)
-        {
-            _spriteRenderer.color = _lockedColor;
-        }
-        else
-        {
-            _spriteRenderer.color = _originalColor;
-        }
+        _spriteRenderer.color = _canPickup || _requiresAnatomyAbility == false
+            ? _originalColor
+            : _lockedColor;
     }
 
     private void ShowLockedMessage()
@@ -235,22 +267,22 @@ public sealed class HealthPickup : MonoBehaviour
         StartCoroutine(FlashRed());
     }
 
-    private System.Collections.IEnumerator FlashRed()
+    private IEnumerator FlashRed()
     {
         if (_spriteRenderer == null)
         {
             yield break;
         }
 
-        Color originalColor = _spriteRenderer.color;
+        Color previousColor = _spriteRenderer.color;
 
         _spriteRenderer.color = Color.red;
 
-        yield return new WaitForSeconds(0.2f);
+        yield return new WaitForSeconds(FlashDuration);
 
         if (_spriteRenderer != null)
         {
-            _spriteRenderer.color = originalColor;
+            _spriteRenderer.color = previousColor;
         }
     }
 
@@ -269,26 +301,38 @@ public sealed class HealthPickup : MonoBehaviour
 
     private void ApplyHealing(GameObject player)
     {
-        HealthManager healthManager = player.GetComponent<HealthManager>() ?? FindObjectOfType<HealthManager>();
+        HealthManager healthManager = player.GetComponent<HealthManager>();
 
-        if (healthManager != null)
+        if (healthManager == null)
         {
-            if (_isFullHeal)
-            {
-                healthManager.FullHeal();
-            }
-            else
-            {
-                healthManager.Heal(2);
-            }
-
-            PlayHealSound(player);
+            healthManager = FindFirstObjectByType<HealthManager>();
         }
+
+        if (healthManager == null)
+        {
+            return;
+        }
+
+        if (_isFullHeal)
+        {
+            healthManager.FullHeal();
+        }
+        else
+        {
+            healthManager.Heal(SmallHealAmount);
+        }
+
+        PlayHealSound(player);
     }
 
     private void PlayHealSound(GameObject player)
     {
         AudioController audioController = player.GetComponent<AudioController>();
+
+        if (audioController == null)
+        {
+            audioController = FindFirstObjectByType<AudioController>();
+        }
 
         audioController?.PlayHealSound();
     }
@@ -305,27 +349,5 @@ public sealed class HealthPickup : MonoBehaviour
         effectInstance.Play();
 
         Destroy(effectInstance.gameObject, DestroyDelay);
-    }
-
-    public void OnAnatomyAbilityPurchased()
-    {
-        if (!_isCollected)
-        {
-            UpdatePickupState();
-        }
-    }
-
-    public void RefreshPickupState()
-    {
-        FindPlayerHero(); 
-        UpdatePickupState();
-    }
-
-    private void OnTriggerStay2D(Collider2D other)
-    {
-        if (other.CompareTag(PlayerTag) && !_isCollected)
-        {
-            UpdatePickupState();
-        }
     }
 }

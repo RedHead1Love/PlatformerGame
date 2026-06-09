@@ -11,7 +11,7 @@ public sealed class ExecutionOrderEnforcer : MonoBehaviour
 
     private static void CreateSystemManager<T>(string managerName) where T : Component
     {
-        if (FindObjectOfType<T>() != null)
+        if (FindFirstObjectByType<T>() != null)
         {
             return;
         }

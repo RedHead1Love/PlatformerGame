@@ -10,6 +10,8 @@ namespace GeneralLogicEnemies
         private const float DefaultHorizontalForce = 2f;
         private const float DefaultTorqueForce = 100f;
         private const float DefaultBounciness = 0.3f;
+        private const float SpawnVerticalOffset = 0.5f;
+        private const int RandomRangeMaxOffset = 1;
 
         [Header("Coin Drop Settings")]
         [SerializeField] private GameObject _coinPrefab;
@@ -32,50 +34,49 @@ namespace GeneralLogicEnemies
             Initialize();
         }
 
-        private void Initialize()
+        private void OnDestroy()
         {
-            _entity = GetComponent<Entity>();
-
-            if (_entity == null)
+            if (_entity != null)
             {
-                _entity = gameObject.AddComponent<Entity>();
-            }
-
-            _entity.OnEntityDeath += HandleEntityDeath;
-        }
-
-        private void Start()
-        {
-            if (_entity == null)
-            {
-                Initialize();
+                _entity.OnEntityDeath -= HandleEntityDeath;
             }
         }
 
         public void InitializeDropSettings(GameObject coinPrefab, int minCoins, int maxCoins)
         {
             _coinPrefab = coinPrefab;
-            _minCoins = minCoins;
-            _maxCoins = maxCoins;
+            _minCoins = Mathf.Max(0, minCoins);
+            _maxCoins = Mathf.Max(_minCoins, maxCoins);
         }
 
         public void DropCoins()
         {
-            int incrementForMaxRange = 1;
-
             if (_hasDroppedCoins || _coinPrefab == null)
             {
                 return;
             }
 
-            int coinCount = Random.Range(_minCoins, _maxCoins + incrementForMaxRange);
+            int coinCount = Random.Range(_minCoins, _maxCoins + RandomRangeMaxOffset);
 
             for (int i = 0; i < coinCount; i++)
             {
-                SpawnCoin(i);
+                SpawnCoin();
             }
 
             _hasDroppedCoins = true;
+        }
+
+        private void Initialize()
+        {
+            _entity = GetComponent<Entity>();
+
+            if (_entity == null)
+            {
+                return;
+            }
+
+            _entity.OnEntityDeath -= HandleEntityDeath;
+            _entity.OnEntityDeath += HandleEntityDeath;
         }
 
         private void HandleEntityDeath(Entity entity)
@@ -83,12 +84,12 @@ namespace GeneralLogicEnemies
             DropCoins();
         }
 
-        private void SpawnCoin(int index)
+        private void SpawnCoin()
         {
-             float verticalOffset = 0.5f;
-             float rotation = 0f;
-
-            Vector3 spawnPosition = transform.position + new Vector3(Random.Range(-_dropRadius, _dropRadius), verticalOffset, rotation);
+            Vector3 spawnPosition = transform.position + new Vector3(
+                Random.Range(-_dropRadius, _dropRadius),
+                SpawnVerticalOffset,
+                0f);
 
             GameObject coin = Instantiate(_coinPrefab, spawnPosition, Quaternion.identity);
 
@@ -102,22 +103,18 @@ namespace GeneralLogicEnemies
 
         private void SetupCoinPhysics(GameObject coin)
         {
-            Rigidbody2D rigidbody = coin.GetComponent<Rigidbody2D>();
+            Rigidbody2D coinRigidbody = coin.GetComponent<Rigidbody2D>();
 
-            if (rigidbody == null)
+            if (coinRigidbody == null)
             {
-                rigidbody = coin.AddComponent<Rigidbody2D>();
-
-                SetupDefaultRigidbody(rigidbody);
+                coinRigidbody = coin.AddComponent<Rigidbody2D>();
+                SetupDefaultRigidbody(coinRigidbody);
             }
 
-            rigidbody.sharedMaterial = CreatePhysicsMaterial();
+            coinRigidbody.sharedMaterial = CreatePhysicsMaterial();
 
-            ApplyRandomForces(rigidbody);
-
-            var groundHandler = coin.AddComponent<CoinPhysicsHandler>();
-
-            groundHandler.Initialize(_groundLayer);
+            ApplyRandomForces(coinRigidbody);
+            AddPhysicsHandler(coin);
         }
 
         private PhysicsMaterial2D CreatePhysicsMaterial()
@@ -129,31 +126,39 @@ namespace GeneralLogicEnemies
             };
         }
 
-        private void SetupDefaultRigidbody(Rigidbody2D rigidbody)
+        private void SetupDefaultRigidbody(Rigidbody2D coinRigidbody)
         {
-            rigidbody.bodyType = RigidbodyType2D.Dynamic;
-            rigidbody.gravityScale = 3f;
-            rigidbody.mass = 0.1f;
-            rigidbody.drag = 0.5f;
-            rigidbody.angularDrag = 0.05f;
-            rigidbody.constraints = RigidbodyConstraints2D.FreezeRotation;
-            rigidbody.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+            coinRigidbody.bodyType = RigidbodyType2D.Dynamic;
+            coinRigidbody.gravityScale = 3f;
+            coinRigidbody.mass = 0.1f;
+            coinRigidbody.drag = 0.5f;
+            coinRigidbody.angularDrag = 0.05f;
+            coinRigidbody.constraints = RigidbodyConstraints2D.FreezeRotation;
+            coinRigidbody.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
         }
 
-        private void ApplyRandomForces(Rigidbody2D rigidbody)
+        private void ApplyRandomForces(Rigidbody2D coinRigidbody)
         {
-            float minHorizontalDirection = -1f;
-            float maxHorizontalDirection = 1f;
+            float horizontalDirection = Random.Range(-1f, 1f);
+            Vector2 force = new Vector2(horizontalDirection * _horizontalForce, _verticalForce);
 
-            float horizontalDir = Random.Range(-minHorizontalDirection, maxHorizontalDirection);
-
-            Vector2 force = new Vector2(horizontalDir * _horizontalForce, _verticalForce);
-
-            rigidbody.AddForce(force, ForceMode2D.Impulse);
+            coinRigidbody.AddForce(force, ForceMode2D.Impulse);
 
             float torque = Random.Range(-_torqueForce, _torqueForce);
 
-            rigidbody.AddTorque(torque, ForceMode2D.Impulse);
+            coinRigidbody.AddTorque(torque, ForceMode2D.Impulse);
+        }
+
+        private void AddPhysicsHandler(GameObject coin)
+        {
+            CoinPhysicsHandler physicsHandler = coin.GetComponent<CoinPhysicsHandler>();
+
+            if (physicsHandler == null)
+            {
+                physicsHandler = coin.AddComponent<CoinPhysicsHandler>();
+            }
+
+            physicsHandler.Initialize(_groundLayer);
         }
     }
 }

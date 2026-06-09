@@ -1,5 +1,4 @@
 using DoorControl;
-using System.Collections.Generic;
 using UnityEngine;
 
 public sealed class GameStateManager : MonoBehaviour
@@ -9,6 +8,7 @@ public sealed class GameStateManager : MonoBehaviour
     private const string KeySpawnedSuffix = "_KeySpawned";
     private const string KeyPrefix = "Key_";
     private const string GameSavedKey = "GameSaved";
+
     private const int TrueValue = 1;
     private const int FalseValue = 0;
     private const int MaxChestCount = 100;
@@ -20,47 +20,25 @@ public sealed class GameStateManager : MonoBehaviour
         InitializeSingleton();
     }
 
-    private void InitializeSingleton()
-    {
-        if (Instance == null)
-        {
-            Instance = this;
-
-            DontDestroyOnLoad(gameObject);
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
-    }
-
     public static bool IsChestOpened(string chestId)
     {
-        string key = GetChestOpenedKey(chestId);
-
-        return PlayerPrefs.GetInt(key, FalseValue) == TrueValue;
+        return PlayerPrefs.GetInt(GetChestOpenedKey(chestId), FalseValue) == TrueValue;
     }
 
     public static void SetChestOpened(string chestId, bool isOpened)
     {
-        string key = GetChestOpenedKey(chestId);
-
-        PlayerPrefs.SetInt(key, isOpened ? TrueValue : FalseValue);
+        PlayerPrefs.SetInt(GetChestOpenedKey(chestId), isOpened ? TrueValue : FalseValue);
         PlayerPrefs.Save();
     }
 
     public static bool IsKeySpawned(string chestId)
     {
-        string key = GetKeySpawnedKey(chestId);
-
-        return PlayerPrefs.GetInt(key, FalseValue) == TrueValue;
+        return PlayerPrefs.GetInt(GetKeySpawnedKey(chestId), FalseValue) == TrueValue;
     }
 
     public static void SetKeySpawned(string chestId, bool isSpawned)
     {
-        string key = GetKeySpawnedKey(chestId);
-
-        PlayerPrefs.SetInt(key, isSpawned ? TrueValue : FalseValue);
+        PlayerPrefs.SetInt(GetKeySpawnedKey(chestId), isSpawned ? TrueValue : FalseValue);
         PlayerPrefs.Save();
     }
 
@@ -69,6 +47,7 @@ public sealed class GameStateManager : MonoBehaviour
         ClearAllKeyData();
         ClearAllChestData();
 
+        PlayerPrefs.DeleteKey(GameSavedKey);
         PlayerPrefs.Save();
     }
 
@@ -80,33 +59,33 @@ public sealed class GameStateManager : MonoBehaviour
 
     public static bool HasKey(KeyColor color)
     {
-        string key = GetKeyColorKey(color);
-
-        return PlayerPrefs.GetInt(key, FalseValue) == TrueValue;
+        return PlayerPrefs.GetInt(GetKeyColorKey(color), FalseValue) == TrueValue;
     }
 
     public static void AddKey(KeyColor color)
     {
-        string key = GetKeyColorKey(color);
-
-        PlayerPrefs.SetInt(key, TrueValue);
+        PlayerPrefs.SetInt(GetKeyColorKey(color), TrueValue);
         PlayerPrefs.Save();
     }
 
     public static void RemoveKey(KeyColor color)
     {
-        string key = GetKeyColorKey(color);
-
-        PlayerPrefs.DeleteKey(key);
+        PlayerPrefs.DeleteKey(GetKeyColorKey(color));
         PlayerPrefs.Save();
     }
 
-    public static void DebugKeys()
+    private void InitializeSingleton()
     {
-        foreach (KeyColor color in System.Enum.GetValues(typeof(KeyColor)))
+        if (Instance == null)
         {
-            bool hasKey = HasKey(color);
+            Instance = this;
+
+            DontDestroyOnLoad(gameObject);
+
+            return;
         }
+
+        Destroy(gameObject);
     }
 
     private static string GetChestOpenedKey(string chestId)

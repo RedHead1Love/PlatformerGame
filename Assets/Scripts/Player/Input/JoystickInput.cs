@@ -3,10 +3,11 @@ using Player.Input;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class JoystickInput : MonoBehaviour, IInputProvider
+public sealed class JoystickInput : MonoBehaviour, IInputProvider
 {
     [SerializeField] private JoystickController _joystick;
 
+    [Header("Gameplay Buttons")]
     [SerializeField] private Button _jumpButton;
     [SerializeField] private Button _attackButton;
     [SerializeField] private Button _secondaryAttackButton;
@@ -19,52 +20,159 @@ public class JoystickInput : MonoBehaviour, IInputProvider
     [SerializeField] private Button _menuButton;
     [SerializeField] private Button _shopOrChestButton;
 
-    private bool _isJumpPressed = false;
-    private bool _isAttackPressed = false;
-    private bool _isSecondaryAttackPressed = false;
-    private bool _isSlidePressed = false;
-    private bool _isLiftPressed = false;
-    private bool _isDropPressed = false;
-    private bool _isOpenShopOrChestPressed = false;
+    private bool _isJumpPressed;
+    private bool _isAttackPressed;
+    private bool _isSecondaryAttackPressed;
+    private bool _isSlidePressed;
+    private bool _isLiftPressed;
+    private bool _isDropPressed;
+    private bool _isMapPressed;
+    private bool _isMenuPressed;
+    private bool _isOpenShopOrChestPressed;
 
-    private bool _isInputBlocked = false;
-    private bool _isShopOpen = false;
+    private bool _isInputBlocked;
+    private bool _isShopOpen;
 
-    private bool _isMapPressed = false;
-    private bool _isMenuPressed = false;
+    public float HorizontalAxis
+    {
+        get
+        {
+            if (IsGameplayInputBlocked())
+            {
+                return 0f;
+            }
+
+            if (_joystick == null)
+            {
+                return 0f;
+            }
+
+            return _joystick.InputDirection.x;
+        }
+    }
+
+    public bool IsJumpPressed => IsGameplayInputBlocked() == false && _isJumpPressed;
+    public bool IsAttackPressed => IsGameplayInputBlocked() == false && _isAttackPressed;
+    public bool IsSecondaryAttackPressed => IsGameplayInputBlocked() == false && _isSecondaryAttackPressed;
+    public bool IsSlidePressed => IsGameplayInputBlocked() == false && _isSlidePressed;
+    public bool IsLiftPressed => IsGameplayInputBlocked() == false && _isLiftPressed;
+    public bool IsDropHeroPressed => IsGameplayInputBlocked() == false && _isDropPressed;
+    public bool IsOpenMapPressed => IsGameplayInputBlocked() == false && _isMapPressed;
+    public bool IsMenuPressed => _isInputBlocked == false && _isMenuPressed;
+    public bool IsOpenShopOrChestPressed => _isInputBlocked == false && _isOpenShopOrChestPressed;
 
     private void OnEnable()
     {
-        if (_jumpButton != null)
-            _jumpButton.onClick.AddListener(() => _isJumpPressed = true);
-
-        if (_attackButton != null)
-            _attackButton.onClick.AddListener(() => _isAttackPressed = true);
-
-        if (_secondaryAttackButton != null)
-            _secondaryAttackButton.onClick.AddListener(() => _isSecondaryAttackPressed = true);
-
-        if (_slideButton != null)
-            _slideButton.onClick.AddListener(() => _isSlidePressed = true);
-
-        if (_liftButton != null)
-            _liftButton.onClick.AddListener(() => _isLiftPressed = true);
-
-        if (_dropButton != null)
-            _dropButton.onClick.AddListener(() => _isDropPressed = true);
-
-        if (_mapButton != null)
-            _mapButton.onClick.AddListener(() => _isMapPressed = true);
-
-        if (_menuButton != null)
-            _menuButton.onClick.AddListener(() => _isMenuPressed = true);
-
-        if (_shopOrChestButton != null)
-            _shopOrChestButton.onClick.AddListener(() => _isOpenShopOrChestPressed = true);
-
+        SubscribeButtons();
     }
 
     private void LateUpdate()
+    {
+        ResetFrameInput();
+    }
+
+    private void OnDisable()
+    {
+        UnsubscribeButtons();
+    }
+
+    private void SubscribeButtons()
+    {
+        if (_jumpButton != null)
+        {
+            _jumpButton.onClick.AddListener(OnJumpButtonClicked);
+        }
+
+        if (_attackButton != null)
+        {
+            _attackButton.onClick.AddListener(OnAttackButtonClicked);
+        }
+
+        if (_secondaryAttackButton != null)
+        {
+            _secondaryAttackButton.onClick.AddListener(OnSecondaryAttackButtonClicked);
+        }
+
+        if (_slideButton != null)
+        {
+            _slideButton.onClick.AddListener(OnSlideButtonClicked);
+        }
+
+        if (_liftButton != null)
+        {
+            _liftButton.onClick.AddListener(OnLiftButtonClicked);
+        }
+
+        if (_dropButton != null)
+        {
+            _dropButton.onClick.AddListener(OnDropButtonClicked);
+        }
+
+        if (_mapButton != null)
+        {
+            _mapButton.onClick.AddListener(OnMapButtonClicked);
+        }
+
+        if (_menuButton != null)
+        {
+            _menuButton.onClick.AddListener(OnMenuButtonClicked);
+        }
+
+        if (_shopOrChestButton != null)
+        {
+            _shopOrChestButton.onClick.AddListener(OnShopOrChestButtonClicked);
+        }
+    }
+
+    private void UnsubscribeButtons()
+    {
+        if (_jumpButton != null)
+        {
+            _jumpButton.onClick.RemoveListener(OnJumpButtonClicked);
+        }
+
+        if (_attackButton != null)
+        {
+            _attackButton.onClick.RemoveListener(OnAttackButtonClicked);
+        }
+
+        if (_secondaryAttackButton != null)
+        {
+            _secondaryAttackButton.onClick.RemoveListener(OnSecondaryAttackButtonClicked);
+        }
+
+        if (_slideButton != null)
+        {
+            _slideButton.onClick.RemoveListener(OnSlideButtonClicked);
+        }
+
+        if (_liftButton != null)
+        {
+            _liftButton.onClick.RemoveListener(OnLiftButtonClicked);
+        }
+
+        if (_dropButton != null)
+        {
+            _dropButton.onClick.RemoveListener(OnDropButtonClicked);
+        }
+
+        if (_mapButton != null)
+        {
+            _mapButton.onClick.RemoveListener(OnMapButtonClicked);
+        }
+
+        if (_menuButton != null)
+        {
+            _menuButton.onClick.RemoveListener(OnMenuButtonClicked);
+        }
+
+        if (_shopOrChestButton != null)
+        {
+            _shopOrChestButton.onClick.RemoveListener(OnShopOrChestButtonClicked);
+        }
+    }
+
+    private void ResetFrameInput()
     {
         _isJumpPressed = false;
         _isAttackPressed = false;
@@ -77,39 +185,63 @@ public class JoystickInput : MonoBehaviour, IInputProvider
         _isOpenShopOrChestPressed = false;
     }
 
-    public float HorizontalAxis
+    private bool IsGameplayInputBlocked()
     {
-        get
-        {
-            if (_isInputBlocked || _isShopOpen) return 0f;
-            if (_joystick != null) return _joystick.InputDirection.x;
-            return 0f;
-        }
+        return _isInputBlocked || _isShopOpen;
     }
 
-    public bool IsJumpPressed => (!_isInputBlocked && !_isShopOpen) && _isJumpPressed;
-    public bool IsAttackPressed => (!_isInputBlocked && !_isShopOpen) && _isAttackPressed;
-    public bool IsSecondaryAttackPressed => (!_isInputBlocked && !_isShopOpen) && _isSecondaryAttackPressed;
-    public bool IsSlidePressed => (!_isInputBlocked && !_isShopOpen) && _isSlidePressed;
-    public bool IsLiftPressed => (!_isInputBlocked && !_isShopOpen) && _isLiftPressed;
-    public bool IsDropHeroPressed => (!_isInputBlocked && !_isShopOpen) && _isDropPressed;
-    public bool IsOpenMapPressed => (!_isInputBlocked && !_isShopOpen) && _isMapPressed;
-    public bool IsMenuPressed => (!_isInputBlocked) && _isMenuPressed;
-    public bool IsOpenShopOrChestPressed => (!_isInputBlocked) && _isOpenShopOrChestPressed;
-
-    public void BlockInput(bool block) => _isInputBlocked = block;
-    public void SetShopMode(bool isShopOpen) => _isShopOpen = isShopOpen;
-
-    private void OnDestroy()
+    private void OnJumpButtonClicked()
     {
-        if (_jumpButton != null) _jumpButton.onClick.RemoveAllListeners();
-        if (_attackButton != null) _attackButton.onClick.RemoveAllListeners();
-        if (_secondaryAttackButton != null) _secondaryAttackButton.onClick.RemoveAllListeners();
-        if (_slideButton != null) _slideButton.onClick.RemoveAllListeners();
-        if (_liftButton != null) _liftButton.onClick.RemoveAllListeners();
-        if (_dropButton != null) _dropButton.onClick.RemoveAllListeners();
-        if (_mapButton != null) _mapButton.onClick.RemoveAllListeners();
-        if (_menuButton != null) _menuButton.onClick.RemoveAllListeners();
-        if (_shopOrChestButton != null) _shopOrChestButton.onClick.RemoveAllListeners();
+        _isJumpPressed = true;
+    }
+
+    private void OnAttackButtonClicked()
+    {
+        _isAttackPressed = true;
+    }
+
+    private void OnSecondaryAttackButtonClicked()
+    {
+        _isSecondaryAttackPressed = true;
+    }
+
+    private void OnSlideButtonClicked()
+    {
+        _isSlidePressed = true;
+    }
+
+    private void OnLiftButtonClicked()
+    {
+        _isLiftPressed = true;
+    }
+
+    private void OnDropButtonClicked()
+    {
+        _isDropPressed = true;
+    }
+
+    private void OnMapButtonClicked()
+    {
+        _isMapPressed = true;
+    }
+
+    private void OnMenuButtonClicked()
+    {
+        _isMenuPressed = true;
+    }
+
+    private void OnShopOrChestButtonClicked()
+    {
+        _isOpenShopOrChestPressed = true;
+    }
+
+    public void BlockInput(bool isBlocked)
+    {
+        _isInputBlocked = isBlocked;
+    }
+
+    public void SetShopMode(bool isShopOpen)
+    {
+        _isShopOpen = isShopOpen;
     }
 }

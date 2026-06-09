@@ -5,15 +5,14 @@ using YG;
 
 public sealed class SimplePauseMenu : MonoBehaviour
 {
-    private const KeyCode PauseKey = KeyCode.Escape;
     private const string MainMenuSceneName = "MainMenu";
     private const float NormalTimeScale = 1f;
     private const float PausedTimeScale = 0f;
 
-    private bool _isPaused = false;
-    private Rect _pauseWindowRect;
-
     [SerializeField] private IInputProvider _inputProvider;
+
+    private bool _isPaused;
+    private Rect _pauseWindowRect;
 
     private void Start()
     {
@@ -31,7 +30,7 @@ public sealed class SimplePauseMenu : MonoBehaviour
 
     private void OnGUI()
     {
-        if (!_isPaused)
+        if (_isPaused == false)
         {
             return;
         }
@@ -46,20 +45,27 @@ public sealed class SimplePauseMenu : MonoBehaviour
 
     private void FindInputProvider()
     {
-        if (_inputProvider == null)
+        if (_inputProvider != null)
         {
-            if (YG2.envir.isDesktop)
-            {
-                _inputProvider = FindObjectOfType<OldInputProvider>();
-            }
-            else if (YG2.envir.isMobile)
-            {
-                _inputProvider = FindObjectOfType<JoystickInput>();
-            }
+            return;
+        }
+
+        _inputProvider = FindFirstObjectByType<AggregatedInputProvider>();
+
+        if (_inputProvider == null && YG2.envir.isDesktop)
+        {
+            _inputProvider = FindFirstObjectByType<OldInputProvider>();
+        }
+
+        if (_inputProvider == null && YG2.envir.isMobile)
+        {
+            _inputProvider = FindFirstObjectByType<JoystickInput>();
         }
 
         if (_inputProvider == null)
-            Debug.LogWarning("IInputProvider not found! Pause menu won't work");
+        {
+            Debug.LogWarning("IInputProvider not found! Pause menu won't work.");
+        }
     }
 
     private void InitializePauseWindow()
@@ -67,8 +73,8 @@ public sealed class SimplePauseMenu : MonoBehaviour
         float windowWidth = 200f;
         float windowHeight = 150f;
 
-        float centerX = Screen.width / 2 - windowWidth / 2;
-        float centerY = Screen.height / 2 - windowHeight / 2;
+        float centerX = Screen.width / 2f - windowWidth / 2f;
+        float centerY = Screen.height / 2f - windowHeight / 2f;
 
         _pauseWindowRect = new Rect(centerX, centerY, windowWidth, windowHeight);
     }
@@ -88,14 +94,12 @@ public sealed class SimplePauseMenu : MonoBehaviour
     private void PauseGame()
     {
         _isPaused = true;
-
         Time.timeScale = PausedTimeScale;
     }
 
     private void ResumeGame()
     {
         _isPaused = false;
-
         Time.timeScale = NormalTimeScale;
     }
 
@@ -128,6 +132,6 @@ public sealed class SimplePauseMenu : MonoBehaviour
             ExitToMainMenu();
         }
 
-        GUI.DragWindow(new Rect(0, 0, dragAreaWidth, dragAreaHeight));
+        GUI.DragWindow(new Rect(0f, 0f, dragAreaWidth, dragAreaHeight));
     }
 }

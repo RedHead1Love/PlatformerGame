@@ -11,9 +11,9 @@ namespace Player
         [SerializeField] private int _maxLives = 6;
 
         [Header("Movement Settings")]
-        [SerializeField] private float _movementSpeed = 3.0f;
-        [SerializeField] private float _jumpForce = 8.0f;
-        [SerializeField] private float _slideSpeed = 5.0f;
+        [SerializeField] private float _movementSpeed = 3f;
+        [SerializeField] private float _jumpForce = 8f;
+        [SerializeField] private float _slideSpeed = 5f;
         [SerializeField] private float _slideDuration = DefaultSlideDuration;
 
         [Header("Combat Settings")]
@@ -33,10 +33,12 @@ namespace Player
         public float JumpForce => _jumpForce;
         public float SlideSpeed => _slideSpeed;
         public float SlideDuration => _slideDuration;
+
         public int Attack1Damage => _attack1Damage;
         public int Attack2Damage => _attack2Damage;
         public int SuperAttackDamage => _superAttackDamage;
         public int AirAttackDamage => _airAttackDamage;
+
         public Vector2 SlideColliderOffset => _slideColliderOffset;
         public Vector2 SlideColliderSize => _slideColliderSize;
         public Vector2 StandColliderOffset => _standColliderOffset;

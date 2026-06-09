@@ -1,5 +1,4 @@
 using GameLogic;
-using UnityEngine;
 
 public interface IShopItem
 {
@@ -7,10 +6,10 @@ public interface IShopItem
     string DisplayName { get; }
     string Description { get; }
     int Price { get; }
-
     WalletManager.CoinType CurrencyType { get; }
 
     bool IsSold { get; set; }
+
     bool CanBePurchased();
     void Purchase();
 }

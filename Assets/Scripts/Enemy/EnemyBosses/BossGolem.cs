@@ -6,10 +6,9 @@ using UnityEngine;
 namespace MiddleBossLogic
 {
     [RequireComponent(typeof(Animator))]
+    [RequireComponent(typeof(Rigidbody2D))]
     public sealed class BossGolem : Entity, IDamageable
     {
-        private const float MinimumHealthThreshold = 0f;
-        private const float DefaultWaitDuration = 0f;
         private const float DestroyDelay = 1f;
         private const float DefaultSoundEffectVolume = 1f;
 
@@ -41,28 +40,31 @@ namespace MiddleBossLogic
         private Rigidbody2D _rigidbody;
         private Transform _playerTransform;
         private AudioController _audioController;
-        private BossHealthBar _healthBar;
 
         private float _nextAttackTime;
         private bool _isActivated;
         private bool _isHit;
         private bool _isDead;
         private bool _wasAttackSuccessful;
-        private int StateParameterHash => Animator.StringToHash("state");
+
+        private static readonly int StateParameterHash = Animator.StringToHash("state");
 
         private BossGolemState CurrentAnimatorState
         {
-            get => (BossGolemState)_animator.GetInteger(StateParameterHash);
-            set => _animator.SetInteger(StateParameterHash, (int)value);
+            get => _animator != null ? (BossGolemState)_animator.GetInteger(StateParameterHash) : BossGolemState.Idle;
+            set
+            {
+                if (_animator != null)
+                {
+                    _animator.SetInteger(StateParameterHash, (int)value);
+                }
+            }
         }
 
-        private void Start()
+        protected override void Awake()
         {
-            _healthBar = GetComponent<BossHealthBar>();
-        }
+            base.Awake();
 
-        private void Awake()
-        {
             _animator = GetComponent<Animator>();
             _rigidbody = GetComponent<Rigidbody2D>();
             _audioController = FindFirstObjectByType<AudioController>();
@@ -75,12 +77,12 @@ namespace MiddleBossLogic
                 return;
             }
 
-            if (!_isActivated && IsPlayerOnTriggerPoint())
+            if (_isActivated == false)
             {
-                Activate();
+                TryActivate();
             }
 
-            if (!_isActivated || _isHit)
+            if (_isActivated == false || _isHit || _playerTransform == null)
             {
                 return;
             }
@@ -89,7 +91,7 @@ namespace MiddleBossLogic
 
             if (distanceToPlayer <= _attackRange && Time.time >= _nextAttackTime)
             {
-                StartCoroutine(AttackRoutine());
+                StartAttack();
 
                 return;
             }
@@ -97,61 +99,17 @@ namespace MiddleBossLogic
             MoveTowardPlayer();
         }
 
-        private bool IsPlayerOnTriggerPoint()
+        private void OnDestroy()
         {
-            return Physics2D.OverlapCircle(_groundCheckPoint.position, _detectionRadius, _playerLayer);
-        }
-
-        private void Activate()
-        {
-            _isActivated = true;
-
-            _playerTransform = Physics2D.OverlapCircle(_groundCheckPoint.position, _detectionRadius, _playerLayer).transform;
-
-            StartBossMusic();
-        }
-
-        private void StartBossMusic()
-        {
-            if (_audioController != null && _bossMusic != null)
+            if (_isActivated)
             {
-                _audioController.PlayBossMusic(_bossMusic);
+                StopBossMusic();
             }
-        }
-
-        private void StopBossMusic()
-        {
-            _audioController?.StopBossMusic();
-        }
-
-        private void MoveTowardPlayer()
-        {
-            float direction = Mathf.Sign(_playerTransform.position.x - transform.position.x);
-
-            _rigidbody.velocity = new Vector2(direction * _moveSpeed, _rigidbody.velocity.y);
-
-            transform.localScale = new Vector3(
-                Mathf.Abs(transform.localScale.x) * direction,
-                transform.localScale.y,
-                transform.localScale.z
-            );
-
-            CurrentAnimatorState = BossGolemState.Move;
-        }
-
-        private IEnumerator AttackRoutine()
-        {
-            _rigidbody.velocity = Vector2.zero;
-            CurrentAnimatorState = BossGolemState.Attack;
-
-            _wasAttackSuccessful = false;
-
-            yield break;
         }
 
         public override void TakeDamage(int amount)
         {
-            if (_isDead || _isHit)
+            if (_isDead || _isHit || amount <= 0)
             {
                 return;
             }
@@ -160,30 +118,6 @@ namespace MiddleBossLogic
             StartCoroutine(HitRoutine());
 
             base.TakeDamage(amount);
-        }
-
-        public void DealDamage()
-        {
-            Collider2D hit = Physics2D.OverlapCircle(transform.position, _attackRange, _playerLayer);
-
-            if (hit != null && hit.TryGetComponent(out Hero hero))
-            {
-                hero.TakeDamage(_attackDamage);
-
-                _wasAttackSuccessful = true;
-            }
-        }
-
-        private IEnumerator HitRoutine()
-        {
-            _isHit = true;
-
-            _rigidbody.velocity = Vector2.zero;
-            CurrentAnimatorState = BossGolemState.Hit;
-
-            yield return new WaitForSeconds(_hitStunDuration);
-
-            _isHit = false;
         }
 
         public override void Die()
@@ -196,7 +130,8 @@ namespace MiddleBossLogic
             _isDead = true;
             _isHit = true;
 
-            _rigidbody.velocity = Vector2.zero;
+            StopMovement();
+            CurrentAnimatorState = BossGolemState.Hit;
 
             PlayDeathSound();
             StopBossMusic();
@@ -206,69 +141,54 @@ namespace MiddleBossLogic
             Destroy(gameObject, DestroyDelay);
         }
 
-        private void PlayAttackSound()
+        public void DealDamage()
         {
-            if (_audioController == null)
-            {
-                return;
-            }
-
-            AudioClip clipToPlay = _attackSound;
-
-            if (clipToPlay != null)
-            {
-                _audioController.PlayOneShotWithVolume(clipToPlay, _soundEffectVolume);
-            }
-        }
-
-        private void PlayAttackMissSound()
-        {
-            if (_attackMissSound != null && _audioController != null)
-            {
-                _audioController.PlayOneShotWithVolume(_attackMissSound, _soundEffectVolume);
-            }
-        }
-
-        private void PlayTakeDamageSound()
-        {
-            if (_audioController == null)
-            {
-                return;
-            }
-
-            AudioClip clipToPlay = _takeDamageSound;
-
-            if (clipToPlay != null)
-            {
-                _audioController.PlayOneShotWithVolume(clipToPlay, _soundEffectVolume);
-            }
-        }
-
-        private void PlayDeathSound()
-        {
-            if (_deathSound != null && _audioController != null)
-            {
-                _audioController.PlayOneShotWithVolume(_deathSound, _soundEffectVolume);
-            }
+            AnimEvent_AttackHit();
         }
 
         public void AnimEvent_AttackHit()
         {
             PlayAttackSound();
-            DealDamage();
+
+            Collider2D hit = Physics2D.OverlapCircle(
+                transform.position,
+                _attackRange,
+                _playerLayer);
+
+            if (hit == null)
+            {
+                _wasAttackSuccessful = false;
+
+                return;
+            }
+
+            IDamageable damageable = hit.GetComponent<IDamageable>();
+
+            if (damageable == null)
+            {
+                damageable = hit.GetComponentInParent<IDamageable>();
+            }
+
+            if (damageable == null)
+            {
+                _wasAttackSuccessful = false;
+
+                return;
+            }
+
+            damageable.TakeDamage(_attackDamage);
+            _wasAttackSuccessful = true;
         }
 
         public void AnimEvent_AttackEnd()
         {
-            if (!_wasAttackSuccessful)
+            if (_wasAttackSuccessful == false)
             {
                 PlayAttackMissSound();
             }
 
             _nextAttackTime = Time.time + _attackCooldown;
-
             CurrentAnimatorState = BossGolemState.Idle;
-
             _wasAttackSuccessful = false;
         }
 
@@ -287,20 +207,122 @@ namespace MiddleBossLogic
             Destroy(gameObject);
         }
 
-        private void OnDestroy()
+        private void TryActivate()
         {
-            if (_isActivated)
+            if (_groundCheckPoint == null)
             {
-                StopBossMusic();
+                return;
+            }
+
+            Collider2D playerCollider = Physics2D.OverlapCircle(
+                _groundCheckPoint.position,
+                _detectionRadius,
+                _playerLayer);
+
+            if (playerCollider == null)
+            {
+                return;
+            }
+
+            _isActivated = true;
+            _playerTransform = playerCollider.transform;
+
+            StartBossMusic();
+        }
+
+        private void MoveTowardPlayer()
+        {
+            if (_playerTransform == null || _rigidbody == null)
+            {
+                return;
+            }
+
+            float direction = Mathf.Sign(_playerTransform.position.x - transform.position.x);
+
+            _rigidbody.velocity = new Vector2(direction * _moveSpeed, _rigidbody.velocity.y);
+            transform.localScale = new Vector3(
+                Mathf.Abs(transform.localScale.x) * direction,
+                transform.localScale.y,
+                transform.localScale.z);
+
+            CurrentAnimatorState = BossGolemState.Move;
+        }
+
+        private void StartAttack()
+        {
+            StopMovement();
+
+            CurrentAnimatorState = BossGolemState.Attack;
+            _wasAttackSuccessful = false;
+        }
+
+        private IEnumerator HitRoutine()
+        {
+            _isHit = true;
+
+            StopMovement();
+            CurrentAnimatorState = BossGolemState.Hit;
+
+            yield return new WaitForSeconds(_hitStunDuration);
+
+            _isHit = false;
+        }
+
+        private void StartBossMusic()
+        {
+            if (_audioController != null && _bossMusic != null)
+            {
+                _audioController.PlayBossMusic(_bossMusic);
+            }
+        }
+
+        private void StopBossMusic()
+        {
+            _audioController?.StopBossMusic();
+        }
+
+        private void StopMovement()
+        {
+            if (_rigidbody != null)
+            {
+                _rigidbody.velocity = Vector2.zero;
+            }
+        }
+
+        private void PlayAttackSound()
+        {
+            PlaySound(_attackSound, _soundEffectVolume);
+        }
+
+        private void PlayAttackMissSound()
+        {
+            PlaySound(_attackMissSound, _soundEffectVolume);
+        }
+
+        private void PlayTakeDamageSound()
+        {
+            PlaySound(_takeDamageSound, _soundEffectVolume);
+        }
+
+        private void PlayDeathSound()
+        {
+            PlaySound(_deathSound, _soundEffectVolume);
+        }
+
+        private void PlaySound(AudioClip clip, float volumeMultiplier)
+        {
+            if (clip != null && _audioController != null)
+            {
+                _audioController.PlayOneShotWithVolume(clip, volumeMultiplier);
             }
         }
 
         private enum BossGolemState
         {
-            Idle,
-            Move,
-            Attack,
-            Hit
+            Idle = 0,
+            Move = 1,
+            Attack = 2,
+            Hit = 3
         }
     }
 }

@@ -23,7 +23,8 @@ public sealed class LevelLoader : MonoBehaviour
     private const string CommandUnlockBossDamageBonus = "16";
 
     private const float LoadDelay = 0.1f;
-    private const float WaitAfterApply = 0.2f;
+    private const float RestoreShopDelay = 0.1f;
+    private const float WorldDataApplyDelay = 0.2f;
 
     private void Start()
     {
@@ -34,13 +35,12 @@ public sealed class LevelLoader : MonoBehaviour
     {
         yield return new WaitForSeconds(LoadDelay);
 
-        if (!CanLoadGame())
+        if (CanLoadGame() == false)
         {
             yield break;
         }
 
         GameSaveData saveData = SaveSystem.Instance.CurrentSave;
-
         string currentSceneName = SceneManager.GetActiveScene().name;
 
         if (currentSceneName != saveData.sceneName)
@@ -60,7 +60,7 @@ public sealed class LevelLoader : MonoBehaviour
 
     private IEnumerator ApplySavedGameData(GameSaveData saveData)
     {
-        Hero player = FindObjectOfType<Hero>();
+        Hero player = FindFirstObjectByType<Hero>();
 
         if (player == null)
         {
@@ -72,16 +72,139 @@ public sealed class LevelLoader : MonoBehaviour
         ApplyPlayerData(player, spawnPosition, saveData);
         ApplyAbilityData(player, saveData);
 
-        yield return new WaitForSeconds(0.1f);
+        yield return new WaitForSeconds(RestoreShopDelay);
 
         RestoreShopPurchases(saveData);
 
-        yield return new WaitForSeconds(WaitAfterApply);
+        yield return new WaitForSeconds(WorldDataApplyDelay);
 
         ApplyGameWorldData(saveData);
         ApplyCoinData(saveData);
 
         SaveSystem.Instance?.UpdateAbilityData(player.AbilityManager);
+    }
+
+    private void ApplyPlayerData(Hero player, Vector3 spawnPosition, GameSaveData saveData)
+    {
+        if (saveData == null)
+        {
+            return;
+        }
+
+        if (spawnPosition != Vector3.zero)
+        {
+            player.transform.position = spawnPosition;
+        }
+
+        if (saveData.playerHealth > 0)
+        {
+            player.SetHealth(saveData.playerHealth);
+        }
+
+        ApplyArmorData(player, saveData);
+    }
+
+    private void ApplyArmorData(Hero player, GameSaveData saveData)
+    {
+        ArmorManager armorManager = player.GetComponent<ArmorManager>();
+
+        if (armorManager == null)
+        {
+            return;
+        }
+
+        if (saveData.abilityData != null && saveData.abilityData.hasArmor)
+        {
+            armorManager.UnlockArmorAbility();
+        }
+
+        armorManager.LoadArmorFromSave(saveData.playerArmor);
+    }
+
+    private void ApplyAbilityData(Hero player, GameSaveData saveData)
+    {
+        if (player == null || player.AbilityManager == null || saveData?.abilityData == null)
+        {
+            return;
+        }
+
+        AbilityManager abilityManager = player.AbilityManager;
+        AbilitySaveData abilityData = saveData.abilityData;
+
+        if (abilityData.hasDash)
+        {
+            abilityManager.UnlockDash();
+        }
+
+        if (abilityData.hasAnatomy)
+        {
+            abilityManager.UnlockAnatomy();
+        }
+
+        if (abilityData.hasMap)
+        {
+            abilityManager.UnlockMap();
+        }
+
+        if (abilityData.hasArmor)
+        {
+            abilityManager.UnlockArmor();
+        }
+
+        if (abilityData.hasSwampDamageBonus)
+        {
+            abilityManager.UnlockSwampDamageBonus();
+        }
+
+        if (abilityData.hasSkeletonDamageBonus)
+        {
+            abilityManager.UnlockSkeletonDamageBonus();
+        }
+
+        if (abilityData.hasDemonDamageBonus)
+        {
+            abilityManager.UnlockDemonDamageBonus();
+        }
+
+        if (abilityData.hasSpiderDamageBonus)
+        {
+            abilityManager.UnlockSpiderDamageBonus();
+        }
+
+        if (abilityData.hasZombieDamageBonus)
+        {
+            abilityManager.UnlockZombieDamageBonus();
+        }
+
+        if (abilityData.hasBossDamageBonus)
+        {
+            abilityManager.UnlockBossDamageBonus();
+        }
+
+        if (abilityData.hasPassiveHealthRegeneration)
+        {
+            abilityManager.UnlockPassiveHealthRegeneration();
+        }
+
+        if (abilityData.hasRobocopRegeneration)
+        {
+            abilityManager.UnlockRobocopRegeneration();
+        }
+
+        if (abilityData.hasVampireAbility)
+        {
+            abilityManager.UnlockVampireAbility();
+        }
+
+        if (abilityData.hasOnePunchManAbility)
+        {
+            abilityManager.UnlockOnePunchManAbility();
+        }
+
+        if (abilityData.isLastChanceActive)
+        {
+            abilityManager.PurchaseLastChance();
+        }
     }
 
     private void RestoreShopPurchases(GameSaveData saveData)
@@ -91,39 +214,40 @@ public sealed class LevelLoader : MonoBehaviour
             return;
         }
 
-        var shopManager = FindObjectOfType<ShopManager>();
+        ShopManager shopManager = FindFirstObjectByType<ShopManager>();
 
         if (shopManager != null)
         {
-            var shopItemsField = typeof(ShopManager).GetField("_shopItems",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-            if (shopItemsField != null)
-            {
-                var shopItems = shopItemsField.GetValue(shopManager) as List<ShopItemData>;
-
-                if (shopItems != null)
-                {
-                    foreach (var itemId in saveData.purchasedItemIds)
-                    {
-                        var item = shopItems.Find(i => i.ItemId == itemId);
-
-                        if (item != null && itemId != "6" && itemId != "7")
-                        {
-                            item.IsSold = true;
-                        }
-                    }
-                }
-            }
+            MarkPurchasedItemsAsSold(shopManager.ShopItems, saveData.purchasedItemIds);
         }
 
-        var hero = FindObjectOfType<Hero>();
+        Hero hero = FindFirstObjectByType<Hero>();
 
-        if (hero != null && hero.AbilityManager != null)
+        if (hero == null || hero.AbilityManager == null)
         {
-            foreach (var itemId in saveData.purchasedItemIds)
+            return;
+        }
+
+        foreach (string itemId in saveData.purchasedItemIds)
+        {
+            ApplyAbilityEffect(itemId, hero.AbilityManager, hero);
+        }
+    }
+
+    private void MarkPurchasedItemsAsSold(List<ShopItemData> shopItems, List<string> purchasedItemIds)
+    {
+        if (shopItems == null)
+        {
+            return;
+        }
+
+        foreach (string itemId in purchasedItemIds)
+        {
+            ShopItemData item = shopItems.Find(shopItem => shopItem.ItemId == itemId);
+
+            if (item != null && itemId != "6" && itemId != "7")
             {
-                ApplyAbilityEffect(itemId, hero.AbilityManager, hero);
+                item.IsSold = true;
             }
         }
     }
@@ -137,220 +261,94 @@ public sealed class LevelLoader : MonoBehaviour
 
         switch (itemId)
         {
-            case CommandUnlockMap: 
-                if (!abilityManager.HasMap)
-                {
-                    abilityManager.UnlockMap(); 
-                }
-
+            case CommandUnlockMap:
+                abilityManager.UnlockMap();
                 break;
 
             case CommandUnlockDash:
-                if (!abilityManager.HasDash)
-                {
-                    abilityManager.UnlockDash();
-                }
-
+                abilityManager.UnlockDash();
                 break;
 
-            case CommandUnlockAnatomy: 
-                if (!abilityManager.HasAnatomy)
-                {
-                    abilityManager.UnlockAnatomy(); 
-                }
-
+            case CommandUnlockAnatomy:
+                abilityManager.UnlockAnatomy();
                 break;
 
             case CommandUnlockArmor:
-                if (!abilityManager.HasArmor)
-                {
-                    abilityManager.UnlockArmor();
-                }
-
-                var armorManager = hero.GetComponent<ArmorManager>();
-
-                armorManager?.UnlockArmorAbility();
-
+                abilityManager.UnlockArmor();
+                hero.GetComponent<ArmorManager>()?.UnlockArmorAbility();
                 break;
 
-            case CommandUnlockSwampDamageBonus: 
-                if (!abilityManager.HasSwampDamageBonus)
-                {
-                    abilityManager.UnlockSwampDamageBonus();
-                }
-
+            case CommandUnlockSwampDamageBonus:
+                abilityManager.UnlockSwampDamageBonus();
                 break;
 
-            case CommandUnlockSkeletonDamageBonus: 
-                if (!abilityManager.HasSkeletonDamageBonus)
-                {
-                    abilityManager.UnlockSkeletonDamageBonus(); 
-                }
-
+            case CommandUnlockSkeletonDamageBonus:
+                abilityManager.UnlockSkeletonDamageBonus();
                 break;
 
-            case CommandUnlockDemonDamageBonus: 
-                if (!abilityManager.HasDemonDamageBonus)
-                {
-                    abilityManager.UnlockDemonDamageBonus(); 
-                }
-
+            case CommandUnlockDemonDamageBonus:
+                abilityManager.UnlockDemonDamageBonus();
                 break;
 
             case CommandUnlockSpiderDamageBonus:
-                if (!abilityManager.HasSpiderDamageBonus)
-                {
-                    abilityManager.UnlockSpiderDamageBonus();
-                }
-
+                abilityManager.UnlockSpiderDamageBonus();
                 break;
 
-            case CommandUnlockZombieDamageBonus: 
-                if (!abilityManager.HasZombieDamageBonus)
-                {
-                    abilityManager.UnlockZombieDamageBonus(); 
-                }
-
+            case CommandUnlockZombieDamageBonus:
+                abilityManager.UnlockZombieDamageBonus();
                 break;
 
-            case CommandUnlockPassiveHealthRegeneration: 
-                if (!abilityManager.HasPassiveHealthRegeneration)
-                {
-                    abilityManager.UnlockPassiveHealthRegeneration();
-                }
-
+            case CommandUnlockPassiveHealthRegeneration:
+                abilityManager.UnlockPassiveHealthRegeneration();
                 break;
 
-            case CommandUnlockRobocopRegeneration: 
-                if (!abilityManager.HasRobocopRegeneration)
-                {
-                    abilityManager.UnlockRobocopRegeneration();
-                }
-
+            case CommandUnlockRobocopRegeneration:
+                abilityManager.UnlockRobocopRegeneration();
                 break;
 
             case CommandUnlockVampireAbility:
-                if (!abilityManager.HasVampireAbility)
-                {
-                    abilityManager.UnlockVampireAbility();
-                }
-
+                abilityManager.UnlockVampireAbility();
                 break;
 
-            case CommandUnlockOnePunchManAbility: 
-                if (!abilityManager.HasOnePunchManAbility)
-                {
-                    abilityManager.UnlockOnePunchManAbility(); 
-                }
-
+            case CommandUnlockOnePunchManAbility:
+                abilityManager.UnlockOnePunchManAbility();
                 break;
 
-            case CommandUnlockBossDamageBonus: 
-                if (!abilityManager.HasBossDamageBonus)
-                {
-                    abilityManager.UnlockBossDamageBonus();
-                }
-
+            case CommandUnlockBossDamageBonus:
+                abilityManager.UnlockBossDamageBonus();
                 break;
         }
     }
 
-    private void ApplyAbilityData(Hero player, GameSaveData saveData)
+    private void ApplyGameWorldData(GameSaveData saveData)
     {
-        if (player == null || saveData?.abilityData == null)
+        if (saveData == null)
         {
             return;
         }
 
-        if (saveData.abilityData.hasDash)
+        KeyCollection keyCollection = FindFirstObjectByType<KeyCollection>();
+
+        if (keyCollection != null && saveData.collectedKeys != null)
         {
-            player.AbilityManager?.UnlockDash();
+            keyCollection.LoadCollectedKeys(saveData.collectedKeys);
         }
 
-        if (saveData.abilityData.hasAnatomy)
-        {
-            player.AbilityManager?.UnlockAnatomy();
-        }
-
-        if (saveData.abilityData.hasMap)
-        {
-            player.AbilityManager?.UnlockMap();
-        }
-
-        if (saveData.abilityData.hasArmor)
-        {
-            player.AbilityManager?.UnlockArmor();
-
-            var armorManager = player.GetComponent<ArmorManager>();
-            armorManager?.LoadArmorFromSave(saveData.playerArmor);
-        }
-
-        if (saveData.abilityData.hasSwampDamageBonus)
-        {
-            player.AbilityManager?.UnlockSwampDamageBonus();
-        }
-
-        if (saveData.abilityData.hasSkeletonDamageBonus)
-        {
-            player.AbilityManager?.UnlockSkeletonDamageBonus();
-        }
-
-        if (saveData.abilityData.hasDemonDamageBonus)
-        {
-            player.AbilityManager?.UnlockDemonDamageBonus();
-        }
-
-        if (saveData.abilityData.hasSpiderDamageBonus)
-        {
-            player.AbilityManager?.UnlockSpiderDamageBonus();
-        }
-
-        if (saveData.abilityData.hasZombieDamageBonus)
-        {
-            player.AbilityManager?.UnlockZombieDamageBonus();
-        }
-
-        if (saveData.abilityData.hasBossDamageBonus)
-        {
-            player.AbilityManager?.UnlockBossDamageBonus();
-        }
-
-        if (saveData.abilityData.hasPassiveHealthRegeneration)
-        {
-            player.AbilityManager?.UnlockPassiveHealthRegeneration();
-        }
-
-        if (saveData.abilityData.hasRobocopRegeneration)
-        {
-            player.AbilityManager?.UnlockRobocopRegeneration();
-        }
-
-        if (saveData.abilityData.hasVampireAbility)
-        {
-            player.AbilityManager?.UnlockVampireAbility();
-        }
-
-        if (saveData.abilityData.hasOnePunchManAbility)
-        {
-            player.AbilityManager?.UnlockOnePunchManAbility();
-        }
-
-        if (saveData.abilityData.isLastChanceActive)
-        {
-            player.AbilityManager?.PurchaseLastChance();
-        }
+        EnemyManager.Instance?.SyncWithSaveData();
     }
 
     private void ApplyCoinData(GameSaveData saveData)
     {
-        if (saveData == null || !saveData.coins.isInitialized)
+        if (saveData == null || saveData.coins.isInitialized == false)
         {
             return;
         }
 
-        if (PersistentWallet.Instance != null)
+        PersistentWallet.Instance?.LoadCoinsFromSave(saveData.coins);
+
+        if (GameLogic.WalletManager.Instance != null)
         {
-            PersistentWallet.Instance.LoadCoinsFromSave(saveData.coins);
+            GameLogic.WalletManager.Instance.LoadFromSaveData(saveData.coins);
         }
     }
 
@@ -361,7 +359,7 @@ public sealed class LevelLoader : MonoBehaviour
             return Vector3.zero;
         }
 
-        if (!string.IsNullOrEmpty(saveData.checkpointId))
+        if (string.IsNullOrEmpty(saveData.checkpointId) == false)
         {
             Vector3 checkpointPosition = FindCheckpointPosition(saveData.checkpointId);
 
@@ -374,60 +372,6 @@ public sealed class LevelLoader : MonoBehaviour
         return saveData.playerPosition;
     }
 
-    private void ApplyPlayerData(Hero player, Vector3 spawnPosition, GameSaveData saveData)
-    {
-        int deathTreshold = 0;
-
-        if (saveData == null)
-        {
-            return;
-        }
-
-        if (spawnPosition != Vector3.zero)
-        {
-            player.transform.position = spawnPosition;
-        }
-
-        if (saveData.playerHealth > deathTreshold)
-        {
-            player.SetHealth(saveData.playerHealth);
-        }
-
-        ApplyArmorData(player, saveData);
-    }
-
-    private void ApplyArmorData(Hero player, GameSaveData saveData)
-    {
-        if (saveData == null)
-        {
-            return;
-        }
-
-        ArmorManager armorManager = player.GetComponent<ArmorManager>();
-
-        if (armorManager != null)
-        {
-            armorManager.LoadArmorFromSave(saveData.playerArmor);
-        }
-    }
-
-    private void ApplyGameWorldData(GameSaveData saveData)
-    {
-        if (saveData == null)
-        {
-            return;
-        }
-
-        KeyCollection keyCollection = FindObjectOfType<KeyCollection>();
-
-        if (keyCollection != null && saveData.collectedKeys != null)
-        {
-            keyCollection.LoadCollectedKeys(saveData.collectedKeys);
-        }
-
-        EnemyManager.Instance?.SyncWithSaveData();
-    }
-
     private Vector3 FindCheckpointPosition(string checkpointId)
     {
         if (string.IsNullOrEmpty(checkpointId))
@@ -435,9 +379,9 @@ public sealed class LevelLoader : MonoBehaviour
             return Vector3.zero;
         }
 
-        Checkpoint[] allCheckpoints = FindObjectsOfType<Checkpoint>();
+        Checkpoint[] checkpoints = FindObjectsByType<Checkpoint>(FindObjectsSortMode.None);
 
-        foreach (Checkpoint checkpoint in allCheckpoints)
+        foreach (Checkpoint checkpoint in checkpoints)
         {
             if (checkpoint.GetCheckpointId() == checkpointId)
             {

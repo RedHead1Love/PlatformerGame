@@ -17,7 +17,6 @@ public sealed class EnemyCombatController : Entity, IDamageable
     private const string PlayerLayerName = "Player";
     private const float BoxRotationAngle = 0f;
     private const float MovementThreshold = 0.01f;
-    private const float MinimumDistanceToResetPlayer = 0.01f;
     private const float DirectionThreshold = 0f;
     private const float MaxDetectionRadiusMultiplier = 1.5f;
 
@@ -61,40 +60,16 @@ public sealed class EnemyCombatController : Entity, IDamageable
     private EnemyAnimationState _currentAnimationState = EnemyAnimationState.Idle;
 
     public new int MaxLives => _maxHealth;
-    public new bool IsAlive => _currentHealth > 0;
+    public new bool IsAlive => _currentHealth > 0 && IsDead == false;
 
     protected override void Awake()
     {
         base.Awake();
+
         InitializeHealth();
         InitializeComponents();
+
         _lastPosition = transform.position;
-    }
-
-    private void Start()
-    {
-        ValidateAnimatorParameters();
-    }
-
-    private void InitializeHealth()
-    {
-        _currentHealth = _maxHealth;
-    }
-
-    private void InitializeComponents()
-    {
-        _animator ??= GetComponent<Animator>();
-        _rigidbody ??= GetComponent<Rigidbody2D>();
-        _patrolAI ??= GetComponent<PatrolAI>();
-        _audioController ??= GetComponent<EnemyAudioController>();
-    }
-
-    private void ValidateAnimatorParameters()
-    {
-        if (_animator == null || _animator.runtimeAnimatorController == null)
-        {
-            return;
-        }
     }
 
     private void Update()
@@ -111,367 +86,24 @@ public sealed class EnemyCombatController : Entity, IDamageable
         UpdateFacingDirection();
     }
 
-    private void UpdateMovementState()
-    {
-        if (_rigidbody != null)
-        {
-            _isMoving = Mathf.Abs(_rigidbody.velocity.x) > MovementThreshold;
-        }
-        else
-        {
-            Vector2 currentPosition = transform.position;
-            _isMoving = Vector2.Distance(currentPosition, _lastPosition) > MinimumDistanceToResetPlayer;
-            _lastPosition = currentPosition;
-        }
-    }
-
-    private void UpdatePlayerDetection()
-    {
-        if (_playerTransform != null && _playerHealthManager != null)
-        {
-            float distanceToPlayer = Vector2.Distance(transform.position, _playerTransform.position);
-
-            if (distanceToPlayer > _detectionRadius * MaxDetectionRadiusMultiplier)
-            {
-                _playerTransform = null;
-                _playerHealthManager = null;
-                _isPlayerInRange = false;
-            }
-            else
-            {
-                _isPlayerInRange = distanceToPlayer <= AttackCheckRadius;
-            }
-            return;
-        }
-
-        Collider2D playerCollider = Physics2D.OverlapCircle(transform.position, _detectionRadius, _playerLayerMask);
-
-        if (playerCollider != null && playerCollider.CompareTag("Player"))
-        {
-            _playerTransform = playerCollider.transform;
-            _playerHealthManager = playerCollider.GetComponent<HealthManager>();
-
-            float distanceToPlayer = Vector2.Distance(transform.position, _playerTransform.position);
-            _isPlayerInRange = distanceToPlayer <= AttackCheckRadius;
-        }
-    }
-
-    private void UpdateCombatState()
-    {
-        if (_isHurt || _isAttacking || _playerTransform == null || _playerHealthManager == null)
-        {
-            return;
-        }
-
-        if (_isPlayerInRange && CanAttack())
-        {
-            ExecuteAttack();
-        }
-    }
-
-    private void UpdateFacingDirection()
-    {
-        if (_isHurt || _isAttacking || IsDead)
-        {
-            return;
-        }
-
-        if (_rigidbody != null && Mathf.Abs(_rigidbody.velocity.x) > MovementThreshold)
-        {
-            _facingDirection = _rigidbody.velocity.x > DirectionThreshold ? Vector2.right : Vector2.left;
-            UpdateSpriteFlip();
-        }
-        else if (_playerTransform != null)
-        {
-            float directionToPlayer = _playerTransform.position.x - transform.position.x;
-            _facingDirection = directionToPlayer > DirectionThreshold ? Vector2.right : Vector2.left;
-            UpdateSpriteFlip();
-        }
-    }
-
-    private void UpdateSpriteFlip()
-    {
-        float absScaleX = Mathf.Abs(transform.localScale.x);
-
-        if (_facingDirection.x > DirectionThreshold)
-        {
-            transform.localScale = new Vector3(absScaleX, transform.localScale.y, transform.localScale.z);
-        }
-        else if (_facingDirection.x < DirectionThreshold)
-        {
-            transform.localScale = new Vector3(-absScaleX, transform.localScale.y, transform.localScale.z);
-        }
-    }
-
-    private bool CanAttack()
-    {
-        return Time.time - _lastAttackTime >= _attackCooldown;
-    }
-
-    private void ExecuteAttack()
-    {
-        if (_attackCoroutine != null)
-        {
-            StopCoroutine(_attackCoroutine);
-        }
-
-        _attackCoroutine = StartCoroutine(PerformAttackSequence());
-        _lastAttackTime = Time.time;
-    }
-
-    private IEnumerator PerformAttackSequence()
-    {
-        const float MinimumRemainingTime = 0.1f;
-
-        _isAttacking = true;
-
-        EnemyAnimationState selectedAttack = SelectAttackType();
-        ForceAnimationState(selectedAttack);
-
-        yield return new WaitForSeconds(DamageAnimationDelay);
-
-        float animationLength = GetCurrentAnimationLength();
-        float remainingTime = Mathf.Max(animationLength - DamageAnimationDelay, MinimumRemainingTime);
-
-        yield return new WaitForSeconds(remainingTime);
-
-        _isAttacking = false;
-        _attackCoroutine = null;
-
-        if (_isPlayerInRange && CanAttack())
-        {
-            ExecuteAttack();
-        }
-    }
-
-    public void OnAttackAnimationEvent()
-    {
-        Vector2 attackCenter = CalculateAttackCenter(_attackOffset);
-        int damage = _currentAnimationState == EnemyAnimationState.StrongAttack
-            ? _strongAttackDamage
-            : _attackDamage;
-
-        bool hitConnected = CheckForHit(attackCenter, _attackSize, damage);
-        PlayAttackSound(hitConnected);
-    }
-
-    private Vector2 CalculateAttackCenter(Vector2 offset)
-    {
-        float directionSign = Mathf.Sign(transform.localScale.x);
-        return (Vector2)transform.position + new Vector2(directionSign * offset.x, offset.y);
-    }
-
-    private bool CheckForHit(Vector2 center, Vector2 size, int damage)
-    {
-        Collider2D[] hits = Physics2D.OverlapBoxAll(center, size, BoxRotationAngle, LayerMask.GetMask(PlayerLayerName));
-        bool hitConnected = false;
-
-        foreach (Collider2D hit in hits)
-        {
-            if (hit.TryGetComponent(out HealthManager healthManager))
-            {
-                healthManager.TakeDamage(damage);
-                hitConnected = true;
-            }
-        }
-
-        return hitConnected;
-    }
-
-    private void PlayAttackSound(bool hitConnected)
-    {
-        if (_audioController == null)
-        {
-            return;
-        }
-
-        if (_currentAnimationState == EnemyAnimationState.StrongAttack)
-        {
-            if (hitConnected)
-            {
-                _audioController.PlaySpecialAttackHitSound();
-            }
-            else
-            {
-                _audioController.PlaySpecialAttackMissSound();
-            }
-        }
-        else
-        {
-            if (hitConnected)
-            {
-                _audioController.PlayAttackHitSound();
-            }
-            else
-            {
-                _audioController.PlayAttackMissSound();
-            }
-        }
-    }
-
-    private EnemyAnimationState SelectAttackType()
-    {
-        if (Random.value <= StrongAttackProbability)
-        {
-            return EnemyAnimationState.StrongAttack;
-        }
-
-        int attackIndex = Random.Range(0, RegularAttackAnimationCount);
-
-        return attackIndex switch
-        {
-            0 => EnemyAnimationState.Attack,
-            1 => EnemyAnimationState.Attack2,
-            2 => EnemyAnimationState.Kick,
-            3 => EnemyAnimationState.DoubleAttack,
-            _ => EnemyAnimationState.Attack
-        };
-    }
-
-    private float GetCurrentAnimationLength()
-    {
-        const float DefaultAnimationLength = 1f;
-        const int MinimumValidLength = 0;
-
-        if (_animator == null)
-        {
-            return DefaultAnimationLength;
-        }
-
-        AnimatorStateInfo stateInfo = _animator.GetCurrentAnimatorStateInfo(0);
-        return stateInfo.length > MinimumValidLength ? stateInfo.length : DefaultAnimationLength;
-    }
-
-    private void UpdateAnimationState()
-    {
-        if (IsDead || _isAttacking || _isHurt)
-        {
-            return;
-        }
-
-        EnemyAnimationState newState = DetermineAppropriateAnimation();
-
-        if (newState != _currentAnimationState)
-        {
-            ChangeAnimationState(newState);
-        }
-    }
-
-    private EnemyAnimationState DetermineAppropriateAnimation()
-    {
-        if (IsDead)
-        {
-            return EnemyAnimationState.Dead;
-        }
-
-        if (_isAttacking || _isHurt)
-        {
-            return _currentAnimationState;
-        }
-
-        return _isMoving ? EnemyAnimationState.Walk : EnemyAnimationState.Idle;
-    }
-
-    private void ChangeAnimationState(EnemyAnimationState newState)
-    {
-        if (_currentAnimationState == newState)
-        {
-            return;
-        }
-
-        _currentAnimationState = newState;
-
-        if (_animator != null && _animator.isActiveAndEnabled)
-        {
-            _animator.SetInteger(AnimationStateParameterName, (int)newState);
-        }
-    }
-
-    private void ForceAnimationState(EnemyAnimationState newState)
-    {
-        const int AnimationLayer = 0;
-        const float NormalizedTime = 0f;
-
-        _currentAnimationState = newState;
-
-        if (_animator != null && _animator.isActiveAndEnabled)
-        {
-            _animator.SetInteger(AnimationStateParameterName, (int)newState);
-            _animator.Play(newState.ToString(), AnimationLayer, NormalizedTime);
-        }
-    }
-
-    private void OnTriggerEnter2D(Collider2D other)
-    {
-        if (IsDead || _isHurt)
-        {
-            return;
-        }
-
-        if (other.CompareTag("Weapon") || other.CompareTag("PlayerAttack"))
-        {
-            TakeDamage(1);
-        }
-    }
-
     public override void TakeDamage(int amount)
     {
-        const int MinimumHealthValue = 0;
-
-        if (IsDead || _isHurt)
+        if (IsDead || _isTakingDamage || amount <= 0)
         {
             return;
         }
 
-        _currentHealth -= amount;
-        _audioController?.PlayHurtSound();
+        _currentHealth = Mathf.Max(0, _currentHealth - amount);
+        lives = _currentHealth;
 
-        StartCoroutine(PlayHitState());
-
-        if (_currentHealth <= MinimumHealthValue)
+        if (_currentHealth <= 0)
         {
             Die();
-        }
-    }
 
-    private IEnumerator PlayHitState()
-    {
-        _isHurt = true;
-
-        if (_attackCoroutine != null)
-        {
-            StopCoroutine(_attackCoroutine);
-            _isAttacking = false;
-            _attackCoroutine = null;
+            return;
         }
 
-        bool wasPatrolAIEnabled = _patrolAI != null && _patrolAI.enabled;
-
-        if (_patrolAI != null)
-        {
-            _patrolAI.enabled = false;
-        }
-
-        if (_rigidbody != null)
-        {
-            _rigidbody.velocity = Vector2.zero;
-        }
-
-        ForceAnimationState(EnemyAnimationState.Hit);
-
-        yield return new WaitForSeconds(_hurtInvulnerabilityDuration);
-
-        if (_patrolAI != null && wasPatrolAIEnabled && !IsDead)
-        {
-            _patrolAI.enabled = true;
-        }
-
-        _isHurt = false;
-
-        if (!IsDead && !_isAttacking)
-        {
-            UpdateAnimationState();
-        }
+        StartCoroutine(TakeDamageRoutine());
     }
 
     public override void Die()
@@ -481,78 +113,304 @@ public sealed class EnemyCombatController : Entity, IDamageable
             return;
         }
 
-        IsDead = true;
         _audioController?.PlayDeathSound();
 
-        if (_attackCoroutine != null)
+        base.Die();
+    }
+
+    private void InitializeHealth()
+    {
+        _currentHealth = _maxHealth;
+        lives = _currentHealth;
+    }
+
+    private void InitializeComponents()
+    {
+        if (_animator == null)
         {
-            StopCoroutine(_attackCoroutine);
-            _attackCoroutine = null;
+            _animator = GetComponent<Animator>();
         }
+
+        if (_rigidbody == null)
+        {
+            _rigidbody = GetComponent<Rigidbody2D>();
+        }
+
+        if (_patrolAI == null)
+        {
+            _patrolAI = GetComponent<PatrolAI>();
+        }
+
+        if (_audioController == null)
+        {
+            _audioController = GetComponent<EnemyAudioController>();
+        }
+    }
+
+    private void UpdateMovementState()
+    {
+        if (_rigidbody != null)
+        {
+            _isMoving = Mathf.Abs(_rigidbody.velocity.x) > MovementThreshold;
+
+            return;
+        }
+
+        Vector2 currentPosition = transform.position;
+
+        _isMoving = Vector2.Distance(currentPosition, _lastPosition) > MovementThreshold;
+        _lastPosition = currentPosition;
+    }
+
+    private void UpdatePlayerDetection()
+    {
+        if (_playerTransform != null && _playerHealthManager != null)
+        {
+            float distanceToPlayer = Vector2.Distance(transform.position, _playerTransform.position);
+
+            _isPlayerInRange = distanceToPlayer <= _detectionRadius * MaxDetectionRadiusMultiplier &&
+                               _playerHealthManager.CurrentHealth > 0;
+
+            return;
+        }
+
+        Collider2D playerCollider = Physics2D.OverlapCircle(
+            transform.position,
+            _detectionRadius,
+            _playerLayerMask);
+
+        if (playerCollider == null)
+        {
+            _isPlayerInRange = false;
+
+            return;
+        }
+
+        _playerTransform = playerCollider.transform;
+        _playerHealthManager = playerCollider.GetComponent<HealthManager>();
+
+        if (_playerHealthManager == null)
+        {
+            _playerHealthManager = playerCollider.GetComponentInParent<HealthManager>();
+        }
+
+        _isPlayerInRange = true;
+    }
+
+    private void UpdateCombatState()
+    {
+        if (_isPlayerInRange == false || _playerTransform == null)
+        {
+            return;
+        }
+
+        float distanceToPlayer = Vector2.Distance(transform.position, _playerTransform.position);
+
+        if (distanceToPlayer > AttackCheckRadius || Time.time < _lastAttackTime + _attackCooldown)
+        {
+            return;
+        }
+
+        StartAttack();
+    }
+
+    private void StartAttack()
+    {
+        _isAttacking = true;
+        _lastAttackTime = Time.time;
+
+        bool useStrongAttack = Random.value <= StrongAttackProbability;
+        int animationIndex = useStrongAttack
+            ? RegularAttackAnimationCount
+            : Random.Range(0, RegularAttackAnimationCount);
+
+        SetAnimationState((EnemyAnimationState)animationIndex);
+
+        _attackCoroutine = StartCoroutine(AttackRoutine(useStrongAttack));
+    }
+
+    private IEnumerator AttackRoutine(bool useStrongAttack)
+    {
+        yield return new WaitForSeconds(DamageAnimationDelay);
+
+        int damage = useStrongAttack ? _strongAttackDamage : _attackDamage;
+        bool hitConnected = ApplyAttackDamage(damage);
+
+        PlayAttackSound(hitConnected, useStrongAttack);
+
+        yield return new WaitForSeconds(HitAnimationDuration);
+
+        _isAttacking = false;
+    }
+
+    private bool ApplyAttackDamage(int damage)
+    {
+        Vector2 attackCenter = CalculateAttackCenter();
+
+        Collider2D playerCollider = Physics2D.OverlapBox(
+            attackCenter,
+            _attackSize,
+            BoxRotationAngle,
+            LayerMask.GetMask(PlayerLayerName));
+
+        if (playerCollider == null)
+        {
+            return false;
+        }
+
+        IDamageable damageable = playerCollider.GetComponent<IDamageable>();
+
+        if (damageable == null)
+        {
+            damageable = playerCollider.GetComponentInParent<IDamageable>();
+        }
+
+        if (damageable == null)
+        {
+            return false;
+        }
+
+        damageable.TakeDamage(damage);
+
+        return true;
+    }
+
+    private Vector2 CalculateAttackCenter()
+    {
+        return (Vector2)transform.position + new Vector2(
+            _attackOffset.x * _facingDirection.x,
+            _attackOffset.y);
+    }
+
+    private IEnumerator TakeDamageRoutine()
+    {
+        _isTakingDamage = true;
+        _isHurt = true;
+
+        _audioController?.PlayHurtSound();
+        SetAnimationState(EnemyAnimationState.Hurt);
 
         if (_patrolAI != null)
         {
             _patrolAI.enabled = false;
         }
 
-        if (_rigidbody != null)
+        yield return new WaitForSeconds(_hurtInvulnerabilityDuration);
+
+        if (_patrolAI != null && IsDead == false)
         {
-            _rigidbody.velocity = Vector2.zero;
-            _rigidbody.isKinematic = true;
+            _patrolAI.enabled = true;
         }
 
-        ForceAnimationState(EnemyAnimationState.Dead);
-
-        base.Die();
-
-        Collider2D collider = GetComponent<Collider2D>();
-        if (collider != null)
-        {
-            collider.enabled = false;
-        }
-
-        this.enabled = false;
-
-        Destroy(gameObject, GetCurrentAnimationLength());
+        _isHurt = false;
+        _isTakingDamage = false;
     }
 
-    public void Heal(int amount)
+    private void UpdateAnimationState()
     {
-        if (IsDead)
+        if (_animator == null || _isAttacking || _isHurt)
         {
             return;
         }
 
-        _currentHealth += amount;
+        EnemyAnimationState targetState = _isMoving
+            ? EnemyAnimationState.Walk
+            : EnemyAnimationState.Idle;
 
-        if (_currentHealth > _maxHealth)
+        SetAnimationState(targetState);
+    }
+
+    private void UpdateFacingDirection()
+    {
+        if (_playerTransform != null && _isPlayerInRange)
         {
-            _currentHealth = _maxHealth;
+            float directionToPlayer = Mathf.Sign(_playerTransform.position.x - transform.position.x);
+
+            if (Mathf.Abs(directionToPlayer) > DirectionThreshold)
+            {
+                _facingDirection = new Vector2(directionToPlayer, 0f);
+                transform.localScale = new Vector3(directionToPlayer, 1f, 1f);
+            }
+
+            return;
+        }
+
+        if (_rigidbody == null || Mathf.Abs(_rigidbody.velocity.x) <= DirectionThreshold)
+        {
+            return;
+        }
+
+        float movementDirection = Mathf.Sign(_rigidbody.velocity.x);
+
+        _facingDirection = new Vector2(movementDirection, 0f);
+        transform.localScale = new Vector3(movementDirection, 1f, 1f);
+    }
+
+    private void SetAnimationState(EnemyAnimationState state)
+    {
+        if (_currentAnimationState == state)
+        {
+            return;
+        }
+
+        _currentAnimationState = state;
+
+        if (_animator != null)
+        {
+            _animator.SetInteger(AnimationStateParameterName, (int)state);
         }
     }
 
-    public void SetMaxHealth(int newMaxHealth)
+    private void PlayAttackSound(bool hitConnected, bool strongAttack)
     {
-        _maxHealth = newMaxHealth;
-
-        if (_currentHealth > _maxHealth)
+        if (_audioController == null)
         {
-            _currentHealth = _maxHealth;
+            return;
+        }
+
+        if (strongAttack)
+        {
+            if (hitConnected)
+            {
+                _audioController.PlaySpecialAttackHitSound();
+            }
+            else
+            {
+                _audioController.PlaySpecialAttackMissSound();
+            }
+
+            return;
+        }
+
+        if (hitConnected)
+        {
+            _audioController.PlayAttackHitSound();
+        }
+        else
+        {
+            _audioController.PlayAttackMissSound();
         }
     }
 
-    public int CurrentHealth => _currentHealth;
-
-    private enum EnemyAnimationState
+    private void OnDrawGizmosSelected()
     {
-        Idle = 0,
-        Walk = 1,
-        Attack = 2,
-        Attack2 = 3,
-        Kick = 4,
-        DoubleAttack = 5,
-        StrongAttack = 6,
-        Hit = 7,
-        Dead = 8
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, _detectionRadius);
+
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireCube(CalculateAttackCenter(), _attackSize);
     }
+}
+
+public enum EnemyAnimationState
+{
+    Idle = 0,
+    Attack1 = 1,
+    Attack2 = 2,
+    Attack3 = 3,
+    Attack4 = 4,
+    StrongAttack = 5,
+    Hurt = 6,
+    Walk = 7,
+    Death = 8
 }

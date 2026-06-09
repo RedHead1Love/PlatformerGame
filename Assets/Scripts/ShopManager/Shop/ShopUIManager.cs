@@ -25,15 +25,138 @@ public sealed class ShopUIManager : MonoBehaviour
     [Header("Description")]
     [SerializeField] private TextMeshProUGUI _selectedItemDescription;
 
-    private const string CommandActiveLastChance = "6";
+    private readonly Dictionary<WalletManager.CoinType, List<ShopItemView>> _itemViewsByCurrency =
+        new Dictionary<WalletManager.CoinType, List<ShopItemView>>();
 
-    private Dictionary<WalletManager.CoinType, List<ShopItemView>> _itemViewsByCurrency;
     private WalletManager.CoinType _currentCurrency = WalletManager.CoinType.Bronze;
-    private bool _isInitialized = false;
+    private bool _isInitialized;
 
     private void Start()
     {
         Initialize();
+    }
+
+    public void SwitchCurrency(WalletManager.CoinType currencyType)
+    {
+        Initialize();
+
+        _currentCurrency = currencyType;
+
+        UpdateCurrencyDisplay();
+        UpdateCoinIndicators();
+        ShowCurrencyMenu(currencyType);
+    }
+
+    public void ShowCurrencyMenu(WalletManager.CoinType currencyType)
+    {
+        HideAllMenus();
+
+        GameObject menu = GetPanel(currencyType);
+
+        if (menu != null)
+        {
+            menu.SetActive(true);
+        }
+    }
+
+    public void UpdateItemSelection(WalletManager.CoinType currency, int selectedIndex)
+    {
+        Initialize();
+        ResetAllItemSelection();
+
+        if (_itemViewsByCurrency.TryGetValue(currency, out List<ShopItemView> itemViews) == false)
+        {
+            return;
+        }
+
+        if (selectedIndex < 0 || selectedIndex >= itemViews.Count)
+        {
+            return;
+        }
+
+        ShopItemView selectedView = itemViews[selectedIndex];
+
+        if (selectedView == null)
+        {
+            return;
+        }
+
+        bool canPurchase = selectedView.ItemData != null && selectedView.ItemData.CanBePurchased();
+
+        selectedView.SetSelected(true, canPurchase);
+    }
+
+    public ShopItemView GetItemView(WalletManager.CoinType currency, int index)
+    {
+        Initialize();
+
+        if (_itemViewsByCurrency.TryGetValue(currency, out List<ShopItemView> itemViews) == false)
+        {
+            return null;
+        }
+
+        return index >= 0 && index < itemViews.Count ? itemViews[index] : null;
+    }
+
+    public ShopItemView GetItemViewById(WalletManager.CoinType currency, string itemId)
+    {
+        Initialize();
+
+        if (_itemViewsByCurrency.TryGetValue(currency, out List<ShopItemView> itemViews) == false)
+        {
+            return null;
+        }
+
+        foreach (ShopItemView itemView in itemViews)
+        {
+            if (itemView != null && itemView.ItemData != null && itemView.ItemData.ItemId == itemId)
+            {
+                return itemView;
+            }
+        }
+
+        return null;
+    }
+
+    public void UpdateDescription(string description)
+    {
+        if (_selectedItemDescription != null)
+        {
+            _selectedItemDescription.text = description;
+        }
+    }
+
+    public void ShowPurchaseMessage(string message)
+    {
+        if (_selectedItemDescription != null)
+        {
+            _selectedItemDescription.text = $"<color=green>✓ {message}</color>";
+        }
+    }
+
+    public void RefreshItemViews()
+    {
+        _isInitialized = false;
+
+        Initialize();
+    }
+
+    public void LogCurrentState() { }
+
+    public void RefreshLastChanceItems()
+    {
+        Initialize();
+
+        foreach (List<ShopItemView> viewList in _itemViewsByCurrency.Values)
+        {
+            foreach (ShopItemView view in viewList)
+            {
+                if (view != null && view.ItemData != null && view.ItemData.ItemId == ShopItemIds.ActivateLastChance)
+                {
+                    view.UpdateView();
+                }
+            }
+        }
     }
 
     private void Initialize()
@@ -43,7 +166,7 @@ public sealed class ShopUIManager : MonoBehaviour
             return;
         }
 
-        _itemViewsByCurrency = new Dictionary<WalletManager.CoinType, List<ShopItemView>>();
+        _itemViewsByCurrency.Clear();
 
         foreach (WalletManager.CoinType currency in System.Enum.GetValues(typeof(WalletManager.CoinType)))
         {
@@ -57,21 +180,9 @@ public sealed class ShopUIManager : MonoBehaviour
 
     private void FindAllItemViews()
     {
-        foreach (var list in _itemViewsByCurrency.Values)
-        {
-            list.Clear();
-        }
-
         FindItemViewsInPanel(_bronzeMenuPanel, WalletManager.CoinType.Bronze);
         FindItemViewsInPanel(_silverMenuPanel, WalletManager.CoinType.Silver);
         FindItemViewsInPanel(_goldMenuPanel, WalletManager.CoinType.Gold);
-
-        int totalViews = 0;
-
-        foreach (var kvp in _itemViewsByCurrency)
-        {
-            totalViews += kvp.Value.Count;
-        }
     }
 
     private void FindItemViewsInPanel(GameObject panel, WalletManager.CoinType currencyType)
@@ -81,9 +192,9 @@ public sealed class ShopUIManager : MonoBehaviour
             return;
         }
 
-        var itemViews = panel.GetComponentsInChildren<ShopItemView>(true);
+        ShopItemView[] itemViews = panel.GetComponentsInChildren<ShopItemView>(true);
 
-        foreach (var itemView in itemViews)
+        foreach (ShopItemView itemView in itemViews)
         {
             if (itemView != null)
             {
@@ -92,44 +203,44 @@ public sealed class ShopUIManager : MonoBehaviour
         }
     }
 
-    public void SwitchCurrency(WalletManager.CoinType currencyType)
+    private void ResetAllItemSelection()
     {
-        _currentCurrency = currencyType;
-
-        UpdateCurrencyDisplay();
-        UpdateCoinIndicators();
-        ShowCurrencyMenu(currencyType);
+        foreach (List<ShopItemView> itemViews in _itemViewsByCurrency.Values)
+        {
+            foreach (ShopItemView itemView in itemViews)
+            {
+                itemView?.SetSelected(false, true);
+            }
+        }
     }
 
-    public void ShowCurrencyMenu(WalletManager.CoinType currencyType)
+    private void UpdateCurrencyDisplay()
     {
-        HideAllMenus();
-
-        switch (currencyType)
+        if (WalletManager.Instance == null || _currentCurrencyText == null)
         {
-            case WalletManager.CoinType.Bronze:
-                if (_bronzeMenuPanel != null)
-                {
-                    _bronzeMenuPanel.SetActive(true);
-                }
+            return;
+        }
 
-                break;
+        _currentCurrencyText.text = WalletManager.Instance.GetCoins(_currentCurrency).ToString();
 
-            case WalletManager.CoinType.Silver:
-                if (_silverMenuPanel != null)
-                {
-                    _silverMenuPanel.SetActive(true);
-                }
+        if (_currentCurrencyIcon != null)
+        {
+            _currentCurrencyIcon.sprite = GetCurrencySprite(_currentCurrency);
+        }
+    }
 
-                break;
+    private void UpdateCoinIndicators()
+    {
+        SetIndicatorColor(_bronzeCoinIndicator, WalletManager.CoinType.Bronze);
+        SetIndicatorColor(_silverCoinIndicator, WalletManager.CoinType.Silver);
+        SetIndicatorColor(_goldCoinIndicator, WalletManager.CoinType.Gold);
+    }
 
-            case WalletManager.CoinType.Gold:
-                if (_goldMenuPanel != null)
-                {
-                    _goldMenuPanel.SetActive(true);
-                }
-
-                break;
+    private void SetIndicatorColor(Image indicator, WalletManager.CoinType currency)
+    {
+        if (indicator != null)
+        {
+            indicator.color = _currentCurrency == currency ? _selectedCoinColor : _unselectedCoinColor;
         }
     }
 
@@ -151,205 +262,25 @@ public sealed class ShopUIManager : MonoBehaviour
         }
     }
 
-    public void UpdateItemSelection(WalletManager.CoinType currency, int selectedIndex)
+    private GameObject GetPanel(WalletManager.CoinType currencyType)
     {
-        if (!_isInitialized)
+        return currencyType switch
         {
-            Initialize();
-        }
-
-        ResetAllItemSelection();
-
-        if (_itemViewsByCurrency.TryGetValue(currency, out var itemViews))
-        {
-            if (selectedIndex >= 0 && selectedIndex < itemViews.Count)
-            {
-                var selectedView = itemViews[selectedIndex];
-
-                if (selectedView != null)
-                {
-                    var itemData = selectedView.ItemData;
-
-                    bool canPurchase = itemData != null && itemData.CanBePurchased();
-                    selectedView.SetSelected(true, canPurchase);
-                }
-            }
-        }
-    }
-
-    private void ResetAllItemSelection()
-    {
-        if (!_isInitialized)
-        {
-            return;
-        }
-
-        foreach (var currency in _itemViewsByCurrency.Keys)
-        {
-            if (!_itemViewsByCurrency.TryGetValue(currency, out var itemViews))
-            {
-                continue;
-            }
-
-            foreach (var itemView in itemViews)
-            {
-                if (itemView != null)
-                {
-                    itemView.SetSelected(false, true);
-                }
-            }
-        }
-    }
-
-    public ShopItemView GetItemView(WalletManager.CoinType currency, int index)
-    {
-        if (!_isInitialized) Initialize();
-
-        if (_itemViewsByCurrency.TryGetValue(currency, out var itemViews))
-        {
-            if (index >= 0 && index < itemViews.Count)
-            {
-                return itemViews[index];
-            }
-        }
-
-        return null;
-    }
-
-    public ShopItemView GetItemViewById(WalletManager.CoinType currency, string itemId)
-    {
-        if (!_isInitialized)
-        {
-            Initialize();
-        }
-
-        if (_itemViewsByCurrency.TryGetValue(currency, out var itemViews))
-        {
-            foreach (var itemView in itemViews)
-            {
-                if (itemView != null && itemView.ItemData != null && itemView.ItemData.ItemId == itemId)
-                {
-                    return itemView;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    private void UpdateCurrencyDisplay()
-    {
-        if (!WalletManager.Instance || !_currentCurrencyText)
-        {
-            return;
-        }
-
-        int coins = WalletManager.Instance.GetCoins(_currentCurrency);
-
-        _currentCurrencyText.text = coins.ToString();
-
-        if (_currentCurrencyIcon)
-        {
-            _currentCurrencyIcon.sprite = GetCurrencySprite(_currentCurrency);
-        }
-    }
-
-    private void UpdateCoinIndicators()
-    {
-        if (_bronzeCoinIndicator)
-        {
-            _bronzeCoinIndicator.color = _currentCurrency == WalletManager.CoinType.Bronze ?
-                _selectedCoinColor : _unselectedCoinColor;
-        }
-
-        if (_silverCoinIndicator)
-        {
-            _silverCoinIndicator.color = _currentCurrency == WalletManager.CoinType.Silver ?
-                _selectedCoinColor : _unselectedCoinColor;
-        }
-
-        if (_goldCoinIndicator)
-        {
-            _goldCoinIndicator.color = _currentCurrency == WalletManager.CoinType.Gold ?
-                _selectedCoinColor : _unselectedCoinColor;
-        }
-    }
-
-    public void UpdateDescription(string description)
-    {
-        if (_selectedItemDescription)
-        {
-            _selectedItemDescription.text = description;
-        }
-    }
-
-    public void ShowPurchaseMessage(string message)
-    {
-        if (_selectedItemDescription)
-        {
-            _selectedItemDescription.text = $"<color=green>✓ {message}</color>";
-        }
+            WalletManager.CoinType.Bronze => _bronzeMenuPanel,
+            WalletManager.CoinType.Silver => _silverMenuPanel,
+            WalletManager.CoinType.Gold => _goldMenuPanel,
+            _ => null
+        };
     }
 
     private Sprite GetCurrencySprite(WalletManager.CoinType coinType)
     {
         return coinType switch
         {
-            WalletManager.CoinType.Bronze => _bronzeCoinIndicator?.sprite,
-            WalletManager.CoinType.Silver => _silverCoinIndicator?.sprite,
-            WalletManager.CoinType.Gold => _goldCoinIndicator?.sprite
+            WalletManager.CoinType.Bronze => _bronzeCoinIndicator != null ? _bronzeCoinIndicator.sprite : null,
+            WalletManager.CoinType.Silver => _silverCoinIndicator != null ? _silverCoinIndicator.sprite : null,
+            WalletManager.CoinType.Gold => _goldCoinIndicator != null ? _goldCoinIndicator.sprite : null,
+            _ => null
         };
-    }
-
-    public void RefreshItemViews()
-    {
-        _isInitialized = false;
-
-        Initialize();
-    }
-
-    public void LogCurrentState()
-    {
-        if (!_isInitialized)
-        {
-            return;
-        }
-
-        foreach (var kvp in _itemViewsByCurrency)
-        {
-            int validCount = 0;
-            int nullCount = 0;
-
-            foreach (var view in kvp.Value)
-            {
-                if (view != null)
-                {
-                    validCount++;
-                }
-                else
-                {
-                    nullCount++;
-                }
-            }
-        }
-    }
-
-    public void RefreshLastChanceItems()
-    {
-        if (!_isInitialized)
-        {
-            Initialize();
-        }
-
-        foreach (var viewList in _itemViewsByCurrency.Values)
-        {
-            foreach (var view in viewList)
-            {
-                if (view != null && view.ItemData != null && view.ItemData.ItemId == CommandActiveLastChance)
-                {
-                    view.UpdateView();
-                }
-            }
-        }
     }
 }

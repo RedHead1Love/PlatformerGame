@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.XR;
 using YG;
 
 public sealed class SaveSystem : MonoBehaviour
@@ -15,28 +14,17 @@ public sealed class SaveSystem : MonoBehaviour
     private const string SaveFileName = "game_save.json";
 
     public static SaveSystem Instance { get; private set; }
+
     public GameSaveData CurrentSave { get; private set; }
 
     public event Action<GameSaveData> OnGameLoaded;
 
+    private string SaveDirectoryPath => Application.persistentDataPath + SaveDirectory;
+    private string SaveFilePath => SaveDirectoryPath + SaveFileName;
+
     private void Awake()
     {
         InitializeSingleton();
-    }
-
-    private void InitializeSingleton()
-    {
-        if (Instance == null)
-        {
-            Instance = this;
-
-            DontDestroyOnLoad(gameObject);
-            LoadGameData();
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
     }
 
     public void SaveGame(string checkpointId, Vector3 playerPosition)
@@ -55,131 +43,71 @@ public sealed class SaveSystem : MonoBehaviour
         UpdateCoinData();
 
         SaveToFile();
+
         YG2.InterstitialAdvShow();
-    }
-
-    private void InitializeSaveDataIfNeeded()
-    {
-        int zeroValue = 0;
-
-        int initialQuantityBronzeCoins = 0;
-        int initialQuantitySilverCoins = 0;
-        int initialQuantityGoldCoins = 0;
-
-        if (CurrentSave == null)
-        {
-            CurrentSave = new GameSaveData();
-        }
-
-        if (CurrentSave.coins.bronze == zeroValue && CurrentSave.coins.silver == zeroValue && CurrentSave.coins.gold == zeroValue)
-        {
-            CurrentSave.coins = new CoinData(initialQuantityBronzeCoins, initialQuantitySilverCoins, initialQuantityGoldCoins);
-        }
-    }
-
-    private void UpdatePlayerData()
-    {
-        int defaultArmor = 0;
-
-        Hero player = FindObjectOfType<Hero>();
-
-        if (player != null)
-        {
-            CurrentSave.playerHealth = player.Lives;
-
-            ArmorManager armorManager = player.GetComponent<ArmorManager>();
-
-            CurrentSave.playerArmor = armorManager?.CurrentArmor ?? defaultArmor;
-        }
-    }
-
-    private void UpdateKeyCollectionData()
-    {
-        KeyCollection keyCollection = FindObjectOfType<KeyCollection>();
-
-        if (keyCollection != null)
-        {
-            CurrentSave.collectedKeys = keyCollection.GetCollectedKeys();
-        }
-    }
-
-    private void UpdateEnemyData()
-    {
-        if (EnemyManager.Instance != null)
-        {
-            HashSet<string> killedEnemies = EnemyManager.Instance.GetKilledEnemies();
-
-            CurrentSave.killedEnemies = new List<string>(killedEnemies);
-        }
-        else
-        {
-            CurrentSave.killedEnemies = new List<string>();
-        }
-    }
-
-    private void UpdateCoinData()
-    {
-        if (PersistentWallet.Instance != null)
-        {
-            CurrentSave.coins.bronze = PersistentWallet.Instance.CurrentCoins.bronze;
-            CurrentSave.coins.silver = PersistentWallet.Instance.CurrentCoins.silver;
-            CurrentSave.coins.gold = PersistentWallet.Instance.CurrentCoins.gold;
-        }
-        else if (WalletManager.Instance != null)
-        {
-            CurrentSave.coins.bronze = WalletManager.Instance.GetCoins(WalletManager.CoinType.Bronze);
-            CurrentSave.coins.silver = WalletManager.Instance.GetCoins(WalletManager.CoinType.Silver);
-            CurrentSave.coins.gold = WalletManager.Instance.GetCoins(WalletManager.CoinType.Gold);
-        }
     }
 
     public void MarkEnemyKilled(string enemyId)
     {
-        InitializeSaveDataIfNeeded();
-        InitializeKilledEnemiesListIfNeeded();
-
-        if (!CurrentSave.killedEnemies.Contains(enemyId))
+        if (string.IsNullOrEmpty(enemyId))
         {
-            CurrentSave.killedEnemies.Add(enemyId);
+            return;
         }
+
+        InitializeSaveDataIfNeeded();
+
+        if (CurrentSave.killedEnemies.Contains(enemyId))
+        {
+            return;
+        }
+
+        CurrentSave.killedEnemies.Add(enemyId);
     }
 
     public void MarkHealthPickupCollected(string pickupId)
     {
-        InitializeSaveDataIfNeeded();
-        InitializeHealthPickupsListIfNeeded();
-
-        if (!CurrentSave.collectedHealthPickups.Contains(pickupId))
+        if (string.IsNullOrEmpty(pickupId))
         {
-            CurrentSave.collectedHealthPickups.Add(pickupId);
+            return;
         }
+
+        InitializeSaveDataIfNeeded();
+
+        if (CurrentSave.collectedHealthPickups.Contains(pickupId))
+        {
+            return;
+        }
+
+        CurrentSave.collectedHealthPickups.Add(pickupId);
     }
 
     public void MarkItemPurchased(string itemId)
     {
+        if (string.IsNullOrEmpty(itemId))
+        {
+            return;
+        }
+
         InitializeSaveDataIfNeeded();
 
-        if (CurrentSave.purchasedItemIds == null)
+        if (CurrentSave.purchasedItemIds.Contains(itemId))
         {
-            CurrentSave.purchasedItemIds = new List<string>();
+            return;
         }
 
-        if (!CurrentSave.purchasedItemIds.Contains(itemId))
-        {
-            CurrentSave.purchasedItemIds.Add(itemId);
+        CurrentSave.purchasedItemIds.Add(itemId);
 
-            SaveToFile();
-        }
+        SaveToFile();
     }
 
     public void UpdateAbilityData(AbilityManager abilityManager)
     {
-        InitializeSaveDataIfNeeded();
-
-        if (CurrentSave.abilityData == null)
+        if (abilityManager == null)
         {
-            CurrentSave.abilityData = new AbilitySaveData();
+            return;
         }
+
+        InitializeSaveDataIfNeeded();
 
         CurrentSave.abilityData.hasDash = abilityManager.HasDash;
         CurrentSave.abilityData.hasDoubleJump = abilityManager.HasDoubleJump;
@@ -201,56 +129,13 @@ public sealed class SaveSystem : MonoBehaviour
         SaveToFile();
     }
 
-    private void InitializeKilledEnemiesListIfNeeded()
-    {
-        if (CurrentSave.killedEnemies == null)
-        {
-            CurrentSave.killedEnemies = new List<string>();
-        }
-    }
-
-    private void InitializeHealthPickupsListIfNeeded()
-    {
-        if (CurrentSave.collectedHealthPickups == null)
-        {
-            CurrentSave.collectedHealthPickups = new List<string>();
-        }
-    }
-
-    private void SaveToFile()
-    {
-        if (CurrentSave == null)
-        {
-            return;
-        }
-
-        string saveDirectoryPath = Application.persistentDataPath + SaveDirectory;
-
-        CreateDirectoryIfNotExists(saveDirectoryPath);
-
-        string jsonData = JsonUtility.ToJson(CurrentSave, true);
-
-        File.WriteAllText(saveDirectoryPath + SaveFileName, jsonData);
-    }
-
-    private void CreateDirectoryIfNotExists(string directoryPath)
-    {
-        if (!Directory.Exists(directoryPath))
-        {
-            Directory.CreateDirectory(directoryPath);
-        }
-    }
-
     public void LoadGameData()
     {
-        string filePath = Application.persistentDataPath + SaveDirectory + SaveFileName;
-
-        if (File.Exists(filePath))
+        if (File.Exists(SaveFilePath))
         {
-            string jsonData = File.ReadAllText(filePath);
+            string jsonData = File.ReadAllText(SaveFilePath);
 
             CurrentSave = JsonUtility.FromJson<GameSaveData>(jsonData);
-
             FixNullValues();
         }
         else
@@ -261,50 +146,11 @@ public sealed class SaveSystem : MonoBehaviour
         OnGameLoaded?.Invoke(CurrentSave);
     }
 
-    private void FixNullValues()
-    {
-         int minimumCoinValue = 0;
-         int minimumArmorValue = 0;
-
-        if (CurrentSave == null)
-        {
-            return;
-        }
-
-        if (CurrentSave.coins.bronze < minimumCoinValue)
-        {
-            CurrentSave.coins.bronze = minimumCoinValue;
-        }
-
-        if (CurrentSave.coins.silver < minimumCoinValue)
-        {
-            CurrentSave.coins.silver = minimumCoinValue;
-        }
-        if (CurrentSave.coins.gold < minimumCoinValue)
-        {
-            CurrentSave.coins.gold = minimumCoinValue;
-        }
-
-        CurrentSave.collectedKeys ??= new List<KeyColor>();
-
-        CurrentSave.killedEnemies ??= new List<string>();
-        CurrentSave.collectedHealthPickups ??= new List<string>();
-        CurrentSave.purchasedItemIds ??= new List<string>();
-        CurrentSave.abilityData ??= new AbilitySaveData();
-
-        if (CurrentSave.playerArmor < minimumArmorValue)
-        {
-            CurrentSave.playerArmor = minimumArmorValue;
-        }
-    }
-
     public void DeleteSaveData()
     {
-        string filePath = Application.persistentDataPath + SaveDirectory + SaveFileName;
-
-        if (File.Exists(filePath))
+        if (File.Exists(SaveFilePath))
         {
-            File.Delete(filePath);
+            File.Delete(SaveFilePath);
         }
 
         CurrentSave = null;
@@ -312,8 +158,142 @@ public sealed class SaveSystem : MonoBehaviour
 
     public bool HasSave()
     {
-        string filePath = Application.persistentDataPath + SaveDirectory + SaveFileName;
+        return File.Exists(SaveFilePath);
+    }
 
-        return File.Exists(filePath);
+    private void InitializeSingleton()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+
+            DontDestroyOnLoad(gameObject);
+            LoadGameData();
+
+            return;
+        }
+
+        Destroy(gameObject);
+    }
+
+    private void InitializeSaveDataIfNeeded()
+    {
+        if (CurrentSave == null)
+        {
+            CurrentSave = new GameSaveData();
+        }
+
+        CurrentSave.EnsureValidCollections();
+    }
+
+    private void UpdatePlayerData()
+    {
+        Hero player = FindFirstObjectByType<Hero>();
+
+        if (player == null)
+        {
+            return;
+        }
+
+        CurrentSave.playerHealth = player.Lives;
+
+        ArmorManager armorManager = player.GetComponent<ArmorManager>();
+        CurrentSave.playerArmor = armorManager != null ? armorManager.CurrentArmor : 0;
+
+        if (player.AbilityManager != null)
+        {
+            CurrentSave.abilityData.hasDash = player.AbilityManager.HasDash;
+            CurrentSave.abilityData.hasDoubleJump = player.AbilityManager.HasDoubleJump;
+            CurrentSave.abilityData.hasMap = player.AbilityManager.HasMap;
+            CurrentSave.abilityData.hasAnatomy = player.AbilityManager.HasAnatomy;
+            CurrentSave.abilityData.hasArmor = player.AbilityManager.HasArmor;
+            CurrentSave.abilityData.hasSwampDamageBonus = player.AbilityManager.HasSwampDamageBonus;
+            CurrentSave.abilityData.hasSkeletonDamageBonus = player.AbilityManager.HasSkeletonDamageBonus;
+            CurrentSave.abilityData.hasDemonDamageBonus = player.AbilityManager.HasDemonDamageBonus;
+            CurrentSave.abilityData.hasSpiderDamageBonus = player.AbilityManager.HasSpiderDamageBonus;
+            CurrentSave.abilityData.hasZombieDamageBonus = player.AbilityManager.HasZombieDamageBonus;
+            CurrentSave.abilityData.hasBossDamageBonus = player.AbilityManager.HasBossDamageBonus;
+            CurrentSave.abilityData.isLastChanceActive = player.AbilityManager.IsLastChanceActive;
+            CurrentSave.abilityData.hasPassiveHealthRegeneration = player.AbilityManager.HasPassiveHealthRegeneration;
+            CurrentSave.abilityData.hasRobocopRegeneration = player.AbilityManager.HasRobocopRegeneration;
+            CurrentSave.abilityData.hasVampireAbility = player.AbilityManager.HasVampireAbility;
+            CurrentSave.abilityData.hasOnePunchManAbility = player.AbilityManager.HasOnePunchManAbility;
+        }
+    }
+
+    private void UpdateKeyCollectionData()
+    {
+        KeyCollection keyCollection = FindFirstObjectByType<KeyCollection>();
+
+        if (keyCollection != null)
+        {
+            CurrentSave.collectedKeys = keyCollection.GetCollectedKeys();
+        }
+    }
+
+    private void UpdateEnemyData()
+    {
+        if (EnemyManager.Instance == null)
+        {
+            CurrentSave.killedEnemies = new List<string>();
+
+            return;
+        }
+
+        CurrentSave.killedEnemies = new List<string>(EnemyManager.Instance.GetKilledEnemies());
+    }
+
+    private void UpdateCoinData()
+    {
+        if (PersistentWallet.Instance != null)
+        {
+            CurrentSave.coins = PersistentWallet.Instance.CurrentCoins;
+
+            return;
+        }
+
+        if (WalletManager.Instance == null)
+        {
+            return;
+        }
+
+        CurrentSave.coins = new CoinData(
+            WalletManager.Instance.GetCoins(WalletManager.CoinType.Bronze),
+            WalletManager.Instance.GetCoins(WalletManager.CoinType.Silver),
+            WalletManager.Instance.GetCoins(WalletManager.CoinType.Gold));
+    }
+
+    private void SaveToFile()
+    {
+        if (CurrentSave == null)
+        {
+            return;
+        }
+
+        CreateDirectoryIfNotExists(SaveDirectoryPath);
+
+        string jsonData = JsonUtility.ToJson(CurrentSave, true);
+
+        File.WriteAllText(SaveFilePath, jsonData);
+    }
+
+    private void CreateDirectoryIfNotExists(string directoryPath)
+    {
+        if (Directory.Exists(directoryPath))
+        {
+            return;
+        }
+
+        Directory.CreateDirectory(directoryPath);
+    }
+
+    private void FixNullValues()
+    {
+        if (CurrentSave == null)
+        {
+            return;
+        }
+
+        CurrentSave.EnsureValidCollections();
     }
 }

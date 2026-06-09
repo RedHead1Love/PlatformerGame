@@ -2,11 +2,13 @@ using UnityEngine;
 
 public sealed class SystemLoader : MonoBehaviour
 {
+    private const float NormalTimeScale = 1f;
+
     [SerializeField] private GameObject _systemManagersPrefab;
 
     private void Awake()
     {
-        Time.timeScale = 1f;
+        Time.timeScale = NormalTimeScale;
 
         if (SaveSystem.Instance == null && _systemManagersPrefab != null)
         {

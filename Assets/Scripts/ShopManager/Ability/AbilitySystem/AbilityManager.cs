@@ -6,6 +6,29 @@ namespace Player.Abilities
     {
         private const float BonusMultiplier = 2f;
 
+        private const string DashKey = "Ability_Dash";
+        private const string DoubleJumpKey = "Ability_DoubleJump";
+        private const string MapKey = "Ability_Map";
+        private const string AnatomyKey = "Ability_Anatomy";
+        private const string ArmorKey = "Ability_Armor";
+        private const string SwampDamageKey = "Ability_SwampDamage";
+        private const string SkeletonDamageKey = "Ability_SkeletonDamage";
+        private const string DemonDamageKey = "Ability_DemonDamage";
+        private const string SpiderDamageKey = "Ability_SpiderDamage";
+        private const string ZombieDamageKey = "Ability_ZombieDamage";
+        private const string BossDamageKey = "Ability_BossDamage";
+        private const string PassiveHealthRegenerationKey = "Ability_PassiveHealthRegen";
+        private const string RobocopRegenerationKey = "Ability_RobocopRegen";
+        private const string LastChanceKey = "LastChance_Active";
+        private const string VampireKey = "Ability_Vampire";
+        private const string OnePunchManKey = "Ability_OnePunchMan";
+
+        private const int ActiveValue = 1;
+        private const int InactiveValue = 0;
+
+        private readonly Hero _hero;
+        private readonly ArmorManager _armorManager;
+
         public bool HasDash { get; private set; }
         public bool HasDoubleJump { get; private set; }
         public bool HasMap { get; private set; }
@@ -24,48 +47,36 @@ namespace Player.Abilities
         public bool HasVampireAbility;
         public bool HasOnePunchManAbility;
 
-        private readonly ArmorManager _armorManager;
-        private readonly Hero _hero;
-
         public AbilityManager(Hero hero)
         {
             _hero = hero;
+            _armorManager = FindArmorManager();
 
-            _armorManager = _hero.GetComponent<ArmorManager>() ??
-                           UnityEngine.Object.FindObjectOfType<ArmorManager>();
             LoadAbilities();
         }
 
         public void UnlockDash()
         {
             HasDash = true;
-
-            SaveToPlayerPrefs();
-            SaveToSaveSystem();
+            SaveAbilities();
         }
 
         public void UnlockAnatomy()
         {
             HasAnatomy = true;
-
-            SaveToPlayerPrefs();
-            SaveToSaveSystem();
+            SaveAbilities();
         }
 
         public void UnlockMap()
         {
             HasMap = true;
-
-            SaveToPlayerPrefs();
-            SaveToSaveSystem();
+            SaveAbilities();
         }
 
         public void UnlockArmor()
         {
             HasArmor = true;
-
             SaveAbilities();
-            SaveToSaveSystem();
 
             _armorManager?.UnlockArmorAbility();
         }
@@ -73,187 +84,111 @@ namespace Player.Abilities
         public void UnlockSwampDamageBonus()
         {
             HasSwampDamageBonus = true;
-
-            SaveToPlayerPrefs();
-            SaveToSaveSystem();
+            SaveAbilities();
         }
 
         public void UnlockSkeletonDamageBonus()
         {
             HasSkeletonDamageBonus = true;
-
-            SaveToPlayerPrefs();
-            SaveToSaveSystem();
+            SaveAbilities();
         }
 
         public void UnlockDemonDamageBonus()
         {
             HasDemonDamageBonus = true;
-
-            SaveToPlayerPrefs();
-            SaveToSaveSystem();
+            SaveAbilities();
         }
 
         public void UnlockSpiderDamageBonus()
         {
             HasSpiderDamageBonus = true;
-
-            SaveToPlayerPrefs();
-            SaveToSaveSystem();
+            SaveAbilities();
         }
 
         public void UnlockZombieDamageBonus()
         {
             HasZombieDamageBonus = true;
-
-            SaveToPlayerPrefs();
-            SaveToSaveSystem();
+            SaveAbilities();
         }
 
         public void UnlockBossDamageBonus()
         {
             HasBossDamageBonus = true;
-
-            SaveToPlayerPrefs();
-            SaveToSaveSystem();
+            SaveAbilities();
         }
 
         public void PurchaseLastChance()
         {
             IsLastChanceActive = true;
-
-            SaveToPlayerPrefs();
-            SaveToSaveSystem();
+            SaveAbilities();
         }
 
         public void UseLastChance()
         {
             IsLastChanceActive = false;
-
-            SaveToPlayerPrefs();
-            SaveToSaveSystem();
+            SaveAbilities();
         }
 
         public void UnlockPassiveHealthRegeneration()
         {
             HasPassiveHealthRegeneration = true;
+            SaveAbilities();
 
-            SaveToPlayerPrefs();
-            SaveToSaveSystem();
-
-            var passiveRegen = _hero?.GetComponent<PassiveHealthRegeneration>();
-            passiveRegen?.EnableRegeneration();
+            PassiveHealthRegeneration regeneration = _hero?.GetComponent<PassiveHealthRegeneration>();
+            regeneration?.EnableRegeneration();
         }
 
         public void UnlockRobocopRegeneration()
         {
             HasRobocopRegeneration = true;
+            SaveAbilities();
 
-            SaveToPlayerPrefs();
-            SaveToSaveSystem();
-
-            var passiveRegen = _hero?.GetComponent<PassiveArmorRegeneration>();
-            passiveRegen?.Activate();
+            PassiveArmorRegeneration regeneration = _hero?.GetComponent<PassiveArmorRegeneration>();
+            regeneration?.Activate();
         }
 
         public void UnlockVampireAbility()
         {
             HasVampireAbility = true;
+            SaveAbilities();
 
-            SaveToPlayerPrefs();
-            SaveToSaveSystem();
-
-            var vampireSystem = _hero?.GetComponent<VampireHealthSystem>();
-
-            if (vampireSystem == null)
-            {
-                vampireSystem = _hero?.gameObject.AddComponent<VampireHealthSystem>();
-            }
-
-            if (vampireSystem != null)
-            {
-                vampireSystem.Activate();
-            }
+            VampireHealthSystem vampireSystem = GetOrAddComponent<VampireHealthSystem>();
+            vampireSystem?.Activate();
         }
 
         public void UnlockOnePunchManAbility()
         {
             HasOnePunchManAbility = true;
+            SaveAbilities();
 
-            SaveToPlayerPrefs();
-            SaveToSaveSystem();
-
-            var onePunchSystem = _hero?.GetComponent<OnePunchManSystem>();
-
-            if (onePunchSystem == null)
-            {
-                onePunchSystem = _hero?.gameObject.AddComponent<OnePunchManSystem>();
-            }
-
-            if (onePunchSystem != null)
-            {
-                onePunchSystem.Activate();
-            }
+            OnePunchManSystem onePunchManSystem = GetOrAddComponent<OnePunchManSystem>();
+            onePunchManSystem?.Activate();
         }
 
         public float GetDamageMultiplierForEnemy(GameObject enemy)
         {
-            float defaultMultiplier = 1f;
-
             if (enemy == null)
             {
-                return defaultMultiplier;
+                return 1f;
             }
 
-            var enemyTypeComponent = enemy.GetComponent<EnemyTypeComponent>() ??
-                                   enemy.GetComponentInParent<EnemyTypeComponent>();
+            EnemyTypeComponent enemyTypeComponent = GetEnemyTypeComponent(enemy);
 
             if (enemyTypeComponent == null)
             {
-                return defaultMultiplier;
+                return 1f;
             }
 
-            float multiplier = defaultMultiplier;
-
-            switch (enemyTypeComponent.EnemyType)
+            return enemyTypeComponent.EnemyType switch
             {
-                case EnemyType.Swamp:
-                    multiplier = HasSwampDamageBonus ? BonusMultiplier : defaultMultiplier;
-
-                    break;
-
-                case EnemyType.Skeleton:
-                    multiplier = HasSkeletonDamageBonus ? BonusMultiplier : defaultMultiplier;
-
-                    break;
-
-                case EnemyType.Demon:
-                    multiplier = HasDemonDamageBonus ? BonusMultiplier : defaultMultiplier;
-
-                    break;
-
-                case EnemyType.Spider:
-                    multiplier = HasSpiderDamageBonus ? BonusMultiplier : defaultMultiplier;
-
-                    break;
-
-                case EnemyType.Zombie:
-                    multiplier = HasZombieDamageBonus ? BonusMultiplier : defaultMultiplier;
-
-                    break;
-
-                case EnemyType.Boss:
-                    multiplier = HasBossDamageBonus ? BonusMultiplier : defaultMultiplier;
-
-                    break;
-
-                default:
-                    multiplier = defaultMultiplier;
-
-                    break;
-            }
-
-            return multiplier;
+                EnemyType.Swamp => HasSwampDamageBonus ? BonusMultiplier : 1f,
+                EnemyType.Skeleton => HasSkeletonDamageBonus ? BonusMultiplier : 1f,
+                EnemyType.Demon => HasDemonDamageBonus ? BonusMultiplier : 1f,
+                EnemyType.Spider => HasSpiderDamageBonus ? BonusMultiplier : 1f,
+                EnemyType.Zombie => HasZombieDamageBonus ? BonusMultiplier : 1f,
+                EnemyType.Boss => HasBossDamageBonus ? BonusMultiplier : 1f,
+                _ => 1f
+            };
         }
 
         public bool HasBonusForEnemy(GameObject enemy)
@@ -263,71 +198,86 @@ namespace Player.Abilities
                 return false;
             }
 
-            var enemyTypeComponent = enemy.GetComponent<EnemyTypeComponent>() ?? enemy.GetComponentInParent<EnemyTypeComponent>();
+            EnemyTypeComponent enemyTypeComponent = GetEnemyTypeComponent(enemy);
 
             if (enemyTypeComponent == null)
             {
                 return false;
             }
 
-            bool hasBonus = false;
-
-            switch (enemyTypeComponent.EnemyType)
+            return enemyTypeComponent.EnemyType switch
             {
-                case EnemyType.Swamp:
-                    hasBonus = HasSwampDamageBonus;
-
-                    break;
-
-                case EnemyType.Skeleton:
-                    hasBonus = HasSkeletonDamageBonus;
-
-                    break;
-
-                case EnemyType.Demon:
-                    hasBonus = HasDemonDamageBonus;
-
-                    break;
-
-                case EnemyType.Spider:
-                    hasBonus = HasSpiderDamageBonus;
-
-                    break;
-
-                case EnemyType.Zombie:
-                    hasBonus = HasZombieDamageBonus;
-
-                    break;
-
-                case EnemyType.Boss:
-                    hasBonus = HasBossDamageBonus;
-
-                    break;
-
-                default:
-                    hasBonus = false;
-
-                    break;
-            }
-
-            return hasBonus;
+                EnemyType.Swamp => HasSwampDamageBonus,
+                EnemyType.Skeleton => HasSkeletonDamageBonus,
+                EnemyType.Demon => HasDemonDamageBonus,
+                EnemyType.Spider => HasSpiderDamageBonus,
+                EnemyType.Zombie => HasZombieDamageBonus,
+                EnemyType.Boss => HasBossDamageBonus,
+                _ => false
+            };
         }
 
         public bool NeedArmorPlates()
         {
-            return HasArmor && _armorManager != null && _armorManager.NeedArmorPlates();
+            return HasArmor &&
+                   _armorManager != null &&
+                   _armorManager.NeedArmorPlates();
+        }
+
+        private ArmorManager FindArmorManager()
+        {
+            ArmorManager armorManager = _hero != null ? _hero.GetComponent<ArmorManager>() : null;
+
+            if (armorManager == null)
+            {
+                armorManager = Object.FindFirstObjectByType<ArmorManager>();
+            }
+
+            return armorManager;
+        }
+
+        private EnemyTypeComponent GetEnemyTypeComponent(GameObject enemy)
+        {
+            EnemyTypeComponent component = enemy.GetComponent<EnemyTypeComponent>();
+
+            if (component == null)
+            {
+                component = enemy.GetComponentInParent<EnemyTypeComponent>();
+            }
+
+            return component;
+        }
+
+        private T GetOrAddComponent<T>() where T : Component
+        {
+            if (_hero == null)
+            {
+                return null;
+            }
+
+            T component = _hero.GetComponent<T>();
+
+            if (component == null)
+            {
+                component = _hero.gameObject.AddComponent<T>();
+            }
+
+            return component;
         }
 
         private void LoadAbilities()
         {
-            if (SaveSystem.Instance != null && SaveSystem.Instance.HasSave() && SaveSystem.Instance.CurrentSave?.abilityData != null)
+            if (SaveSystem.Instance != null &&
+                SaveSystem.Instance.HasSave() &&
+                SaveSystem.Instance.CurrentSave?.abilityData != null)
             {
                 LoadFromSaveData(SaveSystem.Instance.CurrentSave.abilityData);
+
+                return;
             }
-            else
-            {
-                LoadFromPlayerPrefs();
-            }
+
+            LoadFromPlayerPrefs();
+            ApplyLoadedEffects();
         }
 
         private void LoadFromSaveData(AbilitySaveData saveData)
@@ -352,6 +302,26 @@ namespace Player.Abilities
             ApplyLoadedEffects();
         }
 
+        private void LoadFromPlayerPrefs()
+        {
+            HasDash = ReadBool(DashKey);
+            HasDoubleJump = ReadBool(DoubleJumpKey);
+            HasMap = ReadBool(MapKey);
+            HasAnatomy = ReadBool(AnatomyKey);
+            HasArmor = ReadBool(ArmorKey);
+            HasSwampDamageBonus = ReadBool(SwampDamageKey);
+            HasSkeletonDamageBonus = ReadBool(SkeletonDamageKey);
+            HasDemonDamageBonus = ReadBool(DemonDamageKey);
+            HasSpiderDamageBonus = ReadBool(SpiderDamageKey);
+            HasZombieDamageBonus = ReadBool(ZombieDamageKey);
+            HasBossDamageBonus = ReadBool(BossDamageKey);
+            HasPassiveHealthRegeneration = ReadBool(PassiveHealthRegenerationKey);
+            HasRobocopRegeneration = ReadBool(RobocopRegenerationKey);
+            IsLastChanceActive = ReadBool(LastChanceKey);
+            HasVampireAbility = ReadBool(VampireKey);
+            HasOnePunchManAbility = ReadBool(OnePunchManKey);
+        }
+
         private void ApplyLoadedEffects()
         {
             if (_hero == null)
@@ -359,54 +329,58 @@ namespace Player.Abilities
                 return;
             }
 
+            if (HasArmor)
+            {
+                _armorManager?.UnlockArmorAbility();
+            }
+
             if (HasPassiveHealthRegeneration)
             {
-                var passiveRegen = _hero.GetComponent<PassiveHealthRegeneration>();
-
-                if (passiveRegen != null)
-                {
-                    passiveRegen.EnableRegeneration();
-                }
+                _hero.GetComponent<PassiveHealthRegeneration>()?.EnableRegeneration();
             }
 
             if (HasRobocopRegeneration)
             {
-                var armorRegen = _hero.GetComponent<PassiveArmorRegeneration>();
-
-                if (armorRegen != null)
-                {
-                    armorRegen.Activate();
-                }
+                _hero.GetComponent<PassiveArmorRegeneration>()?.Activate();
             }
 
             if (HasVampireAbility)
             {
-                var vampireSystem = _hero.GetComponent<VampireHealthSystem>();
-
-                if (vampireSystem == null)
-                {
-                    vampireSystem = _hero.gameObject.AddComponent<VampireHealthSystem>();
-                }
-
-                vampireSystem.Activate();
+                GetOrAddComponent<VampireHealthSystem>()?.Activate();
             }
 
             if (HasOnePunchManAbility)
             {
-                var onePunchSystem = _hero.GetComponent<OnePunchManSystem>();
-
-                if (onePunchSystem == null)
-                {
-                    onePunchSystem = _hero.gameObject.AddComponent<OnePunchManSystem>();
-                }
-
-                onePunchSystem.Activate();
+                GetOrAddComponent<OnePunchManSystem>()?.Activate();
             }
+        }
 
-            if (HasArmor && _armorManager != null)
-            {
-                _armorManager.UnlockArmorAbility();
-            }
+        private void SaveAbilities()
+        {
+            SaveToPlayerPrefs();
+            SaveToSaveSystem();
+        }
+
+        private void SaveToPlayerPrefs()
+        {
+            WriteBool(DashKey, HasDash);
+            WriteBool(DoubleJumpKey, HasDoubleJump);
+            WriteBool(MapKey, HasMap);
+            WriteBool(AnatomyKey, HasAnatomy);
+            WriteBool(ArmorKey, HasArmor);
+            WriteBool(SwampDamageKey, HasSwampDamageBonus);
+            WriteBool(SkeletonDamageKey, HasSkeletonDamageBonus);
+            WriteBool(DemonDamageKey, HasDemonDamageBonus);
+            WriteBool(SpiderDamageKey, HasSpiderDamageBonus);
+            WriteBool(ZombieDamageKey, HasZombieDamageBonus);
+            WriteBool(BossDamageKey, HasBossDamageBonus);
+            WriteBool(PassiveHealthRegenerationKey, HasPassiveHealthRegeneration);
+            WriteBool(RobocopRegenerationKey, HasRobocopRegeneration);
+            WriteBool(LastChanceKey, IsLastChanceActive);
+            WriteBool(VampireKey, HasVampireAbility);
+            WriteBool(OnePunchManKey, HasOnePunchManAbility);
+
+            PlayerPrefs.Save();
         }
 
         private void SaveToSaveSystem()
@@ -417,56 +391,14 @@ namespace Player.Abilities
             }
         }
 
-        private void LoadFromPlayerPrefs()
+        private bool ReadBool(string key)
         {
-            int activeStateValue = 1;
-            int inactiveStateValue = 0;
-
-            HasDash = PlayerPrefs.GetInt("Ability_Dash", inactiveStateValue) == activeStateValue;
-            HasDoubleJump = PlayerPrefs.GetInt("Ability_DoubleJump", inactiveStateValue) == activeStateValue;
-            HasMap = PlayerPrefs.GetInt("Ability_Map", inactiveStateValue) == activeStateValue;
-            HasAnatomy = PlayerPrefs.GetInt("Ability_Anatomy", inactiveStateValue) == activeStateValue;
-            HasArmor = PlayerPrefs.GetInt("Ability_Armor", inactiveStateValue) == activeStateValue;
-            HasSwampDamageBonus = PlayerPrefs.GetInt("Ability_SwampDamage", inactiveStateValue) == activeStateValue;
-            HasSkeletonDamageBonus = PlayerPrefs.GetInt("Ability_SkeletonDamage", inactiveStateValue) == activeStateValue;
-            HasDemonDamageBonus = PlayerPrefs.GetInt("Ability_DemonDamage", inactiveStateValue) == activeStateValue;
-            HasSpiderDamageBonus = PlayerPrefs.GetInt("Ability_SpiderDamage", inactiveStateValue) == activeStateValue;
-            HasZombieDamageBonus = PlayerPrefs.GetInt("Ability_ZombieDamage", inactiveStateValue) == activeStateValue;
-            HasBossDamageBonus = PlayerPrefs.GetInt("Ability_BossDamage", inactiveStateValue) == activeStateValue;
-            IsLastChanceActive = PlayerPrefs.GetInt("LastChance_Active", inactiveStateValue) == activeStateValue;
-            HasVampireAbility = PlayerPrefs.GetInt("Ability_Vampire", inactiveStateValue) == activeStateValue;
-            HasPassiveHealthRegeneration = PlayerPrefs.GetInt("Ability_PassiveHealthRegen", inactiveStateValue) == activeStateValue;
-            HasRobocopRegeneration = PlayerPrefs.GetInt("Ability_RobocopRegen", inactiveStateValue) == activeStateValue;
-            HasOnePunchManAbility = PlayerPrefs.GetInt("Ability_OnePunchMan", inactiveStateValue) == activeStateValue;
+            return PlayerPrefs.GetInt(key, InactiveValue) == ActiveValue;
         }
 
-        private void SaveAbilities()
+        private void WriteBool(string key, bool value)
         {
-            SaveToPlayerPrefs();
-        }
-
-        private void SaveToPlayerPrefs()
-        {
-            int activeStateValue = 1;
-            int inactiveStateValue = 0;
-
-            PlayerPrefs.SetInt("Ability_Dash", HasDash ? activeStateValue : inactiveStateValue);
-            PlayerPrefs.SetInt("Ability_DoubleJump", HasDoubleJump ? activeStateValue : inactiveStateValue);
-            PlayerPrefs.SetInt("Ability_Map", HasMap ? activeStateValue : inactiveStateValue);
-            PlayerPrefs.SetInt("Ability_Anatomy", HasAnatomy ? activeStateValue : inactiveStateValue);
-            PlayerPrefs.SetInt("Ability_Armor", HasArmor ? activeStateValue : inactiveStateValue);
-            PlayerPrefs.SetInt("Ability_SwampDamage", HasSwampDamageBonus ? activeStateValue : inactiveStateValue);
-            PlayerPrefs.SetInt("Ability_SkeletonDamage", HasSkeletonDamageBonus ? activeStateValue : inactiveStateValue);
-            PlayerPrefs.SetInt("Ability_DemonDamage", HasDemonDamageBonus ? activeStateValue : inactiveStateValue);
-            PlayerPrefs.SetInt("Ability_SpiderDamage", HasSpiderDamageBonus ? activeStateValue : inactiveStateValue);
-            PlayerPrefs.SetInt("Ability_ZombieDamage", HasZombieDamageBonus ? activeStateValue : inactiveStateValue);
-            PlayerPrefs.SetInt("Ability_BossDamage", HasBossDamageBonus ? activeStateValue : inactiveStateValue);
-            PlayerPrefs.SetInt("Ability_PassiveHealthRegen", HasPassiveHealthRegeneration ? activeStateValue : inactiveStateValue);
-            PlayerPrefs.SetInt("Ability_RobocopRegen", HasRobocopRegeneration ? activeStateValue : inactiveStateValue);
-            PlayerPrefs.SetInt("LastChance_Active", IsLastChanceActive ? activeStateValue : inactiveStateValue);
-            PlayerPrefs.SetInt("Ability_Vampire", HasVampireAbility ? activeStateValue : inactiveStateValue);
-            PlayerPrefs.SetInt("Ability_OnePunchMan", HasOnePunchManAbility ? activeStateValue : inactiveStateValue);
-            PlayerPrefs.Save();
+            PlayerPrefs.SetInt(key, value ? ActiveValue : InactiveValue);
         }
     }
 }

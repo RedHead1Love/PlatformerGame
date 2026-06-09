@@ -23,7 +23,7 @@ public sealed class AirAttackState : BaseAttackState
 
     public override void OnAnimationEnd()
     {
-        if (_groundCheck.IsGrounded)
+        if (_groundCheck != null && _groundCheck.IsGrounded)
         {
             _hero.StateMachine.Change<IdleState>();
         }

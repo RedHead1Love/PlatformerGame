@@ -7,6 +7,7 @@ public sealed class OnePunchManSystem : MonoBehaviour, IOnePunchManSystem
     private const float DefaultInstakillChance = 0.5f;
     private const float DefaultInstakillTextHeight = 1f;
     private const float DefaultTextLifetime = 2f;
+    private const int InstakillFontSize = 16;
 
     [SerializeField] private float _instakillChance = DefaultInstakillChance;
     [SerializeField] private bool _showInstakillEffect = true;
@@ -15,21 +16,14 @@ public sealed class OnePunchManSystem : MonoBehaviour, IOnePunchManSystem
     private Hero _hero;
     private AbilityManager _abilityManager;
     private AudioController _audioController;
-    private bool _isActive = false;
+    private bool _isActive;
 
     public float InstakillChance => _instakillChance;
     public bool IsActive => _isActive;
 
     private void Awake()
     {
-        _hero = GetComponent<Hero>();
-
-        if (_hero == null)
-        {
-            _hero = FindObjectOfType<Hero>();
-        }
-
-        _audioController = GetComponent<AudioController>() ?? GetComponentInChildren<AudioController>();
+        InitializeReferences();
     }
 
     private void Start()
@@ -37,24 +31,11 @@ public sealed class OnePunchManSystem : MonoBehaviour, IOnePunchManSystem
         CheckIfAbilityPurchased();
     }
 
-    private void CheckIfAbilityPurchased()
-    {
-        if (_hero != null && _abilityManager == null)
-        {
-            _abilityManager = _hero.AbilityManager;
-        }
-
-        _isActive = (_abilityManager?.HasOnePunchManAbility ?? false);
-    }
-
     public void Activate()
     {
         _isActive = true;
 
-        if (_abilityManager == null && _hero != null)
-        {
-            _abilityManager = _hero.AbilityManager;
-        }
+        RefreshAbilityManagerReference();
 
         if (_abilityManager != null)
         {
@@ -69,31 +50,60 @@ public sealed class OnePunchManSystem : MonoBehaviour, IOnePunchManSystem
 
     public bool CheckForInstakill(Entity enemy)
     {
-        float minRandomValue = 0f;
-        float maxRandomValue = 1f;
-
-        if (!_isActive || enemy == null)
+        if (_isActive == false || enemy == null)
         {
             return false;
         }
 
-        float randomValue = Random.Range(minRandomValue, maxRandomValue);
-
-        if (randomValue <= _instakillChance)
+        if (Random.value > _instakillChance)
         {
-            PerformInstakill(enemy);
-
-            return true;
+            return false;
         }
 
-        return false;
+        PerformInstakill(enemy);
+
+        return true;
+    }
+
+    private void InitializeReferences()
+    {
+        _hero = GetComponent<Hero>();
+
+        if (_hero == null)
+        {
+            _hero = FindFirstObjectByType<Hero>();
+        }
+
+        _audioController = GetComponent<AudioController>();
+
+        if (_audioController == null)
+        {
+            _audioController = GetComponentInChildren<AudioController>();
+        }
+
+        _abilityManager = _hero?.AbilityManager;
+    }
+
+    private void CheckIfAbilityPurchased()
+    {
+        RefreshAbilityManagerReference();
+
+        _isActive = _abilityManager?.HasOnePunchManAbility ?? false;
+    }
+
+    private void RefreshAbilityManagerReference()
+    {
+        if (_abilityManager == null && _hero != null)
+        {
+            _abilityManager = _hero.AbilityManager;
+        }
     }
 
     private void PerformInstakill(Entity enemy)
     {
-        if (enemy == null)
+        if (_instakillSound != null && _audioController != null)
         {
-            return;
+            _audioController.PlayOneShot(_instakillSound);
         }
 
         if (_showInstakillEffect)
@@ -104,20 +114,18 @@ public sealed class OnePunchManSystem : MonoBehaviour, IOnePunchManSystem
 
     private void ShowInstakillEffect(Vector3 position)
     {
-        int fontSize = 16;
+        GameObject textObject = new GameObject("InstakillEffect");
 
-        GameObject textObj = new GameObject("InstakillEffect");
+        textObject.transform.position = position + Vector3.up * DefaultInstakillTextHeight;
 
-        textObj.transform.position = position + Vector3.up * DefaultInstakillTextHeight;
-
-        TextMesh textMesh = textObj.AddComponent<TextMesh>();
+        TextMesh textMesh = textObject.AddComponent<TextMesh>();
 
         textMesh.text = "OneShot";
         textMesh.color = Color.magenta;
-        textMesh.fontSize = fontSize;
+        textMesh.fontSize = InstakillFontSize;
         textMesh.anchor = TextAnchor.MiddleCenter;
         textMesh.fontStyle = FontStyle.Bold;
 
-        Destroy(textObj, DefaultTextLifetime);
+        Destroy(textObject, DefaultTextLifetime);
     }
 }

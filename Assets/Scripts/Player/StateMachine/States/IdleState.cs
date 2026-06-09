@@ -23,13 +23,16 @@ namespace Player.StateMachine
             _rigidbody = hero.Rigidbody;
         }
 
-        public void Enter() => UpdateAnimationState();
+        public void Enter()
+        {
+            UpdateAnimationState();
+        }
 
         public void Tick()
         {
             UpdateAnimationState();
 
-            if (!_groundCheck.IsGrounded)
+            if (_groundCheck != null && _groundCheck.IsGrounded == false)
             {
                 _hero.StateMachine.Change<JumpState>();
 
@@ -39,19 +42,28 @@ namespace Player.StateMachine
             HandleInput();
         }
 
-        public void FixedTick() => StopHorizontalMovement();
+        public void FixedTick()
+        {
+            StopHorizontalMovement();
+        }
 
         public void Exit() { }
 
         private void UpdateAnimationState()
         {
-            States targetState = _enemyScanner.HasEnemyNearby ? States.Idle2 : States.Idle;
+            bool hasEnemyNearby = _enemyScanner != null && _enemyScanner.HasEnemyNearby;
+            States targetState = hasEnemyNearby ? States.Idle2 : States.Idle;
 
             _hero.AnimationService.SetState(targetState);
         }
 
         private void HandleInput()
         {
+            if (_inputProvider == null)
+            {
+                return;
+            }
+
             if (Mathf.Abs(_inputProvider.HorizontalAxis) > HorizontalDeadZone)
             {
                 _hero.StateMachine.Change<RunState>();
@@ -83,16 +95,19 @@ namespace Player.StateMachine
             if (_inputProvider.IsSecondaryAttackPressed)
             {
                 _hero.StateMachine.Change<Attack3State>();
-
-                return;
             }
         }
 
         private void StopHorizontalMovement()
         {
+            if (_rigidbody == null)
+            {
+                return;
+            }
+
             Vector2 velocity = _rigidbody.velocity;
 
-            _rigidbody.velocity = new Vector2(0.0f, velocity.y);
+            _rigidbody.velocity = new Vector2(0f, velocity.y);
         }
     }
 }

@@ -20,30 +20,6 @@ public sealed class GameManager : MonoBehaviour
         SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
-    private void InitializeSingleton()
-    {
-        if (Instance == null)
-        {
-            Instance = this;
-
-            DontDestroyOnLoad(gameObject);
-
-            SceneManager.sceneLoaded += OnSceneLoaded;
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
-    }
-
-    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        if (scene.name == MainMenuSceneName || _shouldStartNewGame)
-        {
-            StartNewGame();
-        }
-    }
-
     public void StartNewGame()
     {
         GameStateManager.ResetGameState();
@@ -63,9 +39,32 @@ public sealed class GameManager : MonoBehaviour
         _shouldStartNewGame = true;
     }
 
+    private void InitializeSingleton()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+
+            DontDestroyOnLoad(gameObject);
+            SceneManager.sceneLoaded += OnSceneLoaded;
+
+            return;
+        }
+
+        Destroy(gameObject);
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name == MainMenuSceneName || _shouldStartNewGame)
+        {
+            StartNewGame();
+        }
+    }
+
     private void ResetKeyCollectionUI()
     {
-        KeyCollection keyCollection = FindObjectOfType<KeyCollection>();
+        KeyCollection keyCollection = FindFirstObjectByType<KeyCollection>();
 
         keyCollection?.ResetAllKeys();
     }

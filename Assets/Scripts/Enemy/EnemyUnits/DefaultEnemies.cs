@@ -10,7 +10,6 @@ namespace EnemyLogicDefault
     {
         private const string PlayerLayerName = "Player";
         private const float DestroyDelay = 1f;
-        private const float MovementThreshold = 0.01f;
         private const float DirectionThreshold = 0f;
         private const float BoxRotationAngle = 0f;
         private const int HealthThreshold = 0;
@@ -51,17 +50,18 @@ namespace EnemyLogicDefault
         {
             base.Awake();
 
-            _animator = GetComponent<Animator>();
-            _patrolAI = GetComponent<PatrolAI>();
-            _audioController = GetComponent<EnemyAudioController>();
+            InitializeComponents();
+            SubscribeToPatrolEvents();
+        }
 
-            _patrolAI.OnMoveDirectionChanged += HandleMovementDirectionChanged;
-            _patrolAI.OnInAttackRange += HandleAttackRangeChanged;
+        private void OnDestroy()
+        {
+            UnsubscribeFromPatrolEvents();
         }
 
         private void Update()
         {
-            if (_isHurt || _isAttacking)
+            if (IsDead || _isHurt || _isAttacking)
             {
                 return;
             }
@@ -72,18 +72,9 @@ namespace EnemyLogicDefault
             }
         }
 
-        private void StartAttack()
-        {
-            _isAttacking = true;
-            _nextAttackTime = Time.time + _attackDuration + _attackPause + _attackCooldown;
-
-            SetAnimationState(AnimationState.Attack);
-            Invoke(nameof(OnAttackEnded), _attackDuration);
-        }
-
         public override void TakeDamage(int amount)
         {
-            if (_isHurt)
+            if (_isHurt || IsDead)
             {
                 return;
             }
@@ -97,189 +88,257 @@ namespace EnemyLogicDefault
             }
         }
 
-        private void StartHurtState()
+        public override void Die()
         {
-            const int FullBodyAnimationLayer = -1;
-            const float ResetToAnimationStart = 0f;
-            const string HurtAnimationName = "Hurt";
-            const string StateParameter = "state";
+            if (IsDead)
+            {
+                return;
+            }
 
-            _wasPlayerInRangeBeforeHurt = _isPlayerInRange;
-            _isHurt = true;
-            _patrolAI.enabled = false;
+            PlayDeathSound();
 
-            _animator.Play(HurtAnimationName, FullBodyAnimationLayer, ResetToAnimationStart);
-            _animator.SetInteger(StateParameter, (int)AnimationState.Hurt);
+            base.Die();
 
-            Invoke(nameof(EndHurtState), _hurtInvulnerabilityDuration);
+            Destroy(gameObject, DestroyDelay);
+        }
+
+        private void InitializeComponents()
+        {
+            _animator = GetComponent<Animator>();
+            _patrolAI = GetComponent<PatrolAI>();
+            _audioController = GetComponent<EnemyAudioController>();
+        }
+
+        private void SubscribeToPatrolEvents()
+        {
+            if (_patrolAI == null)
+            {
+                return;
+            }
+
+            _patrolAI.OnMoveDirectionChanged += HandleMovementDirectionChanged;
+            _patrolAI.OnInAttackRange += HandleAttackRangeChanged;
+        }
+
+        private void UnsubscribeFromPatrolEvents()
+        {
+            if (_patrolAI == null)
+            {
+                return;
+            }
+
+            _patrolAI.OnMoveDirectionChanged -= HandleMovementDirectionChanged;
+            _patrolAI.OnInAttackRange -= HandleAttackRangeChanged;
         }
 
         public void OnAttack()
         {
-            Vector2 attackCenter = CalculateAttackCenter(_attackOffset);
-            bool hitConnected = CheckForHit(attackCenter, _attackSize, _attackDamage);
-            PlayAttackSound(hitConnected);
+            ApplyAttackDamage();
         }
 
-        private Vector2 CalculateAttackCenter(Vector2 offset)
+        public void OnAttackAnimationEnd()
         {
-            float directionSign = Mathf.Sign(transform.localScale.x);
-            return (Vector2)transform.position + new Vector2(directionSign * offset.x, offset.y);
+            FinishAttack();
         }
 
-        private bool CheckForHit(Vector2 center, Vector2 size, int damage)
+        public void OnAttackEnd()
         {
-            Collider2D[] hits = Physics2D.OverlapBoxAll(center, size, BoxRotationAngle, LayerMask.GetMask(PlayerLayerName));
-            bool hitConnected = false;
+            FinishAttack();
+        }
 
-            foreach (Collider2D hit in hits)
+        private void OnAttackEnded()
+        {
+            FinishAttack();
+        }
+
+        private void FinishAttack()
+        {
+            _isAttacking = false;
+
+            SetAnimationState(_isPlayerInRange ? AnimationState.Idle : AnimationState.Walk);
+        }
+
+        private void StartAttack()
+        {
+            _isAttacking = true;
+            _nextAttackTime = Time.time + _attackDuration + _attackPause + _attackCooldown;
+
+            SetAnimationState(AnimationState.Attack);
+            Invoke(nameof(OnAttackEnded), _attackDuration);
+        }
+
+        private void ApplyAttackDamage()
+        {
+            FacePlayerIfPossible();
+
+            Vector2 attackCenter = CalculateAttackCenter();
+
+            Collider2D playerCollider = Physics2D.OverlapBox(
+                attackCenter,
+                _attackSize,
+                BoxRotationAngle,
+                LayerMask.GetMask(PlayerLayerName));
+
+            if (playerCollider == null)
             {
-                if (hit.TryGetComponent(out Hero hero))
-                {
-                    hero.TakeDamage(damage);
-                    hitConnected = true;
-                }
+                _audioController?.PlayAttackMissSound();
+
+                return;
             }
 
-            return hitConnected;
+            IDamageable damageable = playerCollider.GetComponent<IDamageable>();
+
+            if (damageable == null)
+            {
+                damageable = playerCollider.GetComponentInParent<IDamageable>();
+            }
+
+            if (damageable == null)
+            {
+                _audioController?.PlayAttackMissSound();
+
+                return;
+            }
+
+            damageable.TakeDamage(_attackDamage);
+
+            _audioController?.PlayAttackHitSound();
         }
 
-        private void PlayAttackSound(bool hitConnected)
+        private void FacePlayerIfPossible()
         {
-            if (_audioController == null)
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+
+            if (player == null)
             {
                 return;
             }
 
-            if (hitConnected)
+            float directionToPlayer = player.transform.position.x - transform.position.x;
+
+            if (Mathf.Abs(directionToPlayer) <= DirectionThreshold)
             {
-                _audioController.PlayAttackHitSound();
+                return;
             }
-            else
-            {
-                _audioController.PlayAttackMissSound();
-            }
+
+            UpdateFacingDirection(directionToPlayer);
         }
 
-        private void PlayHurtSound() => _audioController?.PlayHurtSound();
-        private void PlayDeathSound() => _audioController?.PlayDeathSound();
-
-        public void OnAttackEnded()
+        private Vector2 CalculateAttackCenter()
         {
-            _isAttacking = false;
+            float direction = transform.localScale.x >= DirectionThreshold ? 1f : -1f;
 
-            if (_isPlayerInRange)
+            Vector2 offset = new Vector2(_attackOffset.x * direction, _attackOffset.y);
+
+            return (Vector2)transform.position + offset;
+        }
+
+        private void StartHurtState()
+        {
+            const string HurtAnimationName = "Hurt";
+            const string StateParameterName = "state";
+            const int FullBodyAnimationLayer = -1;
+            const float ResetToAnimationStart = 0f;
+
+            _wasPlayerInRangeBeforeHurt = _isPlayerInRange;
+            _isHurt = true;
+
+            if (_patrolAI != null)
             {
-                _nextAttackTime = Time.time + _attackCooldown;
+                _patrolAI.enabled = false;
             }
 
-            UpdateAnimation(_patrolAI.CurrentDirection);
+            if (_animator != null)
+            {
+                _animator.Play(HurtAnimationName, FullBodyAnimationLayer, ResetToAnimationStart);
+                _animator.SetInteger(StateParameterName, (int)AnimationState.Hurt);
+            }
+
+            Invoke(nameof(EndHurtState), _hurtInvulnerabilityDuration);
         }
 
         private void EndHurtState()
         {
-            const int FullBodyAnimationLayer = -1;
-            const float ResetToAnimationStart = 0f;
-            const string IdleAnimationName = "Idle";
-
             _isHurt = false;
-            _patrolAI.enabled = true;
+            _isPlayerInRange = _wasPlayerInRangeBeforeHurt;
 
-            _animator.Play(IdleAnimationName, FullBodyAnimationLayer, ResetToAnimationStart);
-
-            if (_wasPlayerInRangeBeforeHurt && Time.time >= _nextAttackTime)
+            if (_patrolAI != null && IsDead == false)
             {
-                StartAttack();
-            }
-            else
-            {
-                UpdateAnimation(_patrolAI.CurrentDirection);
-            }
-        }
-
-        private void HandleAttackRangeChanged(bool isInRange)
-        {
-            _isPlayerInRange = isInRange;
-
-            if (_isHurt)
-            {
-                return;
+                _patrolAI.enabled = true;
             }
 
-            if (isInRange && !_isAttacking && Time.time >= _nextAttackTime)
-            {
-                StartAttack();
-            }
+            SetAnimationState(_isPlayerInRange ? AnimationState.Idle : AnimationState.Walk);
         }
 
         private void HandleMovementDirectionChanged(Vector2 direction)
-        {
-            UpdateAnimation(direction);
-        }
-
-        private void UpdateAnimation(Vector2 direction)
         {
             if (_isHurt || _isAttacking)
             {
                 return;
             }
 
-            var animationState = direction.magnitude > MovementThreshold
-                ? AnimationState.Walk
-                : AnimationState.Idle;
-
-            SetAnimationState(animationState);
-            UpdateFacingDirection(direction);
-        }
-
-        private void UpdateFacingDirection(Vector2 direction)
-        {
-            if (direction.x != DirectionThreshold)
+            if (Mathf.Abs(direction.x) <= DirectionThreshold)
             {
-                float scaleSign = Mathf.Sign(direction.x);
-                transform.localScale = new Vector3(
-                    scaleSign * Mathf.Abs(transform.localScale.x),
-                    transform.localScale.y,
-                    transform.localScale.z);
+                return;
             }
+
+            UpdateFacingDirection(direction.x);
+            SetAnimationState(AnimationState.Walk);
         }
 
-        public override void Die()
+        private void UpdateFacingDirection(float directionX)
         {
-            CancelInvoke(nameof(EndHurtState));
-            CancelInvoke(nameof(OnAttackEnded));
+            float directionSign = Mathf.Sign(directionX);
 
-            _patrolAI.enabled = false;
-            enabled = false;
-
-            SetAnimationState(AnimationState.Death);
-            PlayDeathSound();
-
-            base.Die();
-            Destroy(gameObject, DestroyDelay);
+            transform.localScale = new Vector3(
+                directionSign * Mathf.Abs(transform.localScale.x),
+                transform.localScale.y,
+                transform.localScale.z);
         }
 
-        private void OnDestroy()
+        private void HandleAttackRangeChanged(bool isInRange)
         {
-            if (_patrolAI != null)
+            _isPlayerInRange = isInRange;
+
+            if (_isHurt || _isAttacking)
             {
-                _patrolAI.OnMoveDirectionChanged -= HandleMovementDirectionChanged;
-                _patrolAI.OnInAttackRange -= HandleAttackRangeChanged;
+                return;
             }
+
+            SetAnimationState(isInRange ? AnimationState.Idle : AnimationState.Walk);
         }
 
         private void SetAnimationState(AnimationState state)
         {
-            _animator.SetInteger("state", (int)state);
+            if (_animator != null)
+            {
+                _animator.SetInteger("state", (int)state);
+            }
         }
 
-        private enum AnimationState
+        private void PlayHurtSound()
         {
-            Idle,
-            Walk,
-            Attack,
-            Hurt,
-            Death
+            _audioController?.PlayHurtSound();
         }
+
+        private void PlayDeathSound()
+        {
+            _audioController?.PlayDeathSound();
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireCube(CalculateAttackCenter(), _attackSize);
+        }
+    }
+
+    public enum AnimationState
+    {
+        Idle = 0,
+        Walk = 1,
+        Attack = 2,
+        Hurt = 3,
+        Death = 4
     }
 }

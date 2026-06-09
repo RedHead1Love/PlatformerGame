@@ -3,6 +3,11 @@ using UnityEngine;
 
 public sealed class DamageCalculator
 {
+    private const float NeutralMultiplier = 1f;
+    private const float TextVerticalOffset = 2f;
+    private const float TextDestroyDelay = 2f;
+    private const int TextFontSize = 36;
+
     private readonly AbilityManager _abilityManager;
 
     public DamageCalculator(AbilityManager abilityManager)
@@ -12,111 +17,69 @@ public sealed class DamageCalculator
 
     public int CalculateDamageWithBonuses(int baseDamage, GameObject target = null)
     {
-        int finalDamage = baseDamage;
-        float neutralMultiplier = 1f;
-
-        if (_abilityManager != null && target != null)
+        if (_abilityManager == null || target == null)
         {
-            float multiplier = _abilityManager.GetDamageMultiplierForEnemy(target);
-
-            if (multiplier > neutralMultiplier)
-            {
-                finalDamage = Mathf.RoundToInt(baseDamage * multiplier);
-
-                EnemyTypeComponent enemyTypeComponent = target.GetComponent<EnemyTypeComponent>() ?? target.GetComponentInParent<EnemyTypeComponent>();
-
-                if (enemyTypeComponent != null)
-                {
-                    bool hasBonus = _abilityManager.HasBonusForEnemy(target);
-
-                    string bonusType = GetSpecificBonusType(enemyTypeComponent.EnemyType);
-                    bool isBonusActive = CheckSpecificBonus(enemyTypeComponent.EnemyType);
-                }
-
-                ShowBonusDamageEffect(target, multiplier, enemyTypeComponent);
-            }
+            return baseDamage;
         }
+
+        float multiplier = _abilityManager.GetDamageMultiplierForEnemy(target);
+
+        if (multiplier <= NeutralMultiplier)
+        {
+            return baseDamage;
+        }
+
+        int finalDamage = Mathf.CeilToInt(baseDamage * multiplier);
+
+        ShowBonusDamageEffect(target, multiplier);
 
         return finalDamage;
     }
 
-    private string GetSpecificBonusType(EnemyType enemyType)
+    private void ShowBonusDamageEffect(GameObject target, float multiplier)
     {
-        return enemyType switch
-        {
-            EnemyType.Swamp => "Swamp Damage Bonus",
-            EnemyType.Skeleton => "Skeleton Damage Bonus",
-            EnemyType.Demon => "Demon Damage Bonus",
-            EnemyType.Spider => "Spider Damage Bonus",
-            EnemyType.Zombie => "Zombie Damage Bonus",
-            EnemyType.Boss => "Boss Damage Bonus",
-            _ => "No Bonus"
-        };
-    }
+        EnemyTypeComponent enemyTypeComponent = target.GetComponent<EnemyTypeComponent>();
 
-    private bool CheckSpecificBonus(EnemyType enemyType)
-    {
-        if (_abilityManager == null)
+        if (enemyTypeComponent == null)
         {
-            return false;
+            enemyTypeComponent = target.GetComponentInParent<EnemyTypeComponent>();
         }
 
-        return enemyType switch
-        {
-            EnemyType.Swamp => _abilityManager.HasSwampDamageBonus,
-            EnemyType.Skeleton => _abilityManager.HasSkeletonDamageBonus,
-            EnemyType.Demon => _abilityManager.HasDemonDamageBonus,
-            EnemyType.Spider => _abilityManager.HasSpiderDamageBonus,
-            EnemyType.Zombie => _abilityManager.HasZombieDamageBonus,
-            EnemyType.Boss => _abilityManager.HasBossDamageBonus,
-            _ => false
-        };
-    }
+        string enemyTypeName = enemyTypeComponent != null
+            ? GetEnemyTypeName(enemyTypeComponent.EnemyType)
+            : "враг";
 
-    private void ShowBonusDamageEffect(GameObject target, float multiplier, EnemyTypeComponent enemyTypeComponent = null)
-    {
-        string enemyTypeName = "врага";
-
-        if (enemyTypeComponent != null)
-        {
-            enemyTypeName = GetEnemyTypeName(enemyTypeComponent.EnemyType);
-        }
-
-        CreateBonusDamageText(target, $"БОЛОТО x{multiplier}!");
+        CreateBonusDamageText(target, $"{enemyTypeName} x{multiplier}!");
     }
 
     private string GetEnemyTypeName(EnemyType enemyType)
     {
         return enemyType switch
         {
-            EnemyType.Swamp => "болотного врага",
-            EnemyType.Skeleton => "скелета",
-            EnemyType.Demon => "демона",
-            EnemyType.Spider => "паука",
-            EnemyType.Zombie => "зомби",
-            EnemyType.Boss => "босса",
-            _ => "врага"
+            EnemyType.Swamp => "Болото",
+            EnemyType.Skeleton => "Скелет",
+            EnemyType.Demon => "Демон",
+            EnemyType.Spider => "Паук",
+            EnemyType.Zombie => "Зомби",
+            EnemyType.Boss => "Босс",
+            _ => "Враг"
         };
     }
 
     private void CreateBonusDamageText(GameObject target, string text)
     {
-        float verticalOffset = 2f;
-        string textObjectName = "BonusDamageText";
-        int fontSize = 36;
-        float destroyDelay = 2f;
+        GameObject textObject = new GameObject("BonusDamageText");
 
-        GameObject textObj = new GameObject(textObjectName);
-        textObj.transform.position = target.transform.position + Vector3.up * verticalOffset;
+        textObject.transform.position = target.transform.position + Vector3.up * TextVerticalOffset;
 
-        TextMesh textMesh = textObj.AddComponent<TextMesh>();
+        TextMesh textMesh = textObject.AddComponent<TextMesh>();
+
         textMesh.text = text;
-
         textMesh.color = Color.red;
-        textMesh.fontSize = fontSize;
+        textMesh.fontSize = TextFontSize;
         textMesh.anchor = TextAnchor.MiddleCenter;
         textMesh.fontStyle = FontStyle.Bold;
 
-        Object.Destroy(textObj, destroyDelay);
+        Object.Destroy(textObject, TextDestroyDelay);
     }
 }

@@ -11,11 +11,13 @@ namespace Shared.Sensors
         [SerializeField] private LayerMask _enemyLayerMask;
 
         private AudioController _audioController;
-        private bool _hasEnemyNearby;
+        private bool _hadEnemyNearby;
         private float _lastSoundTime;
-        private float _soundCooldown = DefaultSoundCooldown;
 
-        public bool HasEnemyNearby => Physics2D.OverlapCircleAll(transform.position, _detectionRange, _enemyLayerMask).Length > 0;
+        public bool HasEnemyNearby => Physics2D.OverlapCircle(
+            transform.position,
+            _detectionRange,
+            _enemyLayerMask);
 
         private void Start()
         {
@@ -29,25 +31,32 @@ namespace Shared.Sensors
 
         private void InitializeAudioController()
         {
-            _audioController = GetComponent<AudioController>() ?? FindObjectOfType<AudioController>();
+            _audioController = GetComponent<AudioController>();
+
+            if (_audioController == null)
+            {
+                _audioController = FindFirstObjectByType<AudioController>();
+            }
         }
 
         private void UpdateEnemyDetection()
         {
-            bool currentEnemyDetection = HasEnemyNearby;
+            bool hasEnemyNearby = HasEnemyNearby;
 
-            if (ShouldPlayDetectionSound(currentEnemyDetection))
+            if (ShouldPlayDetectionSound(hasEnemyNearby))
             {
                 PlayDetectionSound();
                 _lastSoundTime = Time.time;
             }
 
-            _hasEnemyNearby = currentEnemyDetection;
+            _hadEnemyNearby = hasEnemyNearby;
         }
 
-        private bool ShouldPlayDetectionSound(bool currentEnemyDetection)
+        private bool ShouldPlayDetectionSound(bool hasEnemyNearby)
         {
-            return currentEnemyDetection && !_hasEnemyNearby && Time.time >= _lastSoundTime + _soundCooldown;
+            return hasEnemyNearby &&
+                   _hadEnemyNearby == false &&
+                   Time.time >= _lastSoundTime + DefaultSoundCooldown;
         }
 
         private void PlayDetectionSound()

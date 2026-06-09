@@ -7,7 +7,7 @@ public sealed class Checkpoint : MonoBehaviour
     [SerializeField] private string _checkpointId;
     [SerializeField] private AudioClip _activationSound;
 
-    private bool _isActivated = false;
+    private bool _isActivated;
     private SpriteRenderer _spriteRenderer;
 
     private void Start()
@@ -17,12 +17,27 @@ public sealed class Checkpoint : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (_isActivated || !other.CompareTag(PlayerTag))
+        if (_isActivated || other.CompareTag(PlayerTag) == false)
         {
             return;
         }
 
         ActivateCheckpoint(other.transform.position);
+    }
+
+    public string GetCheckpointId()
+    {
+        return _checkpointId;
+    }
+
+    public bool IsActivated()
+    {
+        return _isActivated;
+    }
+
+    public Vector3 GetSpawnPosition()
+    {
+        return transform.position;
     }
 
     private void InitializeCheckpoint()
@@ -31,9 +46,9 @@ public sealed class Checkpoint : MonoBehaviour
 
         if (SaveSystem.Instance != null && SaveSystem.Instance.HasSave())
         {
-            var saveData = SaveSystem.Instance.CurrentSave;
+            GameSaveData saveData = SaveSystem.Instance.CurrentSave;
 
-            _isActivated = saveData.checkpointId == _checkpointId;
+            _isActivated = saveData != null && saveData.checkpointId == _checkpointId;
         }
 
         UpdateVisualState();
@@ -43,7 +58,8 @@ public sealed class Checkpoint : MonoBehaviour
     {
         _isActivated = true;
 
-        SaveSystem.Instance.SaveGame(_checkpointId, playerPosition);
+        SaveSystem.Instance?.SaveGame(_checkpointId, playerPosition);
+        GameStateManager.MarkGameSaved();
 
         PlayActivationEffects();
         UpdateVisualState();
@@ -64,8 +80,4 @@ public sealed class Checkpoint : MonoBehaviour
             _spriteRenderer.color = _isActivated ? Color.green : Color.white;
         }
     }
-
-    public string GetCheckpointId() => _checkpointId;
-    public bool IsActivated() => _isActivated;
-    public Vector3 GetSpawnPosition() => transform.position;
 }

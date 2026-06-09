@@ -1,6 +1,7 @@
-using UnityEngine;
 using AudioSystem;
+using UnityEngine;
 
+[RequireComponent(typeof(AudioSource))]
 public sealed class EnemyAudioController : MonoBehaviour
 {
     [Header("Basic Attack Sounds")]
@@ -22,24 +23,74 @@ public sealed class EnemyAudioController : MonoBehaviour
         InitializeAudioPlayer();
     }
 
+    public void PlayAttackHitSound()
+    {
+        PlaySound(_attackHitSound);
+    }
+
+    public void PlayAttackMissSound()
+    {
+        PlaySound(_attackMissSound);
+    }
+
+    public void PlaySpecialAttackHitSound()
+    {
+        PlaySound(_specialAttackHitSound);
+    }
+
+    public void PlaySpecialAttackMissSound()
+    {
+        PlaySound(_specialAttackMissSound);
+    }
+
+    public void PlayHurtSound()
+    {
+        PlaySound(_hurtSound);
+    }
+
+    public void PlayDeathSound()
+    {
+        PlaySound(_deathSound);
+    }
+
+    public void SetAttackHitSound(AudioClip audioClip)
+    {
+        _attackHitSound = audioClip;
+    }
+
+    public void SetAttackMissSound(AudioClip audioClip)
+    {
+        _attackMissSound = audioClip;
+    }
+
+    public void SetSpecialAttackHitSound(AudioClip audioClip)
+    {
+        _specialAttackHitSound = audioClip;
+    }
+
+    public void SetSpecialAttackMissSound(AudioClip audioClip)
+    {
+        _specialAttackMissSound = audioClip;
+    }
+
+    public void SetHurtSound(AudioClip audioClip)
+    {
+        _hurtSound = audioClip;
+    }
+
+    public void SetDeathSound(AudioClip audioClip)
+    {
+        _deathSound = audioClip;
+    }
+
     private void InitializeAudioPlayer()
     {
         AudioSource audioSource = GetComponent<AudioSource>();
 
-        if (audioSource == null)
-        {
-            audioSource = gameObject.AddComponent<AudioSource>();
-        }
+        audioSource.playOnAwake = false;
 
         _audioPlayer = new AudioPlayer(audioSource);
     }
-
-    public void PlayAttackHitSound() => PlaySound(_attackHitSound);
-    public void PlayAttackMissSound() => PlaySound(_attackMissSound);
-    public void PlaySpecialAttackHitSound() => PlaySound(_specialAttackHitSound);
-    public void PlaySpecialAttackMissSound() => PlaySound(_specialAttackMissSound);
-    public void PlayHurtSound() => PlaySound(_hurtSound);
-    public void PlayDeathSound() => PlaySound(_deathSound);
 
     private void PlaySound(AudioClip audioClip)
     {
@@ -50,11 +101,4 @@ public sealed class EnemyAudioController : MonoBehaviour
 
         _audioPlayer.PlayOneShot(audioClip);
     }
-
-    public void SetAttackHitSound(AudioClip audioClip) => _attackHitSound = audioClip;
-    public void SetAttackMissSound(AudioClip audioClip) => _attackMissSound = audioClip;
-    public void SetSpecialAttackHitSound(AudioClip audioClip) => _specialAttackHitSound = audioClip;
-    public void SetSpecialAttackMissSound(AudioClip audioClip) => _specialAttackMissSound = audioClip;
-    public void SetHurtSound(AudioClip audioClip) => _hurtSound = audioClip;
-    public void SetDeathSound(AudioClip audioClip) => _deathSound = audioClip;
 }

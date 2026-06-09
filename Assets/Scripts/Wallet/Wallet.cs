@@ -8,25 +8,23 @@ namespace GameLogic
         public static Wallet Instance { get; private set; }
 
         private int _coins;
+
         public event Action<int> OnCoinsChanged;
 
         public int Coins => _coins;
 
         private void Awake()
         {
-            if (Instance == null)
-            {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
+            InitializeSingleton();
         }
 
         public void AddCoins(int amount)
         {
+            if (amount <= 0)
+            {
+                return;
+            }
+
             _coins += amount;
 
             OnCoinsChanged?.Invoke(_coins);
@@ -34,7 +32,7 @@ namespace GameLogic
 
         public bool TrySpendCoins(int amount)
         {
-            if (_coins < amount)
+            if (amount <= 0 || _coins < amount)
             {
                 return false;
             }
@@ -46,6 +44,23 @@ namespace GameLogic
             return true;
         }
 
-        public int GetCoins() => _coins;
+        public int GetCoins()
+        {
+            return _coins;
+        }
+
+        private void InitializeSingleton()
+        {
+            if (Instance == null)
+            {
+                Instance = this;
+
+                DontDestroyOnLoad(gameObject);
+
+                return;
+            }
+
+            Destroy(gameObject);
+        }
     }
 }

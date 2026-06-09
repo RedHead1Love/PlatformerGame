@@ -1,6 +1,6 @@
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public sealed class MainMenu : MonoBehaviour
 {
@@ -29,43 +29,11 @@ public sealed class MainMenu : MonoBehaviour
         HandleKeyboardInput();
     }
 
-    private void InitializeGameState()
+    private void OnDestroy()
     {
-        Time.timeScale = 1f;
-    }
-
-    private void InitializeButtonListeners()
-    {
-        _newGameButton?.onClick.AddListener(StartNewGame);
-        _continueButton?.onClick.AddListener(ContinueGame);
-        _exitButton?.onClick.AddListener(ExitGame);
-
-        if (_audioSource == null)
-        {
-            _audioSource = GetComponent<AudioSource>();
-        }
-    }
-
-    private void UpdateContinueButtonVisibility()
-    {
-        if (_continueButton == null)
-        {
-            return;
-        }
-
-        bool hasSaveGame = CheckForExistingSave();
-
-        _continueButton.gameObject.SetActive(hasSaveGame);
-    }
-
-    private bool CheckForExistingSave()
-    {
-        if (SaveSystem.Instance != null)
-        {
-            return SaveSystem.Instance.HasSave();
-        }
-
-        return PlayerPrefs.HasKey(GameSavedKey) && PlayerPrefs.GetInt(GameSavedKey) == GameSavedValue;
+        _newGameButton?.onClick.RemoveListener(StartNewGame);
+        _continueButton?.onClick.RemoveListener(ContinueGame);
+        _exitButton?.onClick.RemoveListener(ExitGame);
     }
 
     private void StartNewGame()
@@ -95,6 +63,44 @@ public sealed class MainMenu : MonoBehaviour
         QuitApplication();
     }
 
+    private void InitializeGameState()
+    {
+        Time.timeScale = 1f;
+    }
+
+    private void InitializeButtonListeners()
+    {
+        _newGameButton?.onClick.AddListener(StartNewGame);
+        _continueButton?.onClick.AddListener(ContinueGame);
+        _exitButton?.onClick.AddListener(ExitGame);
+
+        if (_audioSource == null)
+        {
+            _audioSource = GetComponent<AudioSource>();
+        }
+    }
+
+    private void UpdateContinueButtonVisibility()
+    {
+        if (_continueButton == null)
+        {
+            return;
+        }
+
+        _continueButton.gameObject.SetActive(CheckForExistingSave());
+    }
+
+    private bool CheckForExistingSave()
+    {
+        if (SaveSystem.Instance != null)
+        {
+            return SaveSystem.Instance.HasSave();
+        }
+
+        return PlayerPrefs.HasKey(GameSavedKey) &&
+               PlayerPrefs.GetInt(GameSavedKey) == GameSavedValue;
+    }
+
     private void PlayButtonSound()
     {
         if (_buttonClickSound != null && _audioSource != null)
@@ -109,11 +115,6 @@ public sealed class MainMenu : MonoBehaviour
         EnemyManager.Instance?.ResetAllEnemies();
         GameStateManager.ResetGameState();
 
-        ClearPlayerPrefs();
-    }
-
-    private void ClearPlayerPrefs()
-    {
         PlayerPrefs.DeleteAll();
         PlayerPrefs.Save();
     }

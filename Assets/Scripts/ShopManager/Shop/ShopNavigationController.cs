@@ -5,9 +5,12 @@ using UnityEngine;
 public sealed class ShopNavigationController
 {
     private const float DefaultMoveDelay = 0.2f;
+    private const float InputThreshold = 0.1f;
+    private const int NoItemSelectedIndex = -1;
+    private const int FirstItemIndex = 0;
 
     private readonly float _moveDelay;
-    private Dictionary<WalletManager.CoinType, List<IShopItem>> _itemsByCurrency;
+    private readonly Dictionary<WalletManager.CoinType, List<IShopItem>> _itemsByCurrency;
 
     private WalletManager.CoinType _currentCurrency;
     private int _currentItemIndex;
@@ -25,31 +28,36 @@ public sealed class ShopNavigationController
         {
             _itemsByCurrency[currency] = new List<IShopItem>();
         }
+
+        Reset();
     }
 
     public void AddItems(WalletManager.CoinType currency, List<IShopItem> items)
     {
-        if (_itemsByCurrency.ContainsKey(currency))
+        if (items == null)
         {
-            _itemsByCurrency[currency] = items;
+            _itemsByCurrency[currency] = new List<IShopItem>();
+
+            return;
         }
+
+        _itemsByCurrency[currency] = items;
     }
 
     public bool TryMove(Vector2 inputDirection)
     {
-        float inputMagnitudeThreshold = 0.1f;
-
         if (Time.time - _lastMoveTime < _moveDelay)
         {
             return false;
         }
 
-        bool moved = false;
-
-        if (Mathf.Abs(inputDirection.x) > inputMagnitudeThreshold || Mathf.Abs(inputDirection.y) > inputMagnitudeThreshold)
+        if (Mathf.Abs(inputDirection.x) <= InputThreshold &&
+            Mathf.Abs(inputDirection.y) <= InputThreshold)
         {
-            moved = HandleNavigation(inputDirection);
+            return false;
         }
+
+        bool moved = HandleNavigation(inputDirection);
 
         if (moved)
         {
@@ -59,100 +67,10 @@ public sealed class ShopNavigationController
         return moved;
     }
 
-    private bool HandleNavigation(Vector2 inputDirection)
-    {
-        float inputThreshold = 0.1f;
-        int leftDirection = -1;
-        int rightDirection = 1;
-        int resetItemIndex = -1;
-        int firstItemIndex = 0;
-
-        int itemCount = GetCurrentItemCount();
-
-        if (_currentItemIndex < firstItemIndex)
-        {
-            if (inputDirection.x < -inputThreshold)
-            {
-                return SwitchCurrency(leftDirection);
-            }
-            else if (inputDirection.x > inputThreshold)
-            {
-                return SwitchCurrency(rightDirection);
-            }
-            else if (inputDirection.y < -inputThreshold && itemCount > firstItemIndex)
-            {
-                _currentItemIndex = firstItemIndex;
-
-                return true;
-            }
-        }
-        else
-        {
-            if (inputDirection.y > inputThreshold)
-            {
-                _currentItemIndex = leftDirection;
-
-                return true;
-            }
-            else if (inputDirection.x < -inputThreshold)
-            {
-                if (_currentItemIndex > firstItemIndex)
-                {
-                    _currentItemIndex--;
-
-                    return true;
-                }
-            }
-            else if (inputDirection.x > inputThreshold)
-            {
-                if (_currentItemIndex < itemCount - rightDirection)
-                {
-                    _currentItemIndex++;
-
-                    return true;
-                }
-            }
-            else if (inputDirection.y < -inputThreshold)
-            {
-                if (_currentItemIndex < itemCount - rightDirection)
-                {
-                    _currentItemIndex++;
-
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    private bool SwitchCurrency(int direction)
-    {
-        int minimumIndex = 0;
-        int resetItemIndex = -1;
-
-        int currencyCount = System.Enum.GetValues(typeof(WalletManager.CoinType)).Length;
-
-        int currentCurrencyIndex = (int)_currentCurrency;
-
-        int newCurrencyIndex = currentCurrencyIndex + direction;
-
-        if (newCurrencyIndex >= minimumIndex && newCurrencyIndex < currencyCount)
-        {
-            _currentCurrency = (WalletManager.CoinType)newCurrencyIndex;
-            _currentItemIndex = resetItemIndex;
-
-            return true;
-        }
-
-        return false;
-    }
-
     public IShopItem GetCurrentItem()
     {
-        int minimumValidIndex = 0;
-
-        if (_currentItemIndex < minimumValidIndex || _currentItemIndex >= GetCurrentItemCount())
+        if (_currentItemIndex < FirstItemIndex ||
+            _currentItemIndex >= GetCurrentItemCount())
         {
             return null;
         }
@@ -160,17 +78,92 @@ public sealed class ShopNavigationController
         return _itemsByCurrency[_currentCurrency][_currentItemIndex];
     }
 
-    private int GetCurrentItemCount()
-    {
-        int emptyCount = 0;
-
-        return _itemsByCurrency.ContainsKey(_currentCurrency) ? _itemsByCurrency[_currentCurrency].Count : emptyCount;
-    }
-
     public void Reset()
     {
         _currentCurrency = WalletManager.CoinType.Bronze;
-        _currentItemIndex = -1;
+        _currentItemIndex = NoItemSelectedIndex;
         _lastMoveTime = 0f;
+    }
+
+    private bool HandleNavigation(Vector2 inputDirection)
+    {
+        if (_currentItemIndex < FirstItemIndex)
+        {
+            return HandleCurrencyNavigation(inputDirection);
+        }
+
+        return HandleItemNavigation(inputDirection);
+    }
+
+    private bool HandleCurrencyNavigation(Vector2 inputDirection)
+    {
+        if (inputDirection.x < -InputThreshold)
+        {
+            return SwitchCurrency(-1);
+        }
+
+        if (inputDirection.x > InputThreshold)
+        {
+            return SwitchCurrency(1);
+        }
+
+        if (inputDirection.y < -InputThreshold && GetCurrentItemCount() > 0)
+        {
+            _currentItemIndex = FirstItemIndex;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool HandleItemNavigation(Vector2 inputDirection)
+    {
+        if (inputDirection.y > InputThreshold)
+        {
+            _currentItemIndex = NoItemSelectedIndex;
+
+            return true;
+        }
+
+        if (inputDirection.x < -InputThreshold && _currentItemIndex > FirstItemIndex)
+        {
+            _currentItemIndex--;
+
+            return true;
+        }
+
+        if ((inputDirection.x > InputThreshold || inputDirection.y < -InputThreshold) &&
+            _currentItemIndex < GetCurrentItemCount() - 1)
+        {
+            _currentItemIndex++;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool SwitchCurrency(int direction)
+    {
+        int currencyCount = System.Enum.GetValues(typeof(WalletManager.CoinType)).Length;
+        int newCurrencyIndex = (int)_currentCurrency + direction;
+
+        if (newCurrencyIndex < 0 || newCurrencyIndex >= currencyCount)
+        {
+            return false;
+        }
+
+        _currentCurrency = (WalletManager.CoinType)newCurrencyIndex;
+        _currentItemIndex = NoItemSelectedIndex;
+
+        return true;
+    }
+
+    private int GetCurrentItemCount()
+    {
+        return _itemsByCurrency.TryGetValue(_currentCurrency, out List<IShopItem> items)
+            ? items.Count
+            : 0;
     }
 }

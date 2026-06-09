@@ -1,10 +1,12 @@
 using Player.StateMachine;
-using UnityEngine;
 
 namespace Player
 {
     public sealed class DamageService
     {
+        private const int LastChanceHealth = 1;
+        private const int FatalHealthThreshold = 0;
+
         private readonly Hero _hero;
         private readonly HealthManager _healthManager;
 
@@ -16,41 +18,36 @@ namespace Player
 
         public void ApplyDamage(int damageAmount)
         {
-            int lastChanceHealth = 1;
-
-            if (_healthManager == null)
+            if (_hero == null || _healthManager == null || damageAmount <= 0)
             {
                 return;
             }
 
-            int currentHealth = _healthManager.CurrentHealth;
-
-            if (_hero.AbilityManager != null && _hero.AbilityManager.IsLastChanceActive & damageAmount >= currentHealth)
+            if (CanUseLastChance(damageAmount))
             {
                 _hero.AbilityManager.UseLastChance();
-
-                _hero.SetHealth(lastChanceHealth); 
+                _hero.SetHealth(LastChanceHealth);
 
                 return;
             }
 
             _healthManager.TakeDamage(damageAmount);
 
-            HandleDamageResponse(currentHealth, damageAmount);
+            if (_healthManager.CurrentHealth <= FatalHealthThreshold)
+            {
+                _hero.StateMachine?.Change<DieState>();
+
+                return;
+            }
+
+            _hero.StateMachine?.Change<HurtState>();
         }
 
-        private void HandleDamageResponse(int currentHealth, int damageAmount)
+        private bool CanUseLastChance(int damageAmount)
         {
-            int fatalHealthThreshold = 0;
-
-            if (currentHealth - damageAmount <= fatalHealthThreshold)
-            {
-                _hero.StateMachine.Change<DieState>();
-            }
-            else
-            {
-                _hero.StateMachine.Change<HurtState>();
-            }
+            return _hero.AbilityManager != null &&
+                   _hero.AbilityManager.IsLastChanceActive &&
+                   damageAmount >= _healthManager.CurrentHealth;
         }
     }
 }

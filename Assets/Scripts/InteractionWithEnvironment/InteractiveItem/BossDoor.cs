@@ -22,7 +22,6 @@ public sealed class BossDoor : MonoBehaviour
 
     private GameObject _currentMessage;
     private TextMeshProUGUI _messageText;
-    private Coroutine _messageCoroutine;
 
     private void Start()
     {
@@ -48,7 +47,12 @@ public sealed class BossDoor : MonoBehaviour
 
     private void InitializeReferences()
     {
-        _playerTransform = GameObject.FindGameObjectWithTag(PlayerTag)?.transform;
+        GameObject playerObject = GameObject.FindGameObjectWithTag(PlayerTag);
+
+        if (playerObject != null)
+        {
+            _playerTransform = playerObject.transform;
+        }
 
         _audioController = FindFirstObjectByType<AudioController>();
     }
@@ -66,31 +70,29 @@ public sealed class BossDoor : MonoBehaviour
         }
     }
 
-    private GameObject CreateDefaultUIPrefab(string name)
+    private GameObject CreateDefaultUIPrefab(string objectName)
     {
-        string textObjectName = "MessageText";
-        string defaultMessage = "Message";
-        int fontSize = 24;
-        float width = 400f;
-        float height = 50f;
-        float anchorPosition = 0.5f;
+        const string textObjectName = "MessageText";
+        const string defaultMessage = "Message";
+        const int fontSize = 24;
+        const float width = 400f;
+        const float height = 50f;
+        const float anchorPosition = 0.5f;
 
-        GameObject uiObject = new GameObject(name);
+        GameObject uiObject = new GameObject(objectName);
 
         Canvas canvas = uiObject.AddComponent<Canvas>();
-
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+
         uiObject.AddComponent<CanvasScaler>();
         uiObject.AddComponent<GraphicRaycaster>();
 
         GameObject textObject = new GameObject(textObjectName);
-
-        textObject.transform.SetParent(uiObject.transform);
+        textObject.transform.SetParent(uiObject.transform, false);
 
         TextMeshProUGUI textComponent = textObject.AddComponent<TextMeshProUGUI>();
 
         textComponent.text = defaultMessage;
-
         textComponent.fontSize = fontSize;
         textComponent.color = Color.white;
         textComponent.alignment = TextAlignmentOptions.Center;
@@ -101,7 +103,6 @@ public sealed class BossDoor : MonoBehaviour
         rectTransform.anchorMax = new Vector2(anchorPosition, anchorPosition);
         rectTransform.pivot = new Vector2(anchorPosition, anchorPosition);
         rectTransform.sizeDelta = new Vector2(width, height);
-
         rectTransform.anchoredPosition = Vector2.zero;
 
         uiObject.SetActive(false);
@@ -112,16 +113,15 @@ public sealed class BossDoor : MonoBehaviour
     private void UpdatePlayerProximity()
     {
         float distanceToPlayer = Vector2.Distance(transform.position, _playerTransform.position);
-
         bool wasPlayerNear = _isPlayerNear;
 
         _isPlayerNear = distanceToPlayer <= MessageDisplayDistance;
 
-        if (_isPlayerNear && !wasPlayerNear)
+        if (_isPlayerNear && wasPlayerNear == false)
         {
             ShowBossStatus();
         }
-        else if (!_isPlayerNear && wasPlayerNear)
+        else if (_isPlayerNear == false && wasPlayerNear)
         {
             HideBossStatus();
         }
@@ -150,34 +150,34 @@ public sealed class BossDoor : MonoBehaviour
 
     private void TryOpenDoor()
     {
-        int aliveCount = 0;
-
         int aliveBossCount = CountAliveBosses();
 
-        if (aliveBossCount == aliveCount)
+        if (aliveBossCount == 0)
         {
             OpenDoor();
-        }
-        else
-        {
-            string message = $"Не все боссы побеждены. Осталось ({_bossIds.Length - aliveBossCount}/{_bossIds.Length})";
 
-            ShowTemporaryMessage(message, MessageDisplayDuration);
+            return;
         }
+
+        string message = $"Не все боссы побеждены. Осталось ({_bossIds.Length - aliveBossCount}/{_bossIds.Length})";
+
+        ShowTemporaryMessage(message, MessageDisplayDuration);
     }
 
     private int CountAliveBosses()
     {
         int aliveCount = 0;
 
-        if (EnemyManager.Instance != null)
+        if (EnemyManager.Instance == null)
         {
-            foreach (string bossId in _bossIds)
+            return aliveCount;
+        }
+
+        foreach (string bossId in _bossIds)
+        {
+            if (EnemyManager.Instance.IsEnemyAlive(bossId))
             {
-                if (EnemyManager.Instance.IsEnemyAlive(bossId))
-                {
-                    aliveCount++;
-                }
+                aliveCount++;
             }
         }
 
@@ -186,16 +186,12 @@ public sealed class BossDoor : MonoBehaviour
 
     private string GetBossStatusMessage(int aliveBossCount)
     {
-        int deathTreshold = 0;
-
-        if (aliveBossCount > deathTreshold)
+        if (aliveBossCount > 0)
         {
             return $"({_bossIds.Length - aliveBossCount}/{_bossIds.Length}) боссов убито";
         }
-        else
-        {
-            return $"Нажмите {InteractionKey} чтобы открыть дверь";
-        }
+
+        return $"Нажмите {InteractionKey} чтобы открыть дверь";
     }
 
     private void OpenDoor()
@@ -212,60 +208,58 @@ public sealed class BossDoor : MonoBehaviour
     {
         HideInteractionMessage();
 
-        if (_interactionMessagePrefab != null)
+        if (_interactionMessagePrefab == null)
         {
-            _currentMessage = Instantiate(_interactionMessagePrefab);
+            return;
+        }
 
-            _currentMessage.SetActive(true);
+        _currentMessage = Instantiate(_interactionMessagePrefab);
+        _currentMessage.SetActive(true);
 
-            _messageText = _currentMessage.GetComponentInChildren<TextMeshProUGUI>();
+        _messageText = _currentMessage.GetComponentInChildren<TextMeshProUGUI>();
 
-            if (_messageText != null)
-            {
-                _messageText.text = message;
-            }
+        if (_messageText != null)
+        {
+            _messageText.text = message;
         }
     }
 
     private void HideInteractionMessage()
     {
-        if (_currentMessage != null)
+        if (_currentMessage == null)
         {
-            Destroy(_currentMessage);
-
-            _currentMessage = null;
-            _messageText = null;
+            return;
         }
+
+        Destroy(_currentMessage);
+
+        _currentMessage = null;
+        _messageText = null;
     }
 
     private void ShowTemporaryMessage(string message, float duration)
     {
-        if (_temporaryMessagePrefab != null)
+        if (_temporaryMessagePrefab == null)
         {
-            GameObject tempMessage = Instantiate(_temporaryMessagePrefab);
-
-            tempMessage.SetActive(true);
-
-            TextMeshProUGUI textComponent = tempMessage.GetComponentInChildren<TextMeshProUGUI>();
-
-            if (textComponent != null)
-            {
-                textComponent.text = message;
-            }
-
-            Destroy(tempMessage, duration);
+            return;
         }
+
+        GameObject temporaryMessage = Instantiate(_temporaryMessagePrefab);
+
+        temporaryMessage.SetActive(true);
+
+        TextMeshProUGUI textComponent = temporaryMessage.GetComponentInChildren<TextMeshProUGUI>();
+
+        if (textComponent != null)
+        {
+            textComponent.text = message;
+        }
+
+        Destroy(temporaryMessage, duration);
     }
 
     private void CleanupUI()
     {
         HideInteractionMessage();
-
-        if (_messageCoroutine != null)
-        {
-            StopCoroutine(_messageCoroutine);
-
-            _messageCoroutine = null;
-        }
     }
 }

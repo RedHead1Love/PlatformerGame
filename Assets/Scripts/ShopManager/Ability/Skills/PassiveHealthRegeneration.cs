@@ -20,59 +20,75 @@ public sealed class PassiveHealthRegeneration : MonoBehaviour, IPassiveHealthReg
 
     private void Awake()
     {
-        _hero = GetComponent<Hero>() ?? FindObjectOfType<Hero>();
-        _healthManager = GetComponent<HealthManager>() ?? FindObjectOfType<HealthManager>();
-    }
-
-    private void Start()
-    {
         InitializeReferences();
     }
 
     private void Update()
     {
-        if (_abilityManager == null)
-        {
-            _abilityManager = _hero?.AbilityManager;
-        }
+        RefreshAbilityManagerReference();
 
-        if (_healthManager == null)
-        {
-            return;
-        }
-
-        if (!IsActive || _healthManager.IsFullHealth || _hero == null || !_hero.IsAlive())
+        if (CanRegenerate() == false)
         {
             return;
         }
 
         _timer += Time.deltaTime;
 
-        if (_timer >= _regenerationInterval)
+        if (_timer < _regenerationInterval)
         {
-            _timer = 0f;
-
-            _healthManager.Heal(_healAmount);
+            return;
         }
-    }
 
-    private void InitializeReferences()
-    {
-        _hero ??= GetComponent<Hero>() ?? FindObjectOfType<Hero>();
-        _healthManager ??= GetComponent<HealthManager>() ?? FindObjectOfType<HealthManager>();
+        _timer = 0f;
 
-        _abilityManager ??= _hero?.AbilityManager;
+        _healthManager.Heal(_healAmount);
     }
 
     public void EnableRegeneration()
     {
         enabled = true;
+        _timer = 0f;
     }
 
     public void DisableRegeneration()
     {
         enabled = false;
-
         _timer = 0f;
+    }
+
+    private void InitializeReferences()
+    {
+        _hero = GetComponent<Hero>();
+
+        if (_hero == null)
+        {
+            _hero = FindFirstObjectByType<Hero>();
+        }
+
+        _healthManager = GetComponent<HealthManager>();
+
+        if (_healthManager == null)
+        {
+            _healthManager = FindFirstObjectByType<HealthManager>();
+        }
+
+        _abilityManager = _hero?.AbilityManager;
+    }
+
+    private void RefreshAbilityManagerReference()
+    {
+        if (_abilityManager == null)
+        {
+            _abilityManager = _hero?.AbilityManager;
+        }
+    }
+
+    private bool CanRegenerate()
+    {
+        return IsActive &&
+               _hero != null &&
+               _hero.IsAlive() &&
+               _healthManager != null &&
+               _healthManager.IsFullHealth == false;
     }
 }

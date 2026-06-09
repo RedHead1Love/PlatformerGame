@@ -1,65 +1,79 @@
-using Player;
 using UnityEngine;
 
 public sealed class CameraController : MonoBehaviour
 {
-    private const float DefaultLerpSpeed = 5f;
-    private const float DefaultZPosition = -10f;
+    private const string PlayerTag = "Player";
 
-    [Header("Camera Settings")]
-    [SerializeField] private Transform _playerTransform;
-    [SerializeField] private Vector3 _offset = new Vector3(0f, 0f, DefaultZPosition);
-    [SerializeField] private float _lerpSpeed = DefaultLerpSpeed;
+    [Header("Target")]
+    [SerializeField] private Transform _target;
 
-    private void Awake()
+    [Header("Follow Settings")]
+    [SerializeField] private Vector3 _offset = new Vector3(0f, 0f, -10f);
+    [SerializeField] private float _smoothSpeed = 5f;
+
+    [Header("Bounds")]
+    [SerializeField] private bool _useBounds = false;
+    [SerializeField] private Vector2 _minBounds;
+    [SerializeField] private Vector2 _maxBounds;
+
+    private void Start()
     {
-        InitializePlayerReference();
+        FindTargetIfNeeded();
     }
 
     private void LateUpdate()
     {
-        FollowPlayer();
-    }
+        FindTargetIfNeeded();
 
-    private void InitializePlayerReference()
-    {
-        if (_playerTransform == null)
-        {
-            Hero hero = FindFirstObjectByType<Hero>();
-
-            if (hero != null)
-            {
-                _playerTransform = hero.transform;
-            }
-        }
-    }
-
-    private void FollowPlayer()
-    {
-        if (_playerTransform == null)
+        if (_target == null)
         {
             return;
         }
 
-        Vector3 targetPosition = CalculateTargetPosition();
-        UpdateCameraPosition(targetPosition);
+        FollowTarget();
     }
 
-    private Vector3 CalculateTargetPosition()
+    public void SetTarget(Transform target)
     {
-        Vector3 targetPosition = _playerTransform.position + _offset;
-        targetPosition.z = DefaultZPosition;
-        return targetPosition;
+        _target = target;
     }
 
-    private void UpdateCameraPosition(Vector3 targetPosition)
+    private void FindTargetIfNeeded()
     {
-        float interpolationFactor = _lerpSpeed * Time.deltaTime;
-        transform.position = Vector3.Lerp(transform.position, targetPosition, interpolationFactor);
+        if (_target != null)
+        {
+            return;
+        }
+
+        GameObject player = GameObject.FindGameObjectWithTag(PlayerTag);
+
+        if (player != null)
+        {
+            _target = player.transform;
+        }
     }
 
-    public void SetPlayerTransform(Transform playerTransform)
+    private void FollowTarget()
     {
-        _playerTransform = playerTransform;
+        Vector3 targetPosition = _target.position + _offset;
+        targetPosition = ClampPositionToBounds(targetPosition);
+
+        transform.position = Vector3.Lerp(
+            transform.position,
+            targetPosition,
+            _smoothSpeed * Time.deltaTime);
+    }
+
+    private Vector3 ClampPositionToBounds(Vector3 position)
+    {
+        if (_useBounds == false)
+        {
+            return position;
+        }
+
+        position.x = Mathf.Clamp(position.x, _minBounds.x, _maxBounds.x);
+        position.y = Mathf.Clamp(position.y, _minBounds.y, _maxBounds.y);
+
+        return position;
     }
 }

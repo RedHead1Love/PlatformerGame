@@ -10,6 +10,7 @@ namespace ChestControl
         private const float DefaultCheckRadius = 0.5f;
         private const float DefaultKeySpawnForce = 2f;
         private const float GizmoSphereRadius = 0.2f;
+        private const int PlayerLayerBit = 1;
 
         [FoldoutGroup("Reference")]
         [SerializeField] private SpriteRenderer _spriteRenderer;
@@ -33,7 +34,7 @@ namespace ChestControl
         [SerializeField] private GameObject _keyPrefab;
 
         [FoldoutGroup("Key Settings")]
-        [SerializeField] private DoorControl.KeyColor _keyColor = DoorControl.KeyColor.WhiteColor;
+        [SerializeField] private KeyColor _keyColor = KeyColor.WhiteColor;
 
         [FoldoutGroup("Key Settings")]
         [SerializeField] private Vector2 _keySpawnOffset = new Vector2(0f, 1f);
@@ -54,18 +55,19 @@ namespace ChestControl
         [SerializeField] private float _soundVolume = 1f;
 
         [FoldoutGroup("Save Settings")]
-        [SerializeField, HideInInspector]
-        private bool _isOpened;
+        [SerializeField, HideInInspector] private bool _isOpened;
 
-        [SerializeField, HideInInspector]
-        private bool _isKeySpawned = false;
+        [SerializeField, HideInInspector] private bool _isKeySpawned = false;
 
-        [SerializeField]
-        private string _chestId;
+        [SerializeField] private string _chestId;
 
         private bool _isPlayerInRange;
         private Animator _animator;
         private AudioSource _audioSource;
+        private AudioController _audioController;
+
+        [FoldoutGroup("Runtime"), ShowInInspector]
+        public bool IsOpened => _isOpened;
 
         private Animator CachedAnimator
         {
@@ -92,9 +94,6 @@ namespace ChestControl
                 return _audioSource;
             }
         }
-
-        [FoldoutGroup("Runtime"), ShowInInspector]
-        public bool IsOpened => _isOpened;
 
         private void Start()
         {
@@ -129,6 +128,8 @@ namespace ChestControl
 
         private void InitializeChest()
         {
+            _audioController = FindFirstObjectByType<AudioController>();
+
             if (string.IsNullOrEmpty(_chestId))
             {
                 _chestId = GenerateChestId();
@@ -138,7 +139,7 @@ namespace ChestControl
 
             if (CachedAnimator != null)
             {
-                _animator.Play(_isOpened ? "Opened" : "Closed");
+                CachedAnimator.Play(_isOpened ? "Opened" : "Closed");
             }
 
             ApplyVisualState(_isOpened);
@@ -157,7 +158,7 @@ namespace ChestControl
 
         private void HandlePlayerInteraction()
         {
-            if (_isPlayerInRange && Input.GetKeyDown(_interactKey) && !_isOpened)
+            if (_isPlayerInRange && Input.GetKeyDown(_interactKey) && _isOpened == false)
             {
                 Open();
             }
@@ -174,19 +175,7 @@ namespace ChestControl
 
             if (Application.isPlaying)
             {
-                CachedAnimator.SetBool("IsOpened", _isOpened);
-
-                PlayChestSound(opened);
-
-                if (_isOpened && !_isKeySpawned)
-                {
-                    SpawnKey();
-
-                    _isKeySpawned = true;
-                }
-
-                GameStateManager.SetChestOpened(_chestId, _isOpened);
-                GameStateManager.SetKeySpawned(_chestId, _isKeySpawned);
+                ApplyRuntimeState(opened);
             }
             else
             {
@@ -194,27 +183,31 @@ namespace ChestControl
             }
         }
 
+        private void ApplyRuntimeState(bool opened)
+        {
+            if (CachedAnimator != null)
+            {
+                CachedAnimator.SetBool("IsOpened", _isOpened);
+            }
+
+            PlayChestSound(opened);
+
+            if (_isOpened && _isKeySpawned == false)
+            {
+                SpawnKey();
+
+                _isKeySpawned = true;
+            }
+
+            GameStateManager.SetChestOpened(_chestId, _isOpened);
+            GameStateManager.SetKeySpawned(_chestId, _isKeySpawned);
+        }
+
         private void PlayChestSound(bool opened)
         {
             AudioClip soundToPlay = opened ? _openSound : _closeSound;
 
-            if (soundToPlay != null)
-            {
-                AudioController audioController = FindFirstObjectByType<AudioController>();
-
-                if (audioController != null)
-                {
-                    audioController.PlayOneShotWithVolume(soundToPlay, _soundVolume);
-                }
-                else if (CachedAudioSource != null)
-                {
-                    CachedAudioSource.PlayOneShot(soundToPlay, _soundVolume);
-                }
-                else
-                {
-                    AudioSource.PlayClipAtPoint(soundToPlay, transform.position, _soundVolume);
-                }
-            }
+            PlaySound(soundToPlay);
         }
 
         private void ApplyVisualState(bool opened)
@@ -233,14 +226,13 @@ namespace ChestControl
             }
 
             Vector3 spawnPosition = transform.position + (Vector3)_keySpawnOffset;
-
             GameObject keyInstance = Instantiate(_keyPrefab, spawnPosition, Quaternion.identity);
 
             keyInstance.SetActive(true);
 
             ConfigureKeyComponent(keyInstance);
             ApplyKeyPhysics(keyInstance);
-            PlayKeySpawnSound();
+            PlaySound(_keySpawnSound);
         }
 
         private void ConfigureKeyComponent(GameObject keyInstance)
@@ -250,68 +242,62 @@ namespace ChestControl
             if (keyComponent != null)
             {
                 keyComponent.keyColor = _keyColor;
+
+                return;
             }
-            else
+
+            SimpleKey simpleKeyComponent = keyInstance.GetComponent<SimpleKey>();
+
+            if (simpleKeyComponent != null)
             {
-                SimpleKey simpleKeyComponent = keyInstance.GetComponent<SimpleKey>();
-
-                if (simpleKeyComponent != null)
-                {
-                    SetKeyColorViaReflection(simpleKeyComponent, _keyColor);
-                }
+                simpleKeyComponent.SetKeyColor(_keyColor);
             }
-        }
-
-        private void SetKeyColorViaReflection(SimpleKey simpleKey, KeyColor color)
-        {
-            var field = typeof(SimpleKey).GetField("_keyColor", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-            field?.SetValue(simpleKey, color);
         }
 
         private void ApplyKeyPhysics(GameObject keyInstance)
         {
-            float minHorizontalForce = -0.3f;
-            float maxHorizontalForce = 0.3f;
-            float verticalForce = 1f;
+            const float minHorizontalForce = -0.3f;
+            const float maxHorizontalForce = 0.3f;
+            const float verticalForce = 1f;
 
             Rigidbody2D keyRigidbody = keyInstance.GetComponent<Rigidbody2D>();
 
-            if (keyRigidbody != null)
+            if (keyRigidbody == null)
             {
-                Vector2 forceDirection = new Vector2(Random.Range(-minHorizontalForce, maxHorizontalForce), verticalForce).normalized;
-
-                keyRigidbody.AddForce(forceDirection * _keySpawnForce, ForceMode2D.Impulse);
+                return;
             }
+
+            Vector2 forceDirection = new Vector2(
+                Random.Range(minHorizontalForce, maxHorizontalForce),
+                verticalForce).normalized;
+
+            keyRigidbody.AddForce(forceDirection * _keySpawnForce, ForceMode2D.Impulse);
         }
 
-        private void PlayKeySpawnSound()
+        private void PlaySound(AudioClip sound)
         {
-            if (_keySpawnSound != null)
+            if (sound == null)
             {
-                AudioController audioController = FindFirstObjectByType<AudioController>();
+                return;
+            }
 
-                if (audioController != null)
-                {
-                    audioController.PlayOneShotWithVolume(_keySpawnSound, _soundVolume);
-                }
-                else if (CachedAudioSource != null)
-                {
-                    CachedAudioSource.PlayOneShot(_keySpawnSound, _soundVolume);
-                }
-                else
-                {
-                    AudioSource.PlayClipAtPoint(_keySpawnSound, transform.position, _soundVolume);
-                }
+            if (_audioController != null)
+            {
+                _audioController.PlayOneShotWithVolume(sound, _soundVolume);
+            }
+            else if (CachedAudioSource != null)
+            {
+                CachedAudioSource.PlayOneShot(sound, _soundVolume);
+            }
+            else
+            {
+                AudioSource.PlayClipAtPoint(sound, transform.position, _soundVolume);
             }
         }
 
         private void OnTriggerEnter2D(Collider2D other)
         {
-            int bitShiftAmount = 1;
-            int noLayerMatch = 0;
-
-            if ((_playerLayer.value & (bitShiftAmount << other.gameObject.layer)) != noLayerMatch)
+            if (IsInPlayerLayer(other.gameObject.layer))
             {
                 _isPlayerInRange = true;
             }
@@ -319,13 +305,15 @@ namespace ChestControl
 
         private void OnTriggerExit2D(Collider2D other)
         {
-            int bitShiftAmount = 1;
-            int noLayerMatch = 0;
-
-            if ((_playerLayer.value & (bitShiftAmount << other.gameObject.layer)) != noLayerMatch)
+            if (IsInPlayerLayer(other.gameObject.layer))
             {
                 _isPlayerInRange = false;
             }
+        }
+
+        private bool IsInPlayerLayer(int layer)
+        {
+            return (_playerLayer.value & (PlayerLayerBit << layer)) != 0;
         }
 
         private void OnDrawGizmosSelected()
@@ -333,15 +321,17 @@ namespace ChestControl
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(transform.position, _checkRadius);
 
-            if (_keyPrefab != null)
+            if (_keyPrefab == null)
             {
-                Gizmos.color = Color.green;
-
-                Vector3 spawnPosition = transform.position + (Vector3)_keySpawnOffset;
-
-                Gizmos.DrawWireSphere(spawnPosition, GizmoSphereRadius);
-                Gizmos.DrawLine(transform.position, spawnPosition);
+                return;
             }
+
+            Gizmos.color = Color.green;
+
+            Vector3 spawnPosition = transform.position + (Vector3)_keySpawnOffset;
+
+            Gizmos.DrawWireSphere(spawnPosition, GizmoSphereRadius);
+            Gizmos.DrawLine(transform.position, spawnPosition);
         }
     }
 }

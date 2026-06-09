@@ -12,23 +12,6 @@ public sealed class ShopItemData : IShopItem
     [SerializeField] private WalletManager.CoinType _currencyType;
     [SerializeField] private bool _isSold;
 
-    private const string CommandUnlockMap = "1";
-    private const string CommandUnlockDash = "2";
-    private const string CommandUnlockAnatomy = "3";
-    private const string CommandUnlockArmor = "4";
-    private const string CommandUnlockSwampDamageBonus = "5";
-    private const string CommandActiveLastChance = "6";
-    private const string CommandUnlockedArmor = "7";
-    private const string CommandUnlockSkeletonDamageBonus = "8";
-    private const string CommandUnlockDemonDamageBonus = "9";
-    private const string CommandUnlockSpiderDamageBonus = "10";
-    private const string CommandUnlockZombieDamageBonus = "11";
-    private const string CommandUnlockPassiveHealthRegeneration = "12";
-    private const string CommandUnlockRobocopRegeneration = "13";
-    private const string CommandUnlockVampireAbility = "14";
-    private const string CommandUnlockOnePunchManAbility = "15";
-    private const string CommandUnlockBossDamageBonus = "16";
-
     public string ItemId => _itemId;
     public string DisplayName => _itemName;
     public string Description => _description;
@@ -39,17 +22,12 @@ public sealed class ShopItemData : IShopItem
     {
         get
         {
-            if (_itemId == CommandUnlockedArmor)
+            if (_itemId == ShopItemIds.RestoreArmor)
             {
                 return false;
             }
 
-            if (_itemId == CommandActiveLastChance)
-            {
-                return GetLastChanceState();
-            }
-
-            var abilityManager = FindAbilityManager();
+            AbilityManager abilityManager = FindAbilityManager();
 
             if (abilityManager != null)
             {
@@ -65,173 +43,127 @@ public sealed class ShopItemData : IShopItem
         }
         set
         {
-            if (_itemId != CommandUnlockedArmor && _itemId != CommandActiveLastChance)
+            if (_itemId == ShopItemIds.RestoreArmor || _itemId == ShopItemIds.ActivateLastChance)
             {
-                _isSold = value;
+                return;
+            }
 
-                if (value && SaveSystem.Instance != null)
-                {
-                    SaveSystem.Instance.MarkItemPurchased(_itemId);
-                }
+            _isSold = value;
+
+            if (value)
+            {
+                SaveSystem.Instance?.MarkItemPurchased(_itemId);
             }
         }
+    }
+
+    public bool CanBePurchased()
+    {
+        if (WalletManager.Instance == null)
+        {
+            return false;
+        }
+
+        if (WalletManager.Instance.GetCoins(_currencyType) < _price)
+        {
+            return false;
+        }
+
+        if (_itemId == ShopItemIds.RestoreArmor)
+        {
+            ArmorManager armorManager = FindArmorManager();
+
+            return armorManager != null &&
+                   armorManager.IsArmorUnlocked() &&
+                   armorManager.CurrentArmor < armorManager.MaxArmor;
+        }
+
+        if (_itemId == ShopItemIds.ActivateLastChance)
+        {
+            AbilityManager abilityManager = FindAbilityManager();
+
+            return abilityManager != null && abilityManager.IsLastChanceActive == false;
+        }
+
+        return IsSold == false;
+    }
+
+    public void Purchase()
+    {
+        if (_itemId == ShopItemIds.RestoreArmor)
+        {
+            IncrementArmorPlatesUsage();
+
+            return;
+        }
+
+        IsSold = true;
+
+        SavePurchaseState();
     }
 
     private bool IsAbilityUnlocked(AbilityManager abilityManager)
     {
         return _itemId switch
         {
-            CommandUnlockMap => abilityManager.HasMap,
-            CommandUnlockDash => abilityManager.HasDash,
-            CommandUnlockAnatomy => abilityManager.HasAnatomy,
-            CommandUnlockArmor => abilityManager.HasArmor,
-            CommandUnlockSwampDamageBonus => abilityManager.HasSwampDamageBonus,
-            CommandActiveLastChance => abilityManager.IsLastChanceActive,
-            CommandUnlockSkeletonDamageBonus => abilityManager.HasSkeletonDamageBonus,
-            CommandUnlockDemonDamageBonus => abilityManager.HasDemonDamageBonus,
-            CommandUnlockSpiderDamageBonus => abilityManager.HasSpiderDamageBonus,
-            CommandUnlockZombieDamageBonus => abilityManager.HasZombieDamageBonus,
-            CommandUnlockPassiveHealthRegeneration => abilityManager.HasPassiveHealthRegeneration,
-            CommandUnlockRobocopRegeneration => abilityManager.HasRobocopRegeneration,
-            CommandUnlockVampireAbility => abilityManager.HasVampireAbility,
-            CommandUnlockOnePunchManAbility => abilityManager.HasOnePunchManAbility,
-            CommandUnlockBossDamageBonus => abilityManager.HasBossDamageBonus
+            ShopItemIds.UnlockMap => abilityManager.HasMap,
+            ShopItemIds.UnlockDash => abilityManager.HasDash,
+            ShopItemIds.UnlockAnatomy => abilityManager.HasAnatomy,
+            ShopItemIds.UnlockArmor => abilityManager.HasArmor,
+            ShopItemIds.UnlockSwampDamageBonus => abilityManager.HasSwampDamageBonus,
+            ShopItemIds.ActivateLastChance => abilityManager.IsLastChanceActive,
+            ShopItemIds.UnlockSkeletonDamageBonus => abilityManager.HasSkeletonDamageBonus,
+            ShopItemIds.UnlockDemonDamageBonus => abilityManager.HasDemonDamageBonus,
+            ShopItemIds.UnlockSpiderDamageBonus => abilityManager.HasSpiderDamageBonus,
+            ShopItemIds.UnlockZombieDamageBonus => abilityManager.HasZombieDamageBonus,
+            ShopItemIds.UnlockPassiveHealthRegeneration => abilityManager.HasPassiveHealthRegeneration,
+            ShopItemIds.UnlockRobocopRegeneration => abilityManager.HasRobocopRegeneration,
+            ShopItemIds.UnlockVampireAbility => abilityManager.HasVampireAbility,
+            ShopItemIds.UnlockOnePunchManAbility => abilityManager.HasOnePunchManAbility,
+            ShopItemIds.UnlockBossDamageBonus => abilityManager.HasBossDamageBonus,
+            _ => _isSold
         };
-    }
-
-    private bool GetLastChanceState()
-    {
-        string lastChanceKey = "LastChanceActive";
-        int activeValue = 1;
-        int inactiveValue = 0;
-
-        if (_itemId != CommandActiveLastChance)
-        {
-            return _isSold;
-        }
-
-        var abilityManager = FindAbilityManager();
-
-        if (abilityManager != null)
-        {
-            return abilityManager.IsLastChanceActive;
-        }
-
-        if (SaveSystem.Instance != null && SaveSystem.Instance.CurrentSave?.abilityData != null)
-        {
-            return SaveSystem.Instance.CurrentSave.abilityData.isLastChanceActive;
-        }
-
-        return PlayerPrefs.GetInt(lastChanceKey, inactiveValue) == activeValue;
     }
 
     private AbilityManager FindAbilityManager()
     {
-        var hero = GameObject.FindObjectOfType<Hero>();
+        Hero hero = Object.FindFirstObjectByType<Hero>();
 
-        if (hero != null)
-        {
-            return hero.AbilityManager;
-        }
-
-        return null;
-    }
-
-    public bool CanBePurchased()
-    {
-        if (_itemId == CommandUnlockedArmor)
-        {
-            var armorManager = FindArmorManager();
-
-            if (armorManager == null)
-            {
-                return false;
-            }
-
-            bool canBuyArmorPlates = armorManager.IsArmorUnlocked() && armorManager.CurrentArmor < armorManager.MaxArmor;
-
-            bool hasEnoughMoney = WalletManager.Instance != null && WalletManager.Instance.GetCoins(CurrencyType) >= Price;
-
-            return canBuyArmorPlates && hasEnoughMoney;
-        }
-
-        if (_itemId == CommandActiveLastChance)
-        {
-            var abilityManager = FindAbilityManager();
-
-            if (abilityManager == null)
-            {
-                return false;
-            }
-
-            bool canBuyLastChance = !abilityManager.IsLastChanceActive;
-
-            bool hasEnoughCoins = WalletManager.Instance != null && WalletManager.Instance.GetCoins(CurrencyType) >= Price;
-
-            return canBuyLastChance && hasEnoughCoins;
-        }
-
-        if (IsSold)
-        {
-            return false;
-        }
-
-        if (!WalletManager.Instance)
-        {
-            return false;
-        }
-
-        bool canAfford = WalletManager.Instance.GetCoins(CurrencyType) >= Price;
-
-        return canAfford;
+        return hero != null ? hero.AbilityManager : null;
     }
 
     private ArmorManager FindArmorManager()
     {
-        var hero = GameObject.FindObjectOfType<Hero>();
+        Hero hero = Object.FindFirstObjectByType<Hero>();
 
         if (hero != null)
         {
-            var armorManager = hero.GetComponent<ArmorManager>();
+            ArmorManager heroArmorManager = hero.GetComponent<ArmorManager>();
 
-            if (armorManager != null)
+            if (heroArmorManager != null)
             {
-                return armorManager;
+                return heroArmorManager;
             }
         }
 
-        return GameObject.FindObjectOfType<ArmorManager>();
-    }
-
-    public void Purchase()
-    {
-        string armorUsesKey = "ArmorPlatesUsed";
-        int incrementByOne = 1;
-        int initialArmorIndex = 0;
-
-        if (_itemId != CommandUnlockedArmor)
-        {
-            IsSold = true;
-
-            SavePurchaseState();
-        }
-        else
-        {
-            int uses = PlayerPrefs.GetInt(armorUsesKey, initialArmorIndex);
-
-            PlayerPrefs.SetInt(armorUsesKey, uses + incrementByOne);
-            PlayerPrefs.Save();
-        }
+        return Object.FindFirstObjectByType<ArmorManager>();
     }
 
     private void SavePurchaseState()
     {
-        int purchasedValue = 1;
+        const int purchasedValue = 1;
 
-        if (_itemId != CommandUnlockedArmor)
-        {
-            PlayerPrefs.SetInt($"Item_{ItemId}_Purchased", purchasedValue);
-            PlayerPrefs.Save();
-        }
+        PlayerPrefs.SetInt($"Item_{_itemId}_Purchased", purchasedValue);
+        PlayerPrefs.Save();
+    }
+
+    private void IncrementArmorPlatesUsage()
+    {
+        const string armorUsesKey = "ArmorPlatesUsed";
+
+        int uses = PlayerPrefs.GetInt(armorUsesKey, 0);
+
+        PlayerPrefs.SetInt(armorUsesKey, uses + 1);
+        PlayerPrefs.Save();
     }
 }

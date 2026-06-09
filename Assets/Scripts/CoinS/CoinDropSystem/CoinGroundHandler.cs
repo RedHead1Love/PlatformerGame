@@ -1,119 +1,86 @@
-using GameLogic;
 using UnityEngine;
 
-public class CoinGroundHandler : MonoBehaviour
+public sealed class CoinGroundHandler : MonoBehaviour
 {
-    [Header("Ground Settings")]
+    private const float DefaultStopVelocity = 0.1f;
+    private const float GroundCheckDelay = 0.15f;
+
     [SerializeField] private LayerMask _groundLayer;
-    [SerializeField] private float _stopVelocityThreshold = 0.1f;
-    [SerializeField] private float _timeToStop = 2f;
-    [SerializeField] private float _bounceDamping = 0.7f;
+    [SerializeField] private float _stopVelocity = DefaultStopVelocity;
 
-    private Rigidbody2D _rb;
+    private Rigidbody2D _rigidbody;
     private Collider2D _collider;
-    private bool _isOnGround = false;
-    private float _timeInAir = 0f;
-    private Coin _coinScript;
+    private bool _isGrounded;
+    private bool _isStopped;
 
-    public void Initialize(LayerMask groundLayer)
+    private void Awake()
     {
-        _groundLayer = groundLayer;
-
-        _rb = GetComponent<Rigidbody2D>();
+        _rigidbody = GetComponent<Rigidbody2D>();
         _collider = GetComponent<Collider2D>();
-        _coinScript = GetComponent<Coin>();
-    }
-
-    private void Start()
-    {
-        if (_rb == null)
-        {
-            _rb = GetComponent<Rigidbody2D>();
-        }
-
-        if (_collider == null)
-        {
-            _collider = GetComponent<Collider2D>();
-        }
-
-        if (_coinScript == null)
-        {
-            _coinScript = GetComponent<Coin>();
-        }
     }
 
     private void Update()
     {
-        float maxAirTime = 5f;
-
-        if (!_isOnGround)
+        if (_isStopped || _isGrounded == false || _rigidbody == null)
         {
-            _timeInAir += Time.deltaTime;
-
-            if (_timeInAir > maxAirTime)
-            {
-                StopPhysics();
-            }
+            return;
         }
 
-        if (_rb.velocity.magnitude < _stopVelocityThreshold && _isOnGround)
+        if (_rigidbody.velocity.magnitude <= _stopVelocity)
         {
-            StopPhysics();
+            StopOnGround();
         }
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        int singleBitShift = 1;
-        int noLayerMatch = 0;
-        float velocityMultiplierFactor = 2f;
-        float stopDelay = 0.5f;
-
-        if (((singleBitShift << collision.gameObject.layer) & _groundLayer) != noLayerMatch)
-        {
-            _isOnGround = true;
-
-            _rb.velocity *= _bounceDamping;
-            _rb.angularVelocity *= _bounceDamping;
-
-            if (_coinScript != null && _coinScript.IsCollectable &&
-                _rb.velocity.magnitude < _stopVelocityThreshold * velocityMultiplierFactor)
-            {
-                Invoke(nameof(StopPhysics), stopDelay);
-            }
-        }
-    }
-
-    private void OnCollisionExit2D(Collision2D collision)
-    {
-        int singleBitShift = 1;
-        int noLayerMatch = 0;
-
-        if (((singleBitShift << collision.gameObject.layer) & _groundLayer) != noLayerMatch)
-        {
-            _isOnGround = false;
-        }
-    }
-
-    private void StopPhysics()
-    {
-        float rotationSpeed = 0f;
-
-        if (_rb == null)
+        if (IsGroundLayer(collision.gameObject.layer) == false)
         {
             return;
         }
 
-        _rb.bodyType = RigidbodyType2D.Kinematic;
-        _rb.velocity = Vector2.zero;
+        _isGrounded = true;
 
-        _rb.angularVelocity = rotationSpeed;
+        Invoke(nameof(CheckStopAfterGroundHit), GroundCheckDelay);
+    }
+
+    private void OnCollisionExit2D(Collision2D collision)
+    {
+        if (IsGroundLayer(collision.gameObject.layer))
+        {
+            _isGrounded = false;
+        }
+    }
+
+    private void CheckStopAfterGroundHit()
+    {
+        if (_rigidbody != null && _rigidbody.velocity.magnitude <= _stopVelocity)
+        {
+            StopOnGround();
+        }
+    }
+
+    private void StopOnGround()
+    {
+        if (_isStopped || _rigidbody == null)
+        {
+            return;
+        }
+
+        _isStopped = true;
+
+        _rigidbody.velocity = Vector2.zero;
+        _rigidbody.angularVelocity = 0f;
+        _rigidbody.bodyType = RigidbodyType2D.Kinematic;
 
         if (_collider != null)
         {
             _collider.isTrigger = true;
         }
+    }
 
-        Destroy(this);
+    private bool IsGroundLayer(int layer)
+    {
+        return (_groundLayer.value & (1 << layer)) != 0;
     }
 }

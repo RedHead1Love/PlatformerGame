@@ -11,12 +11,12 @@ namespace EnemyLogicWithEnhancedStrike
         private const string PlayerLayerName = "Player";
         private const string DefaultLayer = "Enemy";
         private const string NoCollisionLayer = "IgnoreRaycast";
+
         private const float DestroyDelay = 0.55f;
         private const float MovementThreshold = 0.01f;
         private const int MaxRandomValue = 100;
         private const float BoxRotationAngle = 0f;
         private const int HealthThreshold = 0;
-        private const float NoDirectionThreshold = 0f;
 
         [Header("Attack Settings")]
         [SerializeField] private float _attackCooldown = 1f;
@@ -50,6 +50,7 @@ namespace EnemyLogicWithEnhancedStrike
         private Animator _animator;
         private PatrolAI _patrolAI;
         private EnemyAudioController _audioController;
+        private Collider2D _enemyCollider;
 
         private bool _isPlayerInRange;
         private bool _isAttackInProgress;
@@ -59,8 +60,6 @@ namespace EnemyLogicWithEnhancedStrike
         private float _nextAttackTime;
         private float _nextSpecialAttackTime;
         private float _hurtTimer;
-
-        private Collider2D _enemyCollider;
 
         public float AttackCooldown => _attackCooldown;
         public float SpecialAttackCooldown => _specialAttackCooldown;
@@ -72,27 +71,15 @@ namespace EnemyLogicWithEnhancedStrike
         {
             base.Awake();
 
-            _animator = GetComponent<Animator>();
-            _patrolAI = GetComponent<PatrolAI>();
-            _audioController = GetComponent<EnemyAudioController>();
-            _enemyCollider = GetComponent<Collider2D>();
-
-            _patrolAI.OnMoveDirectionChanged += HandleMovementDirectionChanged;
-            _patrolAI.OnInAttackRange += HandleAttackRangeChanged;
+            InitializeComponents();
+            SubscribeToPatrolEvents();
         }
 
         private void Update()
         {
-            const int HurtTimerThreshold = 0;
-
             if (_isHurt)
             {
-                _hurtTimer -= Time.deltaTime;
-
-                if (_hurtTimer <= HurtTimerThreshold)
-                {
-                    EndHurtState();
-                }
+                UpdateHurtState();
 
                 return;
             }
@@ -106,6 +93,11 @@ namespace EnemyLogicWithEnhancedStrike
             {
                 TryStartAttack();
             }
+        }
+
+        private void OnDestroy()
+        {
+            UnsubscribeFromPatrolEvents();
         }
 
         public void EnableCollider()
@@ -124,61 +116,6 @@ namespace EnemyLogicWithEnhancedStrike
             }
         }
 
-        private void TryStartAttack()
-        {
-            if (_isAttackInProgress || _isHurt || _isDead)
-            {
-                return;
-            }
-
-            bool canUseSpecialAttack = Time.time >= _nextSpecialAttackTime;
-
-            if (canUseSpecialAttack)
-            {
-                int randomValue = Random.Range(0, MaxRandomValue);
-
-                if (randomValue < _specialAttackWeight)
-                {
-                    StartSpecialAttack();
-                }
-                else
-                {
-                    StartNormalAttack();
-                }
-            }
-            else
-            {
-                StartNormalAttack();
-            }
-        }
-
-        private void StartNormalAttack()
-        {
-            const string AttackAnimationName = "StrongAttack";
-            const int BaseAnimationLayer = 0;
-            const float AnimationStartTime = 0f;
-
-            _isAttackInProgress = true;
-            _nextAttackTime = Time.time + _attackCooldown + _attackPause;
-
-            _animator.Play(AttackAnimationName, BaseAnimationLayer, AnimationStartTime);
-            SetAnimationState(AnimationState.Attack);
-        }
-
-        private void StartSpecialAttack()
-        {
-            const string SpecialAttackAnimationName = "StrongAttack";
-            const int BaseAnimationLayer = 0;
-            const float AnimationStartTime = 0f;
-
-            _isAttackInProgress = true;
-            _nextSpecialAttackTime = Time.time + _specialAttackCooldown + _specialAttackPause;
-            _nextAttackTime = Time.time + _attackCooldown;
-
-            _animator.Play(SpecialAttackAnimationName, BaseAnimationLayer, AnimationStartTime);
-            SetAnimationState(AnimationState.StrongAttack);
-        }
-
         public void OnAttack()
         {
             PerformAttack(_attackOffset, _attackSize, _defaultAttackDamage, isSpecialAttack: false);
@@ -189,31 +126,194 @@ namespace EnemyLogicWithEnhancedStrike
             PerformAttack(_specialAttackOffset, _specialAttackSize, _specialAttackDamage, isSpecialAttack: true);
         }
 
+        public void OnAttackAnimationEnd()
+        {
+            _isAttackInProgress = false;
+
+            if (_isHurt || _isDead)
+            {
+                return;
+            }
+
+            UpdateAnimation(_patrolAI != null ? _patrolAI.CurrentDirection : Vector2.zero);
+        }
+
+        public override void TakeDamage(int amount)
+        {
+            if (_isHurt || _isDead || amount <= 0)
+            {
+                return;
+            }
+
+            base.TakeDamage(amount);
+
+            if (lives <= HealthThreshold)
+            {
+                Die();
+
+                return;
+            }
+
+            StartHurtState();
+        }
+
+        public override void Die()
+        {
+            if (_isDead)
+            {
+                return;
+            }
+
+            _isDead = true;
+            _isHurt = false;
+            _isAttackInProgress = false;
+
+            _audioController?.PlayDeathSound();
+
+            if (_patrolAI != null)
+            {
+                _patrolAI.enabled = false;
+            }
+
+            SetAnimationState(AnimationState.Death);
+            PlayAnimation("Death");
+
+            base.Die();
+
+            Destroy(gameObject, DestroyDelay);
+        }
+
+        private void InitializeComponents()
+        {
+            _animator = GetComponent<Animator>();
+            _patrolAI = GetComponent<PatrolAI>();
+            _audioController = GetComponent<EnemyAudioController>();
+            _enemyCollider = GetComponent<Collider2D>();
+        }
+
+        private void SubscribeToPatrolEvents()
+        {
+            if (_patrolAI == null)
+            {
+                return;
+            }
+
+            _patrolAI.OnMoveDirectionChanged += HandleMovementDirectionChanged;
+            _patrolAI.OnInAttackRange += HandleAttackRangeChanged;
+        }
+
+        private void UnsubscribeFromPatrolEvents()
+        {
+            if (_patrolAI == null)
+            {
+                return;
+            }
+
+            _patrolAI.OnMoveDirectionChanged -= HandleMovementDirectionChanged;
+            _patrolAI.OnInAttackRange -= HandleAttackRangeChanged;
+        }
+
+        private void UpdateHurtState()
+        {
+            _hurtTimer -= Time.deltaTime;
+
+            if (_hurtTimer <= 0f)
+            {
+                EndHurtState();
+            }
+        }
+
+        private void TryStartAttack()
+        {
+            if (_isAttackInProgress || _isHurt || _isDead)
+            {
+                return;
+            }
+
+            bool canUseSpecialAttack = Time.time >= _nextSpecialAttackTime;
+            bool shouldUseSpecialAttack = canUseSpecialAttack &&
+                                          Random.Range(0, MaxRandomValue) < _specialAttackWeight;
+
+            if (shouldUseSpecialAttack)
+            {
+                StartSpecialAttack();
+            }
+            else
+            {
+                StartNormalAttack();
+            }
+        }
+
+        private void StartNormalAttack()
+        {
+            _isAttackInProgress = true;
+            _nextAttackTime = Time.time + _attackCooldown + _attackPause;
+
+            PlayAnimation("StrongAttack");
+            SetAnimationState(AnimationState.Attack);
+        }
+
+        private void StartSpecialAttack()
+        {
+            _isAttackInProgress = true;
+            _nextSpecialAttackTime = Time.time + _specialAttackCooldown + _specialAttackPause;
+            _nextAttackTime = Time.time + _attackCooldown;
+
+            PlayAnimation("StrongAttack");
+            SetAnimationState(AnimationState.StrongAttack);
+        }
+
         private void PerformAttack(Vector2 offset, Vector2 size, int damage, bool isSpecialAttack)
         {
             Vector2 attackCenter = CalculateAttackCenter(offset);
             bool hitConnected = CheckForHit(attackCenter, size, damage);
+
             PlayAttackSound(hitConnected, isSpecialAttack);
         }
 
         private Vector2 CalculateAttackCenter(Vector2 offset)
         {
             float directionSign = Mathf.Sign(transform.localScale.x);
+
+            if (Mathf.Approximately(directionSign, 0f))
+            {
+                directionSign = 1f;
+            }
+
             return (Vector2)transform.position + new Vector2(directionSign * offset.x, offset.y);
         }
 
         private bool CheckForHit(Vector2 center, Vector2 size, int damage)
         {
-            Collider2D[] hits = Physics2D.OverlapBoxAll(center, size, BoxRotationAngle, LayerMask.GetMask(PlayerLayerName));
+            Collider2D[] hits = Physics2D.OverlapBoxAll(
+                center,
+                size,
+                BoxRotationAngle,
+                LayerMask.GetMask(PlayerLayerName));
+
             bool hitConnected = false;
 
             foreach (Collider2D hit in hits)
             {
-                if (hit.TryGetComponent(out Hero hero))
+                if (hit == null)
                 {
-                    hero.TakeDamage(damage);
-                    hitConnected = true;
+                    continue;
                 }
+
+                IDamageable damageable = hit.GetComponent<IDamageable>();
+
+                if (damageable == null)
+                {
+                    damageable = hit.GetComponentInParent<IDamageable>();
+                }
+
+                if (damageable == null)
+                {
+                    continue;
+                }
+
+                damageable.TakeDamage(damage);
+                hitConnected = true;
             }
 
             return hitConnected;
@@ -236,113 +336,53 @@ namespace EnemyLogicWithEnhancedStrike
                 {
                     _audioController.PlaySpecialAttackMissSound();
                 }
-            }
-            else
-            {
-                if (hitConnected)
-                {
-                    _audioController.PlayAttackHitSound();
-                }
-                else
-                {
-                    _audioController.PlayAttackMissSound();
-                }
-            }
-        }
 
-        public void OnAttackAnimationEnd()
-        {
-            _isAttackInProgress = false;
-
-            if (!_isHurt && !_isDead)
-            {
-                UpdateAnimation(_patrolAI.CurrentDirection);
-            }
-        }
-
-        public override void TakeDamage(int amount)
-        {
-            if (_isHurt || _isDead)
-            {
                 return;
             }
 
-            StartHurtState();
-            base.TakeDamage(amount);
-
-            if (lives <= HealthThreshold)
+            if (hitConnected)
             {
-                Die();
+                _audioController.PlayAttackHitSound();
+            }
+            else
+            {
+                _audioController.PlayAttackMissSound();
             }
         }
 
         private void StartHurtState()
         {
-            const string HurtAnimationName = "Hurt";
-            const int BaseAnimationLayer = 0;
-            const float AnimationStartTime = 0f;
-
             _isHurt = true;
             _hurtTimer = _hurtInvulnerabilityDuration;
             _isAttackInProgress = false;
 
             _audioController?.PlayHurtSound();
 
-            _animator.Play(HurtAnimationName, BaseAnimationLayer, AnimationStartTime);
-            SetAnimationState(AnimationState.Hurt);
-
             if (_patrolAI != null)
             {
                 _patrolAI.enabled = false;
             }
+
+            PlayAnimation("Hurt");
+            SetAnimationState(AnimationState.Hurt);
         }
 
         private void EndHurtState()
         {
-            const string IdleAnimationName = "Idle";
-            const int BaseAnimationLayer = 0;
-            const float AnimationStartTime = 0f;
-
             _isHurt = false;
 
-            if (_patrolAI != null && !_isDead)
+            if (_patrolAI != null && _isDead == false)
             {
                 _patrolAI.enabled = true;
             }
-
-            if (!_isDead)
-            {
-                _animator.Play(IdleAnimationName, BaseAnimationLayer, AnimationStartTime);
-                UpdateAnimation(_patrolAI.CurrentDirection);
-            }
-        }
-
-        public override void Die()
-        {
-            const string DeathAnimationName = "Death";
-            const int BaseAnimationLayer = 0;
-            const float AnimationStartTime = 0f;
 
             if (_isDead)
             {
                 return;
             }
 
-            _isDead = true;
-            _isHurt = false;
-
-            _audioController?.PlayDeathSound();
-
-            if (_patrolAI != null)
-            {
-                _patrolAI.enabled = false;
-            }
-
-            _animator.Play(DeathAnimationName, BaseAnimationLayer, AnimationStartTime);
-            SetAnimationState(AnimationState.Death);
-
-            base.Die();
-            Destroy(gameObject, DestroyDelay);
+            PlayAnimation("Idle");
+            UpdateAnimation(_patrolAI != null ? _patrolAI.CurrentDirection : Vector2.zero);
         }
 
         private void HandleAttackRangeChanged(bool isInRange)
@@ -354,7 +394,7 @@ namespace EnemyLogicWithEnhancedStrike
                 return;
             }
 
-            if (isInRange && !_isAttackInProgress && Time.time >= _nextAttackTime)
+            if (isInRange && _isAttackInProgress == false && Time.time >= _nextAttackTime)
             {
                 TryStartAttack();
             }
@@ -362,10 +402,12 @@ namespace EnemyLogicWithEnhancedStrike
 
         private void HandleMovementDirectionChanged(Vector2 direction)
         {
-            if (!_isHurt && !_isDead && !_isAttackInProgress)
+            if (_isHurt || _isDead || _isAttackInProgress)
             {
-                UpdateAnimation(direction);
+                return;
             }
+
+            UpdateAnimation(direction);
         }
 
         private void UpdateAnimation(Vector2 direction)
@@ -375,7 +417,7 @@ namespace EnemyLogicWithEnhancedStrike
                 return;
             }
 
-            var animationState = direction.magnitude > MovementThreshold
+            AnimationState animationState = direction.magnitude > MovementThreshold
                 ? AnimationState.Walk
                 : AnimationState.Idle;
 
@@ -385,38 +427,54 @@ namespace EnemyLogicWithEnhancedStrike
 
         private void UpdateFacingDirection(Vector2 direction)
         {
-            if (Mathf.Abs(direction.x) > NoDirectionThreshold)
+            if (Mathf.Abs(direction.x) <= 0f)
             {
-                float scaleSign = Mathf.Sign(direction.x);
-                transform.localScale = new Vector3(
-                    scaleSign * Mathf.Abs(transform.localScale.x),
-                    transform.localScale.y,
-                    transform.localScale.z);
+                return;
             }
+
+            float scaleSign = Mathf.Sign(direction.x);
+
+            transform.localScale = new Vector3(
+                scaleSign * Mathf.Abs(transform.localScale.x),
+                transform.localScale.y,
+                transform.localScale.z);
         }
 
-        private void OnDestroy()
+        private void PlayAnimation(string animationName)
         {
-            if (_patrolAI != null)
+            if (_animator == null)
             {
-                _patrolAI.OnMoveDirectionChanged -= HandleMovementDirectionChanged;
-                _patrolAI.OnInAttackRange -= HandleAttackRangeChanged;
+                return;
             }
+
+            _animator.Play(animationName, 0, 0f);
         }
 
         private void SetAnimationState(AnimationState state)
         {
-            _animator.SetInteger("state", (int)state);
+            if (_animator != null)
+            {
+                _animator.SetInteger("state", (int)state);
+            }
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireCube(CalculateAttackCenter(_attackOffset), _attackSize);
+
+            Gizmos.color = Color.magenta;
+            Gizmos.DrawWireCube(CalculateAttackCenter(_specialAttackOffset), _specialAttackSize);
         }
 
         private enum AnimationState
         {
-            Idle,
-            Walk,
-            Attack,
-            Hurt,
-            Death,
-            StrongAttack
+            Idle = 0,
+            Walk = 1,
+            Attack = 2,
+            Hurt = 3,
+            Death = 4,
+            StrongAttack = 5
         }
     }
 }

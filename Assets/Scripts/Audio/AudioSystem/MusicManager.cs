@@ -21,25 +21,44 @@ namespace AudioSystem
 
         public void Update()
         {
-            if (!_isBossFightActive && _isBackgroundMusicPlaying && !_audioPlayer.IsPlaying)
+            if (_isBossFightActive)
+            {
+                return;
+            }
+
+            if (_isBackgroundMusicPlaying && _audioPlayer.IsPlaying == false)
             {
                 PlayNextTrack();
             }
         }
 
+        public void StartBackgroundMusic()
+        {
+            if (_playlist.HasTracks == false || _isBossFightActive)
+            {
+                return;
+            }
+
+            _isBackgroundMusicPlaying = true;
+
+            PlayNextTrack();
+        }
+
         public void PlayNextTrack()
         {
-            if (!_playlist.HasTracks)
+            if (_playlist.HasTracks == false)
             {
                 return;
             }
 
             AudioClip nextTrack = _playlist.GetNextTrack();
 
-            if (nextTrack != null)
+            if (nextTrack == null)
             {
-                _audioPlayer.Play(nextTrack);
+                return;
             }
+
+            _audioPlayer.Play(nextTrack);
         }
 
         public void PlayBossMusic(AudioClip bossMusic)
@@ -59,42 +78,39 @@ namespace AudioSystem
         public void StopBossMusic()
         {
             _isBossFightActive = false;
-            _audioPlayer.Stop();
-
             _isBackgroundMusicPlaying = true;
+
+            _audioPlayer.Stop();
             PlayNextTrack();
         }
 
         public void PauseBackgroundMusic()
         {
-            if (!_isBossFightActive)
+            if (_isBossFightActive)
             {
-                _audioPlayer.Stop();
-                _isBackgroundMusicPlaying = false;
+                return;
             }
+
+            _isBackgroundMusicPlaying = false;
+
+            _audioPlayer.Stop();
         }
 
         public void ResumeBackgroundMusic()
         {
-            if (!_isBossFightActive)
+            if (_isBossFightActive)
             {
-                _isBackgroundMusicPlaying = true;
-                PlayNextTrack();
+                return;
             }
+
+            _isBackgroundMusicPlaying = true;
+
+            PlayNextTrack();
         }
 
         public void SetVolume(float volume)
         {
             _audioPlayer.SetVolume(volume);
-        }
-
-        public void StartBackgroundMusic()
-        {
-            if (_playlist.HasTracks && !_isBossFightActive)
-            {
-                _isBackgroundMusicPlaying = true;
-                PlayNextTrack();
-            }
         }
     }
 }

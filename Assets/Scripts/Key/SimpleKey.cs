@@ -1,29 +1,27 @@
 using DoorControl;
+using System.Collections;
 using UnityEngine;
 
-public class SimpleKey : MonoBehaviour
+public sealed class SimpleKey : MonoBehaviour
 {
     private const string PlayerTag = "Player";
     private const float CollectAnimationDuration = 0.5f;
     private const float ScaleMultiplier = 0.2f;
     private const float RotationSpeed = 360f;
-    private const float DebugRayLength = 2f;
+    private const float GizmoRadius = 0.5f;
 
     [SerializeField] public KeyColor _keyColor = KeyColor.BlackColor;
+
+    private bool _isCollected;
 
     private void Start()
     {
         InitializeKey();
     }
 
-    private void Update()
-    {
-        DrawDebugRay();
-    }
-
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (!other.CompareTag(PlayerTag))
+        if (_isCollected || other.CompareTag(PlayerTag) == false)
         {
             return;
         }
@@ -33,22 +31,21 @@ public class SimpleKey : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        DrawGizmoSphere();
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(transform.position, GizmoRadius);
+    }
+
+    public void SetKeyColor(KeyColor keyColor)
+    {
+        _keyColor = keyColor;
+
+        ApplyKeyColor();
     }
 
     private void InitializeKey()
     {
-        EnsureActiveState();
         ConfigureCollider();
         ApplyKeyColor();
-    }
-
-    private void EnsureActiveState()
-    {
-        if (!gameObject.activeInHierarchy)
-        {
-            gameObject.SetActive(true);
-        }
     }
 
     private void ConfigureCollider()
@@ -87,26 +84,31 @@ public class SimpleKey : MonoBehaviour
 
     private void CollectKey(GameObject player)
     {
-        KeyCollection keyCollection = player.GetComponent<KeyCollection>() ??
-                                     player.GetComponentInParent<KeyCollection>();
+        _isCollected = true;
+
+        KeyCollection keyCollection = player.GetComponent<KeyCollection>();
+
+        if (keyCollection == null)
+        {
+            keyCollection = player.GetComponentInParent<KeyCollection>();
+        }
 
         keyCollection?.AddKey(_keyColor);
 
         StartCoroutine(PlayCollectionAnimation());
     }
 
-    private System.Collections.IEnumerator PlayCollectionAnimation()
+    private IEnumerator PlayCollectionAnimation()
     {
         SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
-        Collider2D collider = GetComponent<Collider2D>();
+        Collider2D keyCollider = GetComponent<Collider2D>();
 
-        if (collider != null)
+        if (keyCollider != null)
         {
-            collider.enabled = false;
+            keyCollider.enabled = false;
         }
 
         float elapsedTime = 0f;
-
         Vector3 originalScale = transform.localScale;
 
         while (elapsedTime < CollectAnimationDuration)
@@ -125,8 +127,8 @@ public class SimpleKey : MonoBehaviour
 
     private void ApplyAnimationTransform(Vector3 originalScale, float progress, SpriteRenderer spriteRenderer)
     {
-        transform.Rotate(0, 0, RotationSpeed * Time.deltaTime);
-        transform.localScale = originalScale * (1 + progress * ScaleMultiplier);
+        transform.Rotate(0f, 0f, RotationSpeed * Time.deltaTime);
+        transform.localScale = originalScale * (1f + progress * ScaleMultiplier);
 
         if (spriteRenderer != null)
         {
@@ -138,20 +140,8 @@ public class SimpleKey : MonoBehaviour
     {
         Color spriteColor = spriteRenderer.color;
 
-        spriteColor.a = 1 - progress;
+        spriteColor.a = 1f - progress;
+
         spriteRenderer.color = spriteColor;
-    }
-
-    private void DrawDebugRay()
-    {
-        Debug.DrawRay(transform.position, Vector3.up * DebugRayLength, Color.red);
-    }
-
-    private void DrawGizmoSphere()
-    {
-        float sphereRadius = 0.5f;
-
-        Gizmos.color = Color.green;
-        Gizmos.DrawWireSphere(transform.position, sphereRadius);
     }
 }

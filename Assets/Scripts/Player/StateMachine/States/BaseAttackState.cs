@@ -8,27 +8,27 @@ namespace Player.StateMachine
         private const string EnemyLayerName = "Enemy";
         private const float AttackRange = 1.4f;
         private const float AttackAngle = 180f;
-        private const float FacingThreshold = 0.0f;
+        private const float FacingThreshold = 0f;
 
         protected readonly Hero _hero;
         protected readonly MeleeAttack _meleeAttack;
         protected readonly int _baseDamage;
         protected readonly States _animationState;
-        protected bool _hasDealtDamage;
+
+        private bool _hasDealtDamage;
 
         protected BaseAttackState(Hero hero, Transform attackPoint, int baseDamage, States animationState)
         {
             _hero = hero;
-
-            _meleeAttack = new MeleeAttack(
-                attackOrigin: attackPoint,
-                attackRange: AttackRange,
-                attackAngle: AttackAngle,
-                enemyLayerMask: LayerMask.GetMask(EnemyLayerName),
-                hero: hero);
-
             _baseDamage = baseDamage;
             _animationState = animationState;
+
+            _meleeAttack = new MeleeAttack(
+                attackPoint,
+                AttackRange,
+                AttackAngle,
+                LayerMask.GetMask(EnemyLayerName),
+                hero);
         }
 
         public virtual void Enter()
@@ -56,7 +56,6 @@ namespace Player.StateMachine
             _hasDealtDamage = true;
 
             Vector2 attackDirection = new Vector2(_hero.FacingDirection, FacingThreshold);
-
             bool hitConnected = _meleeAttack.Perform(_baseDamage, attackDirection);
 
             PlayAttackSound(hitConnected);

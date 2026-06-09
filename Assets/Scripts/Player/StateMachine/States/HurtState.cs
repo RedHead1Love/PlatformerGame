@@ -17,14 +17,16 @@ namespace Player.StateMachine
         public void Enter()
         {
             _hero.AnimationService.SetState(States.Hurt);
-            _timer = 0.0f;
+            _timer = 0f;
         }
 
         public void Tick()
         {
             _timer += Time.deltaTime;
 
-            if (_timer >= _hero.AnimationService.GetAnimationLength(HurtAnimationName))
+            float animationLength = _hero.AnimationService.GetAnimationLength(HurtAnimationName);
+
+            if (animationLength <= 0f || _timer >= animationLength)
             {
                 _hero.StateMachine.Change<IdleState>();
             }

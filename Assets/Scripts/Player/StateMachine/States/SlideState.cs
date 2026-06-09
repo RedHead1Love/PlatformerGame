@@ -6,10 +6,9 @@ namespace Player.StateMachine
 {
     public sealed class SlideState : IState
     {
-        private const string SlideAnimationName = "Slide";
-
         private readonly Hero _hero;
         private readonly Slide _slideAbility;
+
         private Coroutine _slideCoroutine;
 
         public SlideState(Hero hero)
@@ -35,6 +34,7 @@ namespace Player.StateMachine
         }
 
         public void Tick() { }
+
         public void FixedTick() { }
 
         public void Exit()
@@ -49,12 +49,13 @@ namespace Player.StateMachine
 
         private void StopSlideCoroutine()
         {
-            if (_slideCoroutine != null)
+            if (_slideCoroutine == null)
             {
-                _hero.StopCoroutine(_slideCoroutine);
-
-                _slideCoroutine = null;
+                return;
             }
+
+            _hero.StopCoroutine(_slideCoroutine);
+            _slideCoroutine = null;
         }
 
         private IEnumerator PerformSlide()

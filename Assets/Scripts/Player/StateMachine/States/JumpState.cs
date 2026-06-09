@@ -6,7 +6,8 @@ namespace Player.StateMachine
 {
     public sealed class JumpState : IState
     {
-        private const float VelocityThreshold = 0.0f;
+        private const float VelocityThreshold = 0f;
+        private const float HorizontalDeadZone = 0.1f;
 
         private readonly Hero _hero;
         private readonly IInputProvider _inputProvider;
@@ -16,16 +17,14 @@ namespace Player.StateMachine
         public JumpState(Hero hero)
         {
             _hero = hero;
-
             _inputProvider = hero.GetComponent<IInputProvider>();
             _groundCheck = hero.GetComponentInChildren<GroundCheck>();
-
             _rigidbody = hero.Rigidbody;
         }
 
         public void Enter()
         {
-            if (_groundCheck.IsGrounded)
+            if (IsGrounded())
             {
                 ApplyJumpForce();
             }
@@ -35,14 +34,14 @@ namespace Player.StateMachine
 
         public void Tick()
         {
-            if (_inputProvider.IsAttackPressed && !_groundCheck.IsGrounded)
+            if (_inputProvider != null && _inputProvider.IsAttackPressed && IsGrounded() == false)
             {
                 _hero.StateMachine.Change<AirAttackState>();
 
                 return;
             }
 
-            if (_rigidbody.velocity.y <= VelocityThreshold && _groundCheck.IsGrounded)
+            if (_rigidbody != null && _rigidbody.velocity.y <= VelocityThreshold && IsGrounded())
             {
                 _hero.StateMachine.Change<IdleState>();
             }
@@ -50,30 +49,59 @@ namespace Player.StateMachine
 
         public void FixedTick()
         {
-            float horizontalInput = _inputProvider.HorizontalAxis;
+            if (_inputProvider == null || _rigidbody == null)
+            {
+                return;
+            }
 
-            HandleMovement(horizontalInput);
+            HandleMovement(_inputProvider.HorizontalAxis);
         }
 
         public void Exit() { }
 
-        private void ApplyJumpForce() => _rigidbody.AddForce(Vector2.up * _hero.Data.JumpForce, ForceMode2D.Impulse);
+        private bool IsGrounded()
+        {
+            return _groundCheck != null && _groundCheck.IsGrounded;
+        }
+
+        private void ApplyJumpForce()
+        {
+            if (_rigidbody == null)
+            {
+                return;
+            }
+
+            _rigidbody.AddForce(Vector2.up * _hero.Data.JumpForce, ForceMode2D.Impulse);
+        }
 
         private void HandleMovement(float direction)
         {
+            if (Mathf.Abs(direction) < HorizontalDeadZone)
+            {
+                StopHorizontalMovement();
+
+                return;
+            }
+
             if (_hero.IsTouchingWall() && Mathf.Sign(direction) == Mathf.Sign(_hero.FacingDirection))
             {
                 StopHorizontalMovement();
-            }
-            else
-            {
-                MoveHorizontally(direction);
 
-                _hero.SetFacing(direction);
+                return;
             }
+
+            MoveHorizontally(direction);
+            _hero.SetFacing(direction);
         }
 
-        private void StopHorizontalMovement() => _rigidbody.velocity = new Vector2(0.0f, _rigidbody.velocity.y);
-        private void MoveHorizontally(float direction) => _rigidbody.velocity = new Vector2(direction * _hero.Data.MovementSpeed, _rigidbody.velocity.y);
+        private void StopHorizontalMovement()
+        {
+            _rigidbody.velocity = new Vector2(0f, _rigidbody.velocity.y);
+        }
+
+        private void MoveHorizontally(float direction)
+        {
+            _rigidbody.velocity = new Vector2(direction * _hero.Data.MovementSpeed, _rigidbody.velocity.y);
+        }
     }
 }

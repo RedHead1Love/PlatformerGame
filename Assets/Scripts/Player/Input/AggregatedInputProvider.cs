@@ -1,176 +1,154 @@
 using Player.Input;
 using UnityEngine;
 
-public class AggregatedInputProvider : MonoBehaviour, IInputProvider
+public sealed class AggregatedInputProvider : MonoBehaviour, IInputProvider
 {
+    private const float DefaultDeadZone = 0.1f;
+    private const float ZeroAxisValue = 0f;
+
     [Header("Input Sources")]
     [SerializeField] private JoystickInput _joystickInput;
     [SerializeField] private OldInputProvider _keyboardInput;
 
     [Header("Settings")]
-    [SerializeField] private float _deadZone = 0.1f;
+    [SerializeField] private float _deadZone = DefaultDeadZone;
 
-    private bool _isInputBlocked = false;
-    private bool _isShopOpen = false;
-
-    private void Start()
-    {
-        LogInputStatus();
-    }
+    private bool _isInputBlocked;
+    private bool _isShopOpen;
 
     public float HorizontalAxis
-    { 
-        get
-        {
-            if (_isInputBlocked || _isShopOpen) return 0f;
-
-            float joystick = GetJoystickAxis(() => _joystickInput?.HorizontalAxis ?? 0f);
-            float keyboard = GetKeyboardAxis(() => _keyboardInput?.HorizontalAxis ?? 0f);
-
-            return GetDominantAxis(joystick, keyboard);
-        }
-    }
-
-    public bool IsJumpPressed
     {
         get
         {
-            if (_isInputBlocked || _isShopOpen) return false;
-            return GetButtonPress(() => _joystickInput?.IsJumpPressed ?? false,
-                                  () => _keyboardInput?.IsJumpPressed ?? false);
+            if (IsGameplayInputBlocked())
+            {
+                return ZeroAxisValue;
+            }
+
+            float joystickAxis = GetJoystickAxis();
+            float keyboardAxis = GetKeyboardAxis();
+
+            return GetDominantAxis(joystickAxis, keyboardAxis);
         }
     }
 
-    public bool IsOpenShopOrChestPressed
+    public bool IsJumpPressed => IsGameplayInputBlocked() == false && IsAnyButtonPressed(_joystickInput?.IsJumpPressed, _keyboardInput?.IsJumpPressed);
+    public bool IsAttackPressed => IsGameplayInputBlocked() == false && IsAnyButtonPressed(_joystickInput?.IsAttackPressed, _keyboardInput?.IsAttackPressed);
+    public bool IsSecondaryAttackPressed => IsGameplayInputBlocked() == false && IsAnyButtonPressed(_joystickInput?.IsSecondaryAttackPressed, _keyboardInput?.IsSecondaryAttackPressed);
+    public bool IsSlidePressed => IsGameplayInputBlocked() == false && IsAnyButtonPressed(_joystickInput?.IsSlidePressed, _keyboardInput?.IsSlidePressed);
+    public bool IsLiftPressed => IsGameplayInputBlocked() == false && IsAnyButtonPressed(_joystickInput?.IsLiftPressed, _keyboardInput?.IsLiftPressed);
+    public bool IsDropHeroPressed => IsGameplayInputBlocked() == false && IsAnyButtonPressed(_joystickInput?.IsDropHeroPressed, _keyboardInput?.IsDropHeroPressed);
+    public bool IsOpenMapPressed => IsGameplayInputBlocked() == false && IsAnyButtonPressed(_joystickInput?.IsOpenMapPressed, _keyboardInput?.IsOpenMapPressed);
+    public bool IsMenuPressed => _isInputBlocked == false && IsAnyButtonPressed(_joystickInput?.IsMenuPressed, _keyboardInput?.IsMenuPressed);
+    public bool IsOpenShopOrChestPressed => _isInputBlocked == false && IsAnyButtonPressed(_joystickInput?.IsOpenShopOrChestPressed, _keyboardInput?.IsOpenShopOrChestPressed);
+
+    private void Awake()
     {
-        get
+        InitializeInputSources();
+    }
+
+    private void InitializeInputSources()
+    {
+        if (_joystickInput == null)
         {
-            if (_isInputBlocked || _isShopOpen) return false;
-            return GetButtonPress(() => _joystickInput?.IsOpenShopOrChestPressed ?? false,
-                                  () => _keyboardInput?.IsOpenShopOrChestPressed ?? false);
+            _joystickInput = GetComponent<JoystickInput>();
+
+            if (_joystickInput == null)
+            {
+                _joystickInput = FindFirstObjectByType<JoystickInput>();
+            }
+        }
+
+        if (_keyboardInput == null)
+        {
+            _keyboardInput = GetComponent<OldInputProvider>();
+
+            if (_keyboardInput == null)
+            {
+                _keyboardInput = FindFirstObjectByType<OldInputProvider>();
+            }
         }
     }
 
-    public bool IsAttackPressed
+    private float GetJoystickAxis()
     {
-        get
+        if (_joystickInput == null || _joystickInput.enabled == false)
         {
-            if (_isInputBlocked || _isShopOpen) return false;
-            return GetButtonPress(() => _joystickInput?.IsAttackPressed ?? false,
-                                  () => _keyboardInput?.IsAttackPressed ?? false);
+            return ZeroAxisValue;
         }
+
+        float axis = _joystickInput.HorizontalAxis;
+
+        return Mathf.Abs(axis) > _deadZone ? axis : ZeroAxisValue;
     }
 
-    public bool IsSecondaryAttackPressed
+    private float GetKeyboardAxis()
     {
-        get
+        if (_keyboardInput == null || _keyboardInput.enabled == false)
         {
-            if (_isInputBlocked || _isShopOpen) return false;
-            return GetButtonPress(() => _joystickInput?.IsSecondaryAttackPressed ?? false,
-                                  () => _keyboardInput?.IsSecondaryAttackPressed ?? false);
+            return ZeroAxisValue;
         }
+
+        float axis = _keyboardInput.HorizontalAxis;
+
+        return Mathf.Abs(axis) > _deadZone ? axis : ZeroAxisValue;
     }
 
-    public bool IsSlidePressed
+    private float GetDominantAxis(float joystickAxis, float keyboardAxis)
     {
-        get
+        if (Mathf.Abs(joystickAxis) > Mathf.Abs(keyboardAxis))
         {
-            if (_isInputBlocked || _isShopOpen) return false;
-            return GetButtonPress(() => _joystickInput?.IsSlidePressed ?? false,
-                                  () => _keyboardInput?.IsSlidePressed ?? false);
+            return joystickAxis;
         }
+
+        return keyboardAxis;
     }
 
-    public bool IsLiftPressed
+    private bool IsAnyButtonPressed(bool? joystickButtonPressed, bool? keyboardButtonPressed)
     {
-        get
-        {
-            if (_isInputBlocked || _isShopOpen) return false;
-            return GetButtonPress(() => _joystickInput?.IsLiftPressed ?? false,
-                                  () => _keyboardInput?.IsLiftPressed ?? false);
-        }
+        bool isJoystickPressed = _joystickInput != null &&
+                                 _joystickInput.enabled &&
+                                 joystickButtonPressed.GetValueOrDefault();
+
+        bool isKeyboardPressed = _keyboardInput != null &&
+                                 _keyboardInput.enabled &&
+                                 keyboardButtonPressed.GetValueOrDefault();
+
+        return isJoystickPressed || isKeyboardPressed;
     }
 
-    public bool IsDropHeroPressed
+    private bool IsGameplayInputBlocked()
     {
-        get
-        {
-            if (_isInputBlocked || _isShopOpen) return false;
-            return GetButtonPress(() => _joystickInput?.IsDropHeroPressed ?? false,
-                                  () => _keyboardInput?.IsDropHeroPressed ?? false);
-        }
+        return _isInputBlocked || _isShopOpen;
     }
 
-    public bool IsOpenMapPressed
+    public void BlockInput(bool isBlocked)
     {
-        get
-        {
-            if (_isInputBlocked || _isShopOpen) return false;
-            return GetButtonPress(() => _joystickInput?.IsOpenMapPressed ?? false,
-                                  () => _keyboardInput?.IsOpenMapPressed ?? false);
-        }
-    }
+        _isInputBlocked = isBlocked;
 
-    public bool IsMenuPressed
-    {
-        get
+        if (_joystickInput != null)
         {
-            if (_isInputBlocked) return false;
-            return GetButtonPress(() => _joystickInput?.IsMenuPressed ?? false,
-                                  () => _keyboardInput?.IsMenuPressed ?? false);
+            _joystickInput.BlockInput(isBlocked);
+        }
+
+        if (_keyboardInput != null)
+        {
+            _keyboardInput.BlockInput(isBlocked);
         }
     }
 
     public void SetShopMode(bool isShopOpen)
     {
         _isShopOpen = isShopOpen;
-    }
-
-    private float GetJoystickAxis(System.Func<float> getAxis)
-    {
-        if (_joystickInput == null || !_joystickInput.enabled) return 0f;
-        return getAxis();
-    }
-
-    private float GetKeyboardAxis(System.Func<float> getAxis)
-    {
-        if (_keyboardInput == null || !_keyboardInput.enabled) return 0f;
-        return getAxis();
-    }
-
-    private float GetDominantAxis(float joystick, float keyboard)
-    {
-        if (Mathf.Abs(joystick) > Mathf.Abs(keyboard))
-            return joystick;
-        return keyboard;
-    }
-
-    private bool GetButtonPress(System.Func<bool> getJoystick, System.Func<bool> getKeyboard)
-    {
-        bool joystickPressed = _joystickInput != null && _joystickInput.enabled && getJoystick();
-        bool keyboardPressed = _keyboardInput != null && _keyboardInput.enabled && getKeyboard();
-
-        return joystickPressed || keyboardPressed;
-    }
-
-
-    public void BlockInput(bool block)
-    {
-        _isInputBlocked = block;
 
         if (_joystickInput != null)
-            _joystickInput.BlockInput(block);
-        if (_keyboardInput != null)
-            _keyboardInput.BlockInput(block);
-    }
+        {
+            _joystickInput.SetShopMode(isShopOpen);
+        }
 
-    private void LogInputStatus()
-    {
-        Debug.Log($"=== AggregatedInputProvider Status ===");
-        Debug.Log($"Joystick active: {_joystickInput != null && _joystickInput.enabled}");
-        Debug.Log($"Keyboard active: {_keyboardInput != null && _keyboardInput.enabled}");
-        Debug.Log($"Input blocked: {_isInputBlocked}");
-        Debug.Log($"Shop mode: {_isShopOpen}");
-        Debug.Log($"Jump: {IsJumpPressed}, Attack: {IsAttackPressed}");
+        if (_keyboardInput != null)
+        {
+            _keyboardInput.SetShopMode(isShopOpen);
+        }
     }
 }
