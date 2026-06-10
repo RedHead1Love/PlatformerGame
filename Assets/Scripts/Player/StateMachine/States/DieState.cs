@@ -7,74 +7,74 @@ namespace Player.StateMachine
 {
     public sealed class DieState : IState
     {
-        private const float RestartDelay = 1.5f;
+        private const float AnimationEndThreshold = 0.2f;
+        private const float RestartDelay = 0.9f;
 
         private readonly Hero _hero;
         private readonly Rigidbody2D _rigidbody;
+        private readonly Animator _animator;
 
         private bool _isRestarting;
-        private bool _wasAdShown;
 
         public DieState(Hero hero)
         {
             _hero = hero;
             _rigidbody = hero.GetComponent<Rigidbody2D>();
+            _animator = hero.GetComponent<Animator>();
         }
 
         public void Enter()
         {
-            if (_isRestarting)
-            {
-                return;
-            }
-
+            if (_isRestarting) return;
             _isRestarting = true;
-            _wasAdShown = false;
+
 
             FreezeHero();
             _hero.AnimationService.SetState(States.Die);
-            _hero.StartCoroutine(RestartGame());
+
+            _hero.StartCoroutine(RestartSequence());
         }
-
-        public void Tick() { }
-
-        public void FixedTick() { }
-
-        public void Exit() { }
 
         private void FreezeHero()
         {
-            if (_rigidbody == null)
-            {
-                return;
-            }
-
             _rigidbody.velocity = Vector2.zero;
             _rigidbody.angularVelocity = 0f;
             _rigidbody.gravityScale = 0f;
             _rigidbody.constraints = RigidbodyConstraints2D.FreezeAll;
         }
 
-        private IEnumerator RestartGame()
+        private IEnumerator RestartSequence()
         {
-            ShowInterstitialAdOnce();
+
+            float timer = 0f;
+            while (timer < 2.5f)
+            {
+                AnimatorStateInfo info = _animator.GetCurrentAnimatorStateInfo(0);
+                if (info.IsName("Die") && info.normalizedTime >= AnimationEndThreshold)
+                {
+                    break;
+                }
+                timer += Time.deltaTime;
+                yield return null;
+            }
+
+            ShowInterstitialAdSafe();
 
             yield return new WaitForSecondsRealtime(RestartDelay);
 
             Time.timeScale = 1f;
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
 
-        private void ShowInterstitialAdOnce()
+        private void ShowInterstitialAdSafe()
         {
-            if (_wasAdShown)
-            {
-                return;
-            }
-
-            _wasAdShown = true;
-
-            YG2.InterstitialAdvShow();
+          #if UNITY_WEBGL && !UNITY_EDITOR
+           YG2.InterstitialAdvShow();
+          #endif
         }
+
+        public void Tick() { }
+        public void FixedTick() { }
+        public void Exit() { }
     }
 }

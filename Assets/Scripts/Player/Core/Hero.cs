@@ -50,6 +50,7 @@ public sealed class Hero : MonoBehaviour, IDamageable
     public HeroStateMachine StateMachine { get; private set; }
     public AnimationService AnimationService { get; private set; }
     public Rigidbody2D Rigidbody { get; private set; }
+    public static Hero Instance { get; private set; }
 
     public HeroData Data => _heroData;
     public Transform AttackPoint => _attackPoint;
@@ -59,6 +60,8 @@ public sealed class Hero : MonoBehaviour, IDamageable
 
     private void Awake()
     {
+        Instance = this;
+
         InitializeComponents();
         InitializeAbilityManager();
         InitializeStateMachine();

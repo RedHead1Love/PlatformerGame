@@ -23,8 +23,6 @@ public sealed class CameraController : MonoBehaviour
 
     private void LateUpdate()
     {
-        FindTargetIfNeeded();
-
         if (_target == null)
         {
             return;
@@ -33,20 +31,18 @@ public sealed class CameraController : MonoBehaviour
         FollowTarget();
     }
 
-    public void SetTarget(Transform target)
-    {
-        _target = target;
-    }
-
     private void FindTargetIfNeeded()
     {
         if (_target != null)
+            return;
+
+        if (Hero.Instance != null)
         {
+            _target = Hero.Instance.transform;
             return;
         }
 
         GameObject player = GameObject.FindGameObjectWithTag(PlayerTag);
-
         if (player != null)
         {
             _target = player.transform;
@@ -66,7 +62,7 @@ public sealed class CameraController : MonoBehaviour
 
     private Vector3 ClampPositionToBounds(Vector3 position)
     {
-        if (_useBounds == false)
+        if (!_useBounds)
         {
             return position;
         }
