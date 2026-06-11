@@ -40,7 +40,8 @@ namespace Player.Input
         public bool IsDropHeroPressed => IsGameplayInputBlocked() == false && UnityEngine.Input.GetKeyDown(DropHeroKey);
         public bool IsOpenMapPressed => _isInputBlocked == false && _isShopOpen == false && UnityEngine.Input.GetKeyDown(MapKey);
         public bool IsMenuPressed => _isInputBlocked == false && UnityEngine.Input.GetKeyDown(MenuKey);
-        public bool IsOpenShopOrChestPressed => _isInputBlocked == false && UnityEngine.Input.GetKeyDown(InteractKey);
+        public bool IsOpenShopOrChestPressed => _isInputBlocked == false &&
+         (UnityEngine.Input.GetKeyDown(InteractKey) || UnityEngine.Input.GetKeyDown(KeyCode.F));
 
         public bool IsSlidePressed
         {
