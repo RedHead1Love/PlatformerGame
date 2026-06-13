@@ -61,6 +61,16 @@ public sealed class JoystickInput : MonoBehaviour, IInputProvider
     public bool IsMenuPressed => _isInputBlocked == false && _isMenuPressed;
     public bool IsOpenShopOrChestPressed => _isInputBlocked == false && _isOpenShopOrChestPressed;
 
+    private void Start()
+    {
+#if UNITY_WEBGL
+    if (YG.YG2.envir.isMobile || YG.YG2.envir.isTablet)
+    {
+        gameObject.SetActive(true);
+    }
+#endif
+    }
+
     private void OnEnable()
     {
         SubscribeButtons();

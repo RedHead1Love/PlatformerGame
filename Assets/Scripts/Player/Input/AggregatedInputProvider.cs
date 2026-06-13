@@ -45,6 +45,23 @@ public sealed class AggregatedInputProvider : MonoBehaviour, IInputProvider
     private void Awake()
     {
         InitializeInputSources();
+
+#if UNITY_WEBGL
+    CheckAndEnableMobileInput();
+#endif
+    }
+
+    private void CheckAndEnableMobileInput()
+    {
+        bool isMobile = YG.YG2.envir.isMobile ||
+                        YG.YG2.envir.isTablet ||
+                        Application.isMobilePlatform;
+
+        if (isMobile && _joystickInput != null)
+        {
+            _joystickInput.gameObject.SetActive(true);
+            Debug.Log("[AggregatedInputProvider] Мобильное управление включено");
+        }
     }
 
     private void InitializeInputSources()
@@ -68,6 +85,11 @@ public sealed class AggregatedInputProvider : MonoBehaviour, IInputProvider
                 _keyboardInput = FindFirstObjectByType<OldInputProvider>();
             }
         }
+
+#if UNITY_WEBGL
+    if (_joystickInput != null)
+        _joystickInput.gameObject.SetActive(true);
+#endif
     }
 
     private float GetJoystickAxis()
