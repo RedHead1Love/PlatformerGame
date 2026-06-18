@@ -1,60 +1,59 @@
 using Player;
+using Player.StateMachine;
 using System.Collections;
 using UnityEngine;
-using UnityEngine.SceneManagement;
+using YG;
 
-namespace Player.StateMachine
+public sealed class DieState : IState
 {
-    public sealed class DieState : IState
+    private const string DieAnimationName = "Die";
+    private const float RestartAnimationThreshold = 0.55f;
+    private const float RestartDelay = 1f;
+
+    private readonly Hero _hero;
+    private readonly Animator _animator;
+    private bool _isRestarting;
+
+    public DieState(Hero hero)
     {
-        private const string DieAnimationName = "Die";
-        private const string StateParameterName = "state";
-        private const float RestartAnimationThreshold = 0.55f;
-        private const float RestartDelay = 1f;
-        private const int BaseLayerIndex = 0;
+        _hero = hero;
+        _animator = hero.GetComponent<Animator>();
+    }
 
-        private readonly Hero _hero;
-        private readonly Animator _animator;
-        private bool _isRestarting;
+    public void Enter()
+    {
+        _animator.SetInteger("state", (int)States.Hurt);
 
-        public DieState(Hero hero)
+        _isRestarting = false;
+    }
+
+    public void Tick()
+    {
+        if (!_isRestarting && IsDieAnimationFinished())
         {
-            _hero = hero;
-            _animator = hero.GetComponent<Animator>();
+            _isRestarting = true;
+
+            _hero.StartCoroutine(RestartGame());
         }
+    }
 
-        public void Enter()
-        {
-            _animator.SetInteger(StateParameterName, (int)States.Hurt);
-            _isRestarting = false;
-        }
+    public void FixedTick() { }
 
-        public void Tick()
-        {
-            if (!_isRestarting && IsDieAnimationFinished())
-            {
-                _isRestarting = true;
+    public void Exit() { }
 
-                _hero.StartCoroutine(RestartGameCoroutine());
-            }
-        }
+    private bool IsDieAnimationFinished()
+    {
+        AnimatorStateInfo stateInfo = _animator.GetCurrentAnimatorStateInfo(0);
+        YG2.InterstitialAdvShow();
 
-        public void FixedTick() { }
+        return stateInfo.IsName(DieAnimationName) && stateInfo.normalizedTime >= RestartAnimationThreshold;
+    }
 
-        public void Exit() { }
+    private IEnumerator RestartGame()
+    {
+        yield return new WaitForSeconds(RestartDelay);
 
-        private bool IsDieAnimationFinished()
-        {
-            AnimatorStateInfo stateInfo = _animator.GetCurrentAnimatorStateInfo(BaseLayerIndex);
-
-            return stateInfo.IsName(DieAnimationName) && stateInfo.normalizedTime >= RestartAnimationThreshold;
-        }
-
-        private IEnumerator RestartGameCoroutine()
-        {
-            yield return new WaitForSeconds(RestartDelay);
-
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-        }
+        UnityEngine.SceneManagement.SceneManager.LoadScene(
+            UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
     }
 }
