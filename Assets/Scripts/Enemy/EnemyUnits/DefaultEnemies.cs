@@ -97,6 +97,13 @@ namespace EnemyLogicDefault
 
             PlayDeathSound();
 
+            SetAnimationState(AnimationState.Death);   
+
+            if (_patrolAI != null)
+            {
+                _patrolAI.enabled = false;
+            }
+
             base.Die();
 
             Destroy(gameObject, DestroyDelay);
