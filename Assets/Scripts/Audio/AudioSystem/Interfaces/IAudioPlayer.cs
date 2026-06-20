@@ -11,6 +11,7 @@ namespace AudioSystem
         void PlayOneShot(AudioClip audioClip, float volume);
         void Stop();
         void SetVolume(float volume);
+
         float GetVolume();
     }
 }
