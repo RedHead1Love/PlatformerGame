@@ -3,7 +3,6 @@ using UnityEngine;
 
 public sealed class TutorialManager : MonoBehaviour
 {
-    private const KeyCode CloseTutorialKey = KeyCode.V;
     private const float PausedTimeScale = 0f;
     private const float NormalTimeScale = 1f;
 
@@ -14,6 +13,11 @@ public sealed class TutorialManager : MonoBehaviour
     private void Start()
     {
         InitializeTutorial();
+    }
+
+    private void Update()
+    {
+        TryCloseTutorial();   
     }
 
     private void InitializeTutorial()
@@ -63,7 +67,12 @@ public sealed class TutorialManager : MonoBehaviour
 
     public void TryCloseTutorial()
     {
-        if (_tutorialPanel.activeInHierarchy || Input.GetKeyDown(CloseTutorialKey))
+        if (_tutorialPanel.activeInHierarchy == false)
+        {
+            return;
+        }
+
+        if (Input.anyKeyDown)
         {
             CloseTutorial();
         }
