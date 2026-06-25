@@ -1,60 +1,31 @@
+using Player.Input;
 using UnityEngine;
 
 public sealed class TutorialManager : MonoBehaviour
 {
+    private const KeyCode CloseTutorialKey = KeyCode.V;
     private const float PausedTimeScale = 0f;
     private const float NormalTimeScale = 1f;
 
     [SerializeField] private GameObject _tutorialPanel;
 
-    private static bool _isTutorialShown;
+    private static bool _isTutorialShown = false;
 
     private void Start()
     {
         InitializeTutorial();
     }
 
-    public void CloseTutorial()
-    {
-        if (_tutorialPanel != null)
-        {
-            _tutorialPanel.SetActive(false);
-        }
-
-        ResumeGame();
-
-        _isTutorialShown = true;
-    }
-
-    public static void ResetTutorial()
-    {
-        _isTutorialShown = false;
-    }
-
-    public void TryCloseTutorial()
-    {
-        if (_tutorialPanel != null && _tutorialPanel.activeInHierarchy)
-        {
-            CloseTutorial();
-        }
-    }
-
     private void InitializeTutorial()
     {
-        if (_tutorialPanel == null)
-        {
-            ResumeGame();
-
-            return;
-        }
-
-        if (_isTutorialShown == false)
+        if (!_isTutorialShown)
         {
             ShowTutorial();
         }
         else
         {
             ResumeGame();
+
             _tutorialPanel.SetActive(false);
         }
     }
@@ -66,6 +37,20 @@ public sealed class TutorialManager : MonoBehaviour
         PauseGame();
     }
 
+    public void CloseTutorial()
+    {
+        _tutorialPanel.SetActive(false);
+
+        ResumeGame();
+
+        _isTutorialShown = true;
+    }
+
+    public static void ResetTutorial()
+    {
+        _isTutorialShown = false;
+    }
+
     private void PauseGame()
     {
         Time.timeScale = PausedTimeScale;
@@ -74,5 +59,13 @@ public sealed class TutorialManager : MonoBehaviour
     private void ResumeGame()
     {
         Time.timeScale = NormalTimeScale;
+    }
+
+    public void TryCloseTutorial()
+    {
+        if (_tutorialPanel.activeInHierarchy || Input.GetKeyDown(CloseTutorialKey))
+        {
+            CloseTutorial();
+        }
     }
 }
