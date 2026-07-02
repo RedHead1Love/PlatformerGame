@@ -12,12 +12,14 @@ public sealed class Checkpoint : MonoBehaviour
 
     private void Start()
     {
+        _spriteRenderer = GetComponent<SpriteRenderer>();
+
         InitializeCheckpoint();
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (_isActivated || other.CompareTag(PlayerTag) == false)
+        if (_isActivated || !other.CompareTag(PlayerTag))
         {
             return;
         }
@@ -25,29 +27,11 @@ public sealed class Checkpoint : MonoBehaviour
         ActivateCheckpoint(other.transform.position);
     }
 
-    public string GetCheckpointId()
-    {
-        return _checkpointId;
-    }
-
-    public bool IsActivated()
-    {
-        return _isActivated;
-    }
-
-    public Vector3 GetSpawnPosition()
-    {
-        return transform.position;
-    }
-
     private void InitializeCheckpoint()
     {
-        _spriteRenderer = GetComponent<SpriteRenderer>();
-
         if (SaveSystem.Instance != null && SaveSystem.Instance.HasSave())
         {
             GameSaveData saveData = SaveSystem.Instance.CurrentSave;
-
             _isActivated = saveData != null && saveData.checkpointId == _checkpointId;
         }
 
@@ -58,11 +42,15 @@ public sealed class Checkpoint : MonoBehaviour
     {
         _isActivated = true;
 
-        SaveSystem.Instance?.SaveGame(_checkpointId, playerPosition);
-        GameStateManager.MarkGameSaved();
-
-        PlayActivationEffects();
         UpdateVisualState();
+        PlayActivationEffects();
+
+            if (SaveSystem.Instance != null)
+            {
+                SaveSystem.Instance.SaveGame(_checkpointId, playerPosition);
+            }
+
+            GameStateManager.MarkGameSaved();
     }
 
     private void PlayActivationEffects()
@@ -80,4 +68,8 @@ public sealed class Checkpoint : MonoBehaviour
             _spriteRenderer.color = _isActivated ? Color.green : Color.white;
         }
     }
+
+    public string GetCheckpointId() => _checkpointId;
+    public bool IsActivated() => _isActivated;
+    public Vector3 GetSpawnPosition() => transform.position;
 }

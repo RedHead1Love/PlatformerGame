@@ -58,6 +58,7 @@ namespace Player.Abilities
         public void UnlockDash()
         {
             HasDash = true;
+
             SaveAbilities();
         }
 
@@ -65,17 +66,30 @@ namespace Player.Abilities
         {
             HasAnatomy = true;
             SaveAbilities();
+            NotifyHealthPickups();  
+        }
+
+        private void NotifyHealthPickups()
+        {
+            var pickups = Object.FindObjectsByType<HealthPickup>(FindObjectsSortMode.None);
+
+            foreach (var pickup in pickups)
+            {
+                pickup?.RefreshPickupState();
+            }
         }
 
         public void UnlockMap()
         {
             HasMap = true;
+
             SaveAbilities();
         }
 
         public void UnlockArmor()
         {
             HasArmor = true;
+
             SaveAbilities();
 
             _armorManager?.UnlockArmorAbility();
@@ -84,84 +98,100 @@ namespace Player.Abilities
         public void UnlockSwampDamageBonus()
         {
             HasSwampDamageBonus = true;
+
             SaveAbilities();
         }
 
         public void UnlockSkeletonDamageBonus()
         {
             HasSkeletonDamageBonus = true;
+
             SaveAbilities();
         }
 
         public void UnlockDemonDamageBonus()
         {
             HasDemonDamageBonus = true;
+
             SaveAbilities();
         }
 
         public void UnlockSpiderDamageBonus()
         {
             HasSpiderDamageBonus = true;
+
             SaveAbilities();
         }
 
         public void UnlockZombieDamageBonus()
         {
             HasZombieDamageBonus = true;
+
             SaveAbilities();
         }
 
         public void UnlockBossDamageBonus()
         {
             HasBossDamageBonus = true;
+
             SaveAbilities();
         }
 
         public void PurchaseLastChance()
         {
             IsLastChanceActive = true;
+
             SaveAbilities();
         }
 
         public void UseLastChance()
         {
             IsLastChanceActive = false;
+
             SaveAbilities();
         }
 
         public void UnlockPassiveHealthRegeneration()
         {
             HasPassiveHealthRegeneration = true;
+
             SaveAbilities();
 
             PassiveHealthRegeneration regeneration = _hero?.GetComponent<PassiveHealthRegeneration>();
+
             regeneration?.EnableRegeneration();
         }
 
         public void UnlockRobocopRegeneration()
         {
             HasRobocopRegeneration = true;
+
             SaveAbilities();
 
             PassiveArmorRegeneration regeneration = _hero?.GetComponent<PassiveArmorRegeneration>();
+
             regeneration?.Activate();
         }
 
         public void UnlockVampireAbility()
         {
             HasVampireAbility = true;
+
             SaveAbilities();
 
             VampireHealthSystem vampireSystem = GetOrAddComponent<VampireHealthSystem>();
+
             vampireSystem?.Activate();
         }
 
         public void UnlockOnePunchManAbility()
         {
             HasOnePunchManAbility = true;
+
             SaveAbilities();
 
             OnePunchManSystem onePunchManSystem = GetOrAddComponent<OnePunchManSystem>();
+
             onePunchManSystem?.Activate();
         }
 

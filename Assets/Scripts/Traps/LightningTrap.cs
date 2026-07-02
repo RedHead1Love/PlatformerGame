@@ -70,13 +70,22 @@ namespace Traps
 
         private void OnTriggerEnter2D(Collider2D other)
         {
-            if (_activateOnTriggerEnter == false || _isActive)
+            Debug.Log($"[LightningTrap] TRIGGER ENTER → Object: {other.name} | Layer: {LayerMask.LayerToName(other.gameObject.layer)} | Tag: {other.tag} | Is Trigger: {other.isTrigger}");
+
+            if (!_activateOnTriggerEnter || _isActive)
             {
+                Debug.Log("[LightningTrap] Activation blocked by flags");
                 return;
             }
 
-            if (IsActivationLayer(other.gameObject.layer) || other.CompareTag(_playerTag))
+            bool layerOk = IsActivationLayer(other.gameObject.layer);
+            bool tagOk = other.CompareTag(_playerTag);
+
+            Debug.Log($"[LightningTrap] Checks: Layer OK = {layerOk}, Tag OK = {tagOk}");
+
+            if (layerOk || tagOk)
             {
+                Debug.Log("<color=green>[LightningTrap] ACTIVATING TRAP!</color>");
                 ActivateTrap();
             }
         }
@@ -226,8 +235,23 @@ namespace Traps
 
         private void InitializePlayerReference()
         {
+            // Не используй Find в Awake — в билде может не сработать
             GameObject playerObject = GameObject.FindGameObjectWithTag(_playerTag);
 
+            if (playerObject != null)
+            {
+                _player = playerObject.transform;
+            }
+            else
+            {
+                // Запасной вариант — ищем позже
+                Invoke(nameof(FindPlayerDelayed), 0.1f);
+            }
+        }
+
+        private void FindPlayerDelayed()
+        {
+            GameObject playerObject = GameObject.FindGameObjectWithTag(_playerTag);
             if (playerObject != null)
             {
                 _player = playerObject.transform;

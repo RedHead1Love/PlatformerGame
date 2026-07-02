@@ -132,47 +132,65 @@ public sealed class ShopItemPurchaseHandler
         {
             case ShopItemIds.UnlockMap:
                 _abilityManager.UnlockMap();
+
                 break;
 
             case ShopItemIds.UnlockDash:
                 _abilityManager.UnlockDash();
+
                 break;
 
             case ShopItemIds.UnlockAnatomy:
                 _abilityManager.UnlockAnatomy();
+
+                RefreshAllPickups();
+
+                if (_shopManager != null)
+                {
+                    _shopManager.Invoke(nameof(RefreshAllPickups), 0.2f);
+                }
+
                 break;
 
             case ShopItemIds.UnlockArmor:
                 _abilityManager.UnlockArmor();
                 _armorManager?.FillArmor();
+
                 break;
 
             case ShopItemIds.UnlockSwampDamageBonus:
                 _abilityManager.UnlockSwampDamageBonus();
+
                 break;
 
             case ShopItemIds.ActivateLastChance:
                 _abilityManager.PurchaseLastChance();
+
                 break;
 
             case ShopItemIds.RestoreArmor:
                 RestoreArmor();
+
                 break;
 
             case ShopItemIds.UnlockSkeletonDamageBonus:
                 _abilityManager.UnlockSkeletonDamageBonus();
+
                 break;
 
             case ShopItemIds.UnlockDemonDamageBonus:
                 _abilityManager.UnlockDemonDamageBonus();
+
                 break;
 
             case ShopItemIds.UnlockSpiderDamageBonus:
                 _abilityManager.UnlockSpiderDamageBonus();
+
                 break;
 
             case ShopItemIds.UnlockZombieDamageBonus:
                 _abilityManager.UnlockZombieDamageBonus();
+
                 break;
 
             case ShopItemIds.UnlockPassiveHealthRegeneration:
@@ -181,18 +199,22 @@ public sealed class ShopItemPurchaseHandler
 
             case ShopItemIds.UnlockRobocopRegeneration:
                 _abilityManager.UnlockRobocopRegeneration();
+
                 break;
 
             case ShopItemIds.UnlockVampireAbility:
                 _abilityManager.UnlockVampireAbility();
+
                 break;
 
             case ShopItemIds.UnlockOnePunchManAbility:
                 _abilityManager.UnlockOnePunchManAbility();
+
                 break;
 
             case ShopItemIds.UnlockBossDamageBonus:
                 _abilityManager.UnlockBossDamageBonus();
+
                 break;
         }
     }
@@ -212,6 +234,19 @@ public sealed class ShopItemPurchaseHandler
         _armorManager.FillArmor();
 
         ShowArmorRestoredEffect();
+    }
+
+    private void RefreshAllPickups()
+    {
+        var pickups = Object.FindObjectsByType<HealthPickup>(FindObjectsSortMode.None);
+
+        foreach (var pickup in pickups)
+        {
+            if (pickup != null)
+            {
+                pickup.RefreshPickupState();
+            }
+        }
     }
 
     private void SavePurchase(string itemId)

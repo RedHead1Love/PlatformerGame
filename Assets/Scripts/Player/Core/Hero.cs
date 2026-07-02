@@ -62,8 +62,8 @@ public sealed class Hero : MonoBehaviour, IDamageable
     {
         Instance = this;
 
-        InitializeComponents();
         InitializeAbilityManager();
+        InitializeComponents();
         InitializeStateMachine();
         InitializeSensors();
         SubscribeToEvents();

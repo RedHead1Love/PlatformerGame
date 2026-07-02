@@ -109,19 +109,32 @@ public sealed class Door : MonoBehaviour, IOpenable
 
     private void InitializePlayerReferences()
     {
-        GameObject playerObject = GameObject.FindGameObjectWithTag("Player");
-
-        if (playerObject == null)
+        if (Hero.Instance != null)
         {
+            player = Hero.Instance.transform;
+
+            playerKeyCollection = Hero.Instance.GetComponent<KeyCollection>();
+
+            if (playerKeyCollection == null)
+            {
+                playerKeyCollection = Hero.Instance.GetComponentInParent<KeyCollection>();
+            }
+
             return;
         }
 
-        player = playerObject.transform;
-        playerKeyCollection = playerObject.GetComponent<KeyCollection>();
+        GameObject playerObject = GameObject.FindGameObjectWithTag("Player");
 
-        if (playerKeyCollection == null)
+        if (playerObject != null)
         {
-            playerKeyCollection = playerObject.GetComponentInParent<KeyCollection>();
+            player = playerObject.transform;
+
+            playerKeyCollection = playerObject.GetComponent<KeyCollection>();
+
+            if (playerKeyCollection == null)
+            {
+                playerKeyCollection = playerObject.GetComponentInParent<KeyCollection>();
+            }
         }
     }
 

@@ -45,6 +45,11 @@ public sealed class HealthPickup : MonoBehaviour
             return;
         }
 
+        if (_playerHero == null || _playerHero.AbilityManager == null)
+        {
+            FindPlayerHero();
+        }
+
         if (Time.frameCount % FrameCheckInterval != 0)
         {
             return;
@@ -52,13 +57,12 @@ public sealed class HealthPickup : MonoBehaviour
 
         bool canPickup = CheckPickupAbility();
 
-        if (canPickup == _canPickup)
+        if (canPickup != _canPickup)
         {
-            return;
-        }
+            _canPickup = canPickup;
 
-        _canPickup = canPickup;
-        UpdateVisualState();
+            UpdateVisualState();
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D other)
@@ -140,11 +144,29 @@ public sealed class HealthPickup : MonoBehaviour
 
     private void FindPlayerHero()
     {
+        if (_playerHero != null && _playerHero.AbilityManager != null)
+        {
+            return;
+        }
+
+
+        if (Hero.Instance != null)
+        {
+            _playerHero = Hero.Instance;
+
+            return;
+        }
+
         GameObject player = GameObject.FindGameObjectWithTag(PlayerTag);
 
         if (player != null)
         {
             _playerHero = player.GetComponent<Hero>();
+        }
+
+        if (_playerHero == null)
+        {
+            _playerHero = FindFirstObjectByType<Hero>();
         }
     }
 
@@ -173,6 +195,7 @@ public sealed class HealthPickup : MonoBehaviour
         }
 
         _isCollected = true;
+
         HidePickup();
     }
 
