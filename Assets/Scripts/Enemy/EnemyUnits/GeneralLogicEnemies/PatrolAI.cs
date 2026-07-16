@@ -151,7 +151,9 @@ namespace GeneralEnemyPatrolSystem
                 return;
             }
 
-            if (Vector2.Distance(transform.position, _nextPatrolPoint) < ArrivalThreshold)
+            float distanceX = Mathf.Abs(transform.position.x - _nextPatrolPoint.x);
+
+            if (distanceX < ArrivalThreshold)
             {
                 _nextPatrolPoint = _nextPatrolPoint == _pointA.position
                     ? _pointB.position

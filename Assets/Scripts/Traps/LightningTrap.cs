@@ -52,17 +52,19 @@ namespace Traps
 
         private void Start()
         {
-            if (_isActive == false && _animator != null)
-            {
-                _animator.enabled = false;
-            }
+
         }
 
         private void Update()
         {
+            if (_player == null && Hero.Instance != null)
+            {
+                _player = Hero.Instance.transform;
+            }
+
             CalculateDamageAreaCenter();
 
-            if (_usePositionActivation && _player != null && _isActive == false)
+            if (_usePositionActivation && _player != null && !_isActive)
             {
                 CheckPositionActivation();
             }
@@ -70,22 +72,18 @@ namespace Traps
 
         private void OnTriggerEnter2D(Collider2D other)
         {
-            Debug.Log($"[LightningTrap] TRIGGER ENTER → Object: {other.name} | Layer: {LayerMask.LayerToName(other.gameObject.layer)} | Tag: {other.tag} | Is Trigger: {other.isTrigger}");
 
             if (!_activateOnTriggerEnter || _isActive)
             {
-                Debug.Log("[LightningTrap] Activation blocked by flags");
                 return;
             }
 
             bool layerOk = IsActivationLayer(other.gameObject.layer);
             bool tagOk = other.CompareTag(_playerTag);
 
-            Debug.Log($"[LightningTrap] Checks: Layer OK = {layerOk}, Tag OK = {tagOk}");
 
             if (layerOk || tagOk)
             {
-                Debug.Log("<color=green>[LightningTrap] ACTIVATING TRAP!</color>");
                 ActivateTrap();
             }
         }
@@ -235,17 +233,13 @@ namespace Traps
 
         private void InitializePlayerReference()
         {
-            // Не используй Find в Awake — в билде может не сработать
             GameObject playerObject = GameObject.FindGameObjectWithTag(_playerTag);
+
+            Debug.Log(playerObject);
 
             if (playerObject != null)
             {
                 _player = playerObject.transform;
-            }
-            else
-            {
-                // Запасной вариант — ищем позже
-                Invoke(nameof(FindPlayerDelayed), 0.1f);
             }
         }
 
