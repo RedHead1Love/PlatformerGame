@@ -119,6 +119,7 @@ namespace GeneralEnemyPatrolSystem
             if (distanceToPlayer > _loseRadius)
             {
                 ClearPlayerReference();
+
                 InAttackRange = false;
 
                 return;
@@ -281,7 +282,27 @@ namespace GeneralEnemyPatrolSystem
                 BoxRotationAngle,
                 _playerLayerMask);
 
-            return playerInAttackRange != null;
+            if (playerInAttackRange == null)
+            {
+                return false;
+            }
+
+            Vector2 startPoint = transform.position;
+            Vector2 endPoint = playerInAttackRange.transform.position;
+
+            RaycastHit2D hit = Physics2D.Linecast(startPoint, endPoint, _doorLayerMask);
+
+            if (hit.collider != null)
+            {
+                IOpenable door = hit.collider.GetComponent<IOpenable>();
+
+                if (door != null && door.IsClosed)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private Vector2 CalculateAttackCenter(Vector2 offset)

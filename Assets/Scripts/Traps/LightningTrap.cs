@@ -235,17 +235,6 @@ namespace Traps
         {
             GameObject playerObject = GameObject.FindGameObjectWithTag(_playerTag);
 
-            Debug.Log(playerObject);
-
-            if (playerObject != null)
-            {
-                _player = playerObject.transform;
-            }
-        }
-
-        private void FindPlayerDelayed()
-        {
-            GameObject playerObject = GameObject.FindGameObjectWithTag(_playerTag);
             if (playerObject != null)
             {
                 _player = playerObject.transform;
