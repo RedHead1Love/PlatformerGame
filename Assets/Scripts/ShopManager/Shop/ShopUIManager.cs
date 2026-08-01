@@ -18,12 +18,25 @@ public sealed class ShopUIManager : MonoBehaviour
     [SerializeField] private Color _selectedCoinColor = Color.white;
     [SerializeField] private Color _unselectedCoinColor = new Color(0.5f, 0.5f, 0.5f, 0.5f);
 
+    [Header("Currency Colors (Text)")]
+    [SerializeField] private Color _bronzeTextColor = new Color(0.8f, 0.5f, 0.2f);
+    [SerializeField] private Color _silverTextColor = new Color(0.75f, 0.75f, 0.75f);
+    [SerializeField] private Color _goldTextColor = new Color(1f, 0.84f, 0f);
+
     [Header("Currency Display")]
     [SerializeField] private TextMeshProUGUI _currentCurrencyText;
     [SerializeField] private Image _currentCurrencyIcon;
 
-    [Header("Description")]
-    [SerializeField] private TextMeshProUGUI _selectedItemDescription;
+    [Header("Right Panel Details")]
+    [SerializeField] private TextMeshProUGUI _detailsNameText;
+    [SerializeField] private GameObject _detailsTitleDivider; 
+    [SerializeField] private TextMeshProUGUI _detailsDescriptionText;
+    [SerializeField] private TextMeshProUGUI _detailsPriceText;
+    [SerializeField] private Image _detailsPriceCurrencyIcon;
+    [SerializeField] private Image _detailsItemIcon;
+    [SerializeField] private Button _buyButton;
+
+    public Button BuyButton => _buyButton;
 
     private readonly Dictionary<WalletManager.CoinType, List<ShopItemView>> _itemViewsByCurrency =
         new Dictionary<WalletManager.CoinType, List<ShopItemView>>();
@@ -62,6 +75,7 @@ public sealed class ShopUIManager : MonoBehaviour
     public void UpdateItemSelection(WalletManager.CoinType currency, int selectedIndex)
     {
         Initialize();
+
         ResetAllItemSelection();
 
         if (_itemViewsByCurrency.TryGetValue(currency, out List<ShopItemView> itemViews) == false)
@@ -118,19 +132,121 @@ public sealed class ShopUIManager : MonoBehaviour
         return null;
     }
 
-    public void UpdateDescription(string description)
+    public void UpdateRightPanel(IShopItem item, Sprite icon, string customName = null, string customMessage = null)
     {
-        if (_selectedItemDescription != null)
+        if (item == null)
         {
-            _selectedItemDescription.text = description;
+            ClearRightPanel(customMessage);
+
+            return;
+        }
+
+        if (_detailsNameText != null)
+        {
+            _detailsNameText.text = !string.IsNullOrEmpty(customName) ? customName : item.DisplayName;
+        }
+
+        if (_detailsTitleDivider != null)
+        {
+            _detailsTitleDivider.SetActive(true);
+        }
+
+        if (_detailsDescriptionText != null)
+        {
+            _detailsDescriptionText.text = customMessage ?? item.Description;
+        }
+
+        if (_detailsItemIcon != null)
+        {
+            _detailsItemIcon.sprite = icon;
+            _detailsItemIcon.gameObject.SetActive(icon != null);
+        }
+
+        if (_detailsPriceText != null)
+        {
+            if (item.ItemId == ShopItemIds.ActivateLastChance && item.IsSold)
+            {
+                _detailsPriceText.text = "Aктивно";
+                _detailsPriceText.color = Color.yellow;
+
+                SetDetailsCurrencyIconActive(false);
+            }
+            else if (item.IsSold && item.ItemId != ShopItemIds.RestoreArmor)
+            {
+                _detailsPriceText.text = "Куплено";
+                _detailsPriceText.color = Color.green;
+
+                SetDetailsCurrencyIconActive(false);
+            }
+            else
+            {
+                _detailsPriceText.text = $"{item.Price}";
+                _detailsPriceText.color = GetCurrencyColor(item.CurrencyType);
+
+                if (_detailsPriceCurrencyIcon != null)
+                {
+                    _detailsPriceCurrencyIcon.sprite = GetCurrencySprite(item.CurrencyType);
+
+                    SetDetailsCurrencyIconActive(true);
+                }
+            }
+        }
+
+        if (_buyButton != null)
+        {
+            _buyButton.interactable = item.CanBePurchased();
         }
     }
 
     public void ShowPurchaseMessage(string message)
     {
-        if (_selectedItemDescription != null)
+        if (_detailsDescriptionText != null)
         {
-            _selectedItemDescription.text = $"<color=green>✓ {message}</color>";
+            _detailsDescriptionText.text = $"<color=green>✓ {message}</color>";
+        }
+    }
+
+    private void ClearRightPanel(string message)
+    {
+        if (_detailsNameText != null)
+        {
+            _detailsNameText.text = string.Empty;
+        }
+
+        if (_detailsTitleDivider != null)
+        {
+            _detailsTitleDivider.SetActive(false);
+        }
+
+        if (_detailsDescriptionText != null)
+        {
+            _detailsDescriptionText.text = message ?? string.Empty;
+        }
+
+        if (_detailsPriceText != null)
+        {
+            _detailsPriceText.text = string.Empty;
+            _detailsPriceText.color = Color.white;
+        }
+
+        SetDetailsCurrencyIconActive(false);
+
+        if (_detailsItemIcon != null)
+        {
+            _detailsItemIcon.gameObject.SetActive(false);
+        }
+
+        if (_buyButton != null)
+        {
+            _buyButton.interactable = false;
+        }
+    }
+
+    private void SetDetailsCurrencyIconActive(bool isActive)
+    {
+        if (_detailsPriceCurrencyIcon != null)
+        {
+            _detailsPriceCurrencyIcon.gameObject.SetActive(isActive);
         }
     }
 
@@ -140,8 +256,6 @@ public sealed class ShopUIManager : MonoBehaviour
 
         Initialize();
     }
-
-    public void LogCurrentState() { }
 
     public void RefreshLastChanceItems()
     {
@@ -281,6 +395,17 @@ public sealed class ShopUIManager : MonoBehaviour
             WalletManager.CoinType.Silver => _silverCoinIndicator != null ? _silverCoinIndicator.sprite : null,
             WalletManager.CoinType.Gold => _goldCoinIndicator != null ? _goldCoinIndicator.sprite : null,
             _ => null
+        };
+    }
+
+    private Color GetCurrencyColor(WalletManager.CoinType coinType)
+    {
+        return coinType switch
+        {
+            WalletManager.CoinType.Bronze => _bronzeTextColor,
+            WalletManager.CoinType.Silver => _silverTextColor,
+            WalletManager.CoinType.Gold => _goldTextColor,
+            _ => Color.white
         };
     }
 }

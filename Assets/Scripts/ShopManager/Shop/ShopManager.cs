@@ -28,6 +28,8 @@ public sealed class ShopManager : MonoBehaviour
     private ShopNavigationController _navigationController;
     private bool _isShopOpen;
 
+    public bool IsShopOpen => _isShopOpen;
+
     public List<ShopItemData> ShopItems => _shopItems;
 
     private void Start()
@@ -53,6 +55,11 @@ public sealed class ShopManager : MonoBehaviour
         {
             _closeButton.onClick.RemoveListener(CloseShop);
         }
+
+        if (_uiManager != null && _uiManager.BuyButton != null)
+        {
+            _uiManager.BuyButton.onClick.RemoveListener(ConfirmPurchase);
+        }
     }
 
     public void OpenShop()
@@ -67,7 +74,7 @@ public sealed class ShopManager : MonoBehaviour
 
         SetShopInputMode(true);
         UpdateUI();
-        UpdateDescription();
+        UpdateDetailsPanel();
     }
 
     public void CloseShop()
@@ -79,30 +86,11 @@ public sealed class ShopManager : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    public void NavigateUp()
-    {
-        HandleShopInput(Vector2.up);
-    }
-
-    public void NavigateDown()
-    {
-        HandleShopInput(Vector2.down);
-    }
-
-    public void NavigateLeft()
-    {
-        HandleShopInput(Vector2.left);
-    }
-
-    public void NavigateRight()
-    {
-        HandleShopInput(Vector2.right);
-    }
-
-    public void ConfirmPurchase()
-    {
-        TryPurchaseSelectedItem();
-    }
+    public void NavigateUp() => HandleShopInput(Vector2.up);
+    public void NavigateDown() => HandleShopInput(Vector2.down);
+    public void NavigateLeft() => HandleShopInput(Vector2.left);
+    public void NavigateRight() => HandleShopInput(Vector2.right);
+    public void ConfirmPurchase() => TryPurchaseSelectedItem();
 
     private void Initialize()
     {
@@ -115,6 +103,12 @@ public sealed class ShopManager : MonoBehaviour
         if (_uiManager == null)
         {
             _uiManager = GetComponentInChildren<ShopUIManager>(true);
+        }
+
+        if (_uiManager != null && _uiManager.BuyButton != null)
+        {
+            _uiManager.BuyButton.onClick.RemoveListener(ConfirmPurchase);
+            _uiManager.BuyButton.onClick.AddListener(ConfirmPurchase);
         }
 
         Hero hero = FindFirstObjectByType<Hero>();
@@ -200,8 +194,7 @@ public sealed class ShopManager : MonoBehaviour
 
     private void InitializeNavigation()
     {
-        Dictionary<WalletManager.CoinType, List<IShopItem>> itemsByCurrency =
-            new Dictionary<WalletManager.CoinType, List<IShopItem>>();
+        Dictionary<WalletManager.CoinType, List<IShopItem>> itemsByCurrency = new Dictionary<WalletManager.CoinType, List<IShopItem>>();
 
         foreach (ShopItemData item in _shopItems)
         {
@@ -223,25 +216,40 @@ public sealed class ShopManager : MonoBehaviour
 
     private void InitializeItemViews()
     {
-        if (_uiManager == null)
-        {
+        if (_uiManager == null) 
+        { 
             return;
         }
 
+        Dictionary<WalletManager.CoinType, List<ShopItemData>> itemsByCurrency = new Dictionary<WalletManager.CoinType, List<ShopItemData>>();
+
         foreach (ShopItemData item in _shopItems)
         {
-            ShopItemView itemView = _uiManager.GetItemViewById(item.CurrencyType, item.ItemId);
+            if (itemsByCurrency.ContainsKey(item.CurrencyType) == false)
+            {
+                itemsByCurrency[item.CurrencyType] = new List<ShopItemData>();
+            }
 
-            itemView?.Initialize(item);
+            itemsByCurrency[item.CurrencyType].Add(item);
+        }
+
+        foreach (KeyValuePair<WalletManager.CoinType, List<ShopItemData>> kvp in itemsByCurrency)
+        {
+            for (int i = 0; i < kvp.Value.Count; i++)
+            {
+                ShopItemView itemView = _uiManager.GetItemView(kvp.Key, i);
+
+                if (itemView != null)
+                {
+                    itemView.Initialize(kvp.Value[i]);
+                }
+            }
         }
     }
 
     private void HandleShopInput()
     {
-        Vector2 input = new Vector2(
-            Input.GetAxisRaw(HorizontalAxisName),
-            Input.GetAxisRaw(VerticalAxisName));
-
+        Vector2 input = new Vector2(Input.GetAxisRaw(HorizontalAxisName), Input.GetAxisRaw(VerticalAxisName));
         HandleShopInput(input);
 
         if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return))
@@ -271,7 +279,7 @@ public sealed class ShopManager : MonoBehaviour
     private void OnNavigationChanged()
     {
         UpdateUI();
-        UpdateDescription();
+        UpdateDetailsPanel();
     }
 
     private void UpdateUI()
@@ -287,7 +295,7 @@ public sealed class ShopManager : MonoBehaviour
         _uiManager.UpdateItemSelection(currency, _navigationController.CurrentItemIndex);
     }
 
-    private void UpdateDescription()
+    private void UpdateDetailsPanel()
     {
         if (_uiManager == null || _navigationController == null)
         {
@@ -298,16 +306,22 @@ public sealed class ShopManager : MonoBehaviour
 
         if (item != null)
         {
-            string status = item.IsSold && item.ItemId != ShopItemIds.RestoreArmor
-                ? "<color=green>[Куплено]</color>\n"
-                : string.Empty;
+            ShopItemView view = _uiManager.GetItemViewById(_navigationController.CurrentCurrency, item.ItemId);
+            Sprite icon = view != null ? view.ItemIcon : null;
 
-            _uiManager.UpdateDescription(status + item.Description);
+            string itemName = _purchaseHandler.GetItemName(item.ItemId);
+            string itemDesc = _purchaseHandler.GetItemDescription(item.ItemId);
 
-            return;
+            string statusMessage = item.IsSold && item.ItemId != ShopItemIds.RestoreArmor
+                ? "<color=green>[Куплено]</color>\n" + itemDesc
+                : itemDesc;
+
+            _uiManager.UpdateRightPanel(item, icon, itemName, statusMessage);
         }
-
-        _uiManager.UpdateDescription(GetCurrencyDescription(_navigationController.CurrentCurrency));
+        else
+        {
+            _uiManager.UpdateRightPanel(null, null, null, GetCurrencyDescription(_navigationController.CurrentCurrency));
+        }
     }
 
     private void TryPurchaseSelectedItem()
@@ -341,7 +355,7 @@ public sealed class ShopManager : MonoBehaviour
         _uiManager?.RefreshLastChanceItems();
 
         UpdateUI();
-        UpdateDescription();
+        UpdateDetailsPanel();
         SaveGameImmediately();
     }
 
@@ -349,7 +363,7 @@ public sealed class ShopManager : MonoBehaviour
     {
         if (item.IsSold && item.ItemId != ShopItemIds.RestoreArmor)
         {
-            _uiManager?.ShowPurchaseMessage("<color=yellow>этот предмет уже куплен</color>");
+            _uiManager?.ShowPurchaseMessage("<color=yellow>Этот предмет уже куплен</color>");
         }
         else
         {
@@ -376,13 +390,7 @@ public sealed class ShopManager : MonoBehaviour
 
     private string GetCurrencyDescription(WalletManager.CoinType coinType)
     {
-        return coinType switch
-        {
-            WalletManager.CoinType.Bronze => "Бронзовые монеты - базовая валюта\n↓ Выбрать предмет",
-            WalletManager.CoinType.Silver => "Серебряные монеты - редкая валюта\n↓ Выбрать предмет",
-            WalletManager.CoinType.Gold => "Золотые монеты - ценная валюта\n↓ Выбрать предмет",
-            _ => string.Empty
-        };
+        return string.Empty;
     }
 
     private void SetShopInputMode(bool isShopOpen)

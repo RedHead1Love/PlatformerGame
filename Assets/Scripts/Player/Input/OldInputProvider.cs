@@ -31,7 +31,7 @@ namespace Player.Input
         public bool IsOpenMapPressed => IsGameplayInputBlocked() == false && UnityEngine.Input.GetKeyDown(MapKey);
         public bool IsOpenShopOrChestPressed => IsGameplayInputBlocked() == false && (UnityEngine.Input.GetKeyDown(InteractKey));
 
-        public bool IsMenuPressed => _isInputBlocked == false && UnityEngine.Input.GetKeyDown(MenuKey);
+        public bool IsMenuPressed => _isInputBlocked == false && _isShopOpen == false && UnityEngine.Input.GetKeyDown(MenuKey);
 
         public bool IsSlidePressed => IsGameplayInputBlocked() == false &&
                               UnityEngine.Input.GetKeyDown(SlideKey) &&

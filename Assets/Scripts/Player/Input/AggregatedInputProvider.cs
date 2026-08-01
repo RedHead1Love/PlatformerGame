@@ -39,7 +39,7 @@ public sealed class AggregatedInputProvider : MonoBehaviour, IInputProvider
     public bool IsLiftPressed => IsGameplayInputBlocked() == false && IsAnyButtonPressed(_joystickInput?.IsLiftPressed, _keyboardInput?.IsLiftPressed);
     public bool IsDropHeroPressed => IsGameplayInputBlocked() == false && IsAnyButtonPressed(_joystickInput?.IsDropHeroPressed, _keyboardInput?.IsDropHeroPressed);
     public bool IsOpenMapPressed => IsGameplayInputBlocked() == false && IsAnyButtonPressed(_joystickInput?.IsOpenMapPressed, _keyboardInput?.IsOpenMapPressed);
-    public bool IsMenuPressed => _isInputBlocked == false && IsAnyButtonPressed(_joystickInput?.IsMenuPressed, _keyboardInput?.IsMenuPressed);
+    public bool IsMenuPressed => _isInputBlocked == false && _isShopOpen == false && IsAnyButtonPressed(_joystickInput?.IsMenuPressed, _keyboardInput?.IsMenuPressed);
     public bool IsOpenShopOrChestPressed => _isInputBlocked == false && IsAnyButtonPressed(_joystickInput?.IsOpenShopOrChestPressed, _keyboardInput?.IsOpenShopOrChestPressed);
 
     private void Awake()
@@ -47,7 +47,7 @@ public sealed class AggregatedInputProvider : MonoBehaviour, IInputProvider
         InitializeInputSources();
 
 #if UNITY_WEBGL
-    CheckAndEnableMobileInput();
+        CheckAndEnableMobileInput();
 #endif
     }
 
@@ -60,7 +60,6 @@ public sealed class AggregatedInputProvider : MonoBehaviour, IInputProvider
         if (isMobile && _joystickInput != null)
         {
             _joystickInput.gameObject.SetActive(true);
-            Debug.Log("[AggregatedInputProvider] Мобильное управление включено");
         }
     }
 
@@ -87,8 +86,8 @@ public sealed class AggregatedInputProvider : MonoBehaviour, IInputProvider
         }
 
 #if UNITY_WEBGL
-    if (_joystickInput != null)
-        _joystickInput.gameObject.SetActive(true);
+        if (_joystickInput != null)
+            _joystickInput.gameObject.SetActive(true);
 #endif
     }
 
