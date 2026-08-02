@@ -244,14 +244,23 @@ public sealed class ArmorManager : MonoBehaviour, IArmorManager
             return;
         }
 
-        Canvas canvas = FindFirstObjectByType<Canvas>();
+        GameObject armorContainer = GameObject.FindGameObjectWithTag("ArmorContainer");
 
-        if (canvas == null)
+        if (armorContainer == null)
         {
             return;
         }
 
-        _armorPanelInstance = Instantiate(_armorPanelPrefab, canvas.transform);
+        _armorPanelInstance = Instantiate(_armorPanelPrefab, armorContainer.transform);
+
+        RectTransform rectTransform = _armorPanelInstance.GetComponent<RectTransform>();
+        if (rectTransform != null)
+        {
+            rectTransform.anchoredPosition = Vector2.zero;
+            rectTransform.localPosition = Vector3.zero;
+            rectTransform.localScale = Vector3.one;
+        }
+
         _armorPanelInstance.name = ArmorPanelName;
         _armorPanelInstance.SetActive(true);
 

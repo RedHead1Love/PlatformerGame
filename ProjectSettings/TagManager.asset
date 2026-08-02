@@ -13,6 +13,8 @@ TagManager:
   - Weapon
   - PlayerAttack
   - SwampEnemy
+  - MainCanvas
+  - ArmorContainer
   layers:
   - Default
   - TransparentFX
