@@ -256,9 +256,9 @@ namespace ChestControl
 
         private void ApplyKeyPhysics(GameObject keyInstance)
         {
-            const float minHorizontalForce = -0.3f;
-            const float maxHorizontalForce = 0.3f;
-            const float verticalForce = 1f;
+            float minHorizontalForce = -0.3f;
+            float maxHorizontalForce = 0.3f;
+            float verticalForce = 1f;
 
             Rigidbody2D keyRigidbody = keyInstance.GetComponent<Rigidbody2D>();
 

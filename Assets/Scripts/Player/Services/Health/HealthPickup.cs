@@ -17,6 +17,7 @@ public sealed class HealthPickup : MonoBehaviour
 
     [Header("Visual Effects")]
     [SerializeField] private ParticleSystem _collectEffect;
+    [SerializeField] private GameObject _lockedHint; 
     [SerializeField] private Color _lockedColor = new Color(0.3f, 0.3f, 0.3f, 0.5f);
     [SerializeField] private Color _collectedColor = new Color(0.3f, 0.3f, 0.3f, 0.3f);
 
@@ -149,7 +150,6 @@ public sealed class HealthPickup : MonoBehaviour
             return;
         }
 
-
         if (Hero.Instance != null)
         {
             _playerHero = Hero.Instance;
@@ -268,21 +268,26 @@ public sealed class HealthPickup : MonoBehaviour
 
     private void UpdateVisualState()
     {
-        if (_spriteRenderer == null)
+        if (_spriteRenderer != null)
         {
-            return;
+            if (_isCollected)
+            {
+                _spriteRenderer.color = _collectedColor;
+            }
+            else
+            {
+                _spriteRenderer.color = _canPickup || _requiresAnatomyAbility == false
+                    ? _originalColor
+                    : _lockedColor;
+            }
         }
 
-        if (_isCollected)
+        if (_lockedHint != null)
         {
-            _spriteRenderer.color = _collectedColor;
+            bool shouldShowHint = _isCollected == false && _requiresAnatomyAbility && _canPickup == false;
 
-            return;
+            _lockedHint.SetActive(shouldShowHint);
         }
-
-        _spriteRenderer.color = _canPickup || _requiresAnatomyAbility == false
-            ? _originalColor
-            : _lockedColor;
     }
 
     private void ShowLockedMessage()
@@ -319,6 +324,11 @@ public sealed class HealthPickup : MonoBehaviour
         if (_spriteRenderer != null)
         {
             _spriteRenderer.enabled = false;
+        }
+
+        if (_lockedHint != null)
+        {
+            _lockedHint.SetActive(false);
         }
     }
 

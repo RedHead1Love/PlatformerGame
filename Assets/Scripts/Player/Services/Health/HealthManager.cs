@@ -9,6 +9,9 @@ public sealed class HealthManager : MonoBehaviour
     [SerializeField] private ArmorManager _armorManager;
     [SerializeField] private AudioController _audioController;
 
+    [Header("Effects")]
+    [SerializeField] private LowHealthEffect _lowHealthEffect;
+
     public int CurrentHealth { get; private set; }
     public int MaxHealth => _maxHealth;
     public bool IsFullHealth => CurrentHealth >= _maxHealth;
@@ -138,10 +141,17 @@ public sealed class HealthManager : MonoBehaviour
                 _audioController = FindFirstObjectByType<AudioController>();
             }
         }
+
+        if (_lowHealthEffect == null)
+        {
+            _lowHealthEffect = FindFirstObjectByType<LowHealthEffect>();
+        }
     }
 
     private void UpdateHealthUI()
     {
         _healthBarUI?.SetHealth(CurrentHealth);
+
+        _lowHealthEffect?.UpdateHealthState(CurrentHealth, _maxHealth);
     }
 }
