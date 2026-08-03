@@ -9,9 +9,12 @@ public sealed class PauseMenuController : MonoBehaviour
 
     [Header("UI Panels")]
     [SerializeField] private GameObject _pausePanel;
+    [SerializeField] private GameObject _controlsPanel;
 
     [Header("Buttons")]
     [SerializeField] private UnityEngine.UI.Button _continueButton;
+    [SerializeField] private UnityEngine.UI.Button _controlsButton;
+    [SerializeField] private UnityEngine.UI.Button _closeControlsButton;
     [SerializeField] private UnityEngine.UI.Button _exitButton;
 
     private IInputProvider _inputProvider;
@@ -41,6 +44,16 @@ public sealed class PauseMenuController : MonoBehaviour
             _continueButton.onClick.AddListener(ResumeGame);
         }
 
+        if (_controlsButton != null)
+        {
+            _controlsButton.onClick.AddListener(OpenControls);
+        }
+
+        if (_closeControlsButton != null)
+        {
+            _closeControlsButton.onClick.AddListener(CloseControls);
+        }
+
         if (_exitButton != null)
         {
             _exitButton.onClick.AddListener(ExitToMainMenu);
@@ -66,6 +79,12 @@ public sealed class PauseMenuController : MonoBehaviour
     {
         if (_isPaused)
         {
+            if (_controlsPanel != null && _controlsPanel.activeSelf)
+            {
+                CloseControls();
+                return;
+            }
+
             ResumeGame();
         }
         else
@@ -80,7 +99,6 @@ public sealed class PauseMenuController : MonoBehaviour
         IsGamePaused = true;
 
         Time.timeScale = 0f;
-
         AudioListener.pause = true;
 
         ShowPauseMenu();
@@ -92,10 +110,26 @@ public sealed class PauseMenuController : MonoBehaviour
         IsGamePaused = false;
 
         Time.timeScale = 1f;
-
         AudioListener.pause = false;
 
         HidePauseMenu();
+        CloseControls(); 
+    }
+
+    private void OpenControls()
+    {
+        if (_controlsPanel != null)
+        {
+            _controlsPanel.SetActive(true);
+        }
+    }
+
+    private void CloseControls()
+    {
+        if (_controlsPanel != null)
+        {
+            _controlsPanel.SetActive(false);
+        }
     }
 
     private void ExitToMainMenu()

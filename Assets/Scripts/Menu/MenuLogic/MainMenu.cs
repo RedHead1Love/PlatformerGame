@@ -8,9 +8,14 @@ public sealed class MainMenu : MonoBehaviour
     private const string GameSavedKey = "GameSaved";
     private const int GameSavedValue = 1;
 
+    [Header("UI Panels")]
+    [SerializeField] private GameObject _controlsPanel;
+
     [Header("Menu Buttons")]
     [SerializeField] private Button _newGameButton;
     [SerializeField] private Button _continueButton;
+    [SerializeField] private Button _controlsButton;
+    [SerializeField] private Button _closeControlsButton;
     [SerializeField] private Button _exitButton;
 
     [Header("Sound Settings")]
@@ -22,6 +27,11 @@ public sealed class MainMenu : MonoBehaviour
         InitializeGameState();
         InitializeButtonListeners();
         UpdateContinueButtonVisibility();
+
+        if (_controlsPanel != null)
+        {
+            _controlsPanel.SetActive(false);
+        }
     }
 
     private void Update()
@@ -33,6 +43,8 @@ public sealed class MainMenu : MonoBehaviour
     {
         _newGameButton?.onClick.RemoveListener(StartNewGame);
         _continueButton?.onClick.RemoveListener(ContinueGame);
+        _controlsButton?.onClick.RemoveListener(OpenControls);
+        _closeControlsButton?.onClick.RemoveListener(CloseControls);
         _exitButton?.onClick.RemoveListener(ExitGame);
     }
 
@@ -57,6 +69,26 @@ public sealed class MainMenu : MonoBehaviour
         }
     }
 
+    private void OpenControls()
+    {
+        PlayButtonSound();
+
+        if (_controlsPanel != null)
+        {
+            _controlsPanel.SetActive(true);
+        }
+    }
+
+    private void CloseControls()
+    {
+        PlayButtonSound();
+
+        if (_controlsPanel != null)
+        {
+            _controlsPanel.SetActive(false);
+        }
+    }
+
     private void ExitGame()
     {
         PlayButtonSound();
@@ -72,6 +104,8 @@ public sealed class MainMenu : MonoBehaviour
     {
         _newGameButton?.onClick.AddListener(StartNewGame);
         _continueButton?.onClick.AddListener(ContinueGame);
+        _controlsButton?.onClick.AddListener(OpenControls);
+        _closeControlsButton?.onClick.AddListener(CloseControls);
         _exitButton?.onClick.AddListener(ExitGame);
 
         if (_audioSource == null)
@@ -136,13 +170,23 @@ public sealed class MainMenu : MonoBehaviour
     {
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
-#else
+#else        
         Application.Quit();
 #endif
     }
 
     private void HandleKeyboardInput()
     {
+        if (_controlsPanel != null && _controlsPanel.activeSelf)
+        {
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                CloseControls();
+            }
+
+            return;
+        }
+
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
             StartNewGame();

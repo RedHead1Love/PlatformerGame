@@ -4,10 +4,8 @@ namespace Shared.Sensors
 {
     public sealed class GroundCheck : MonoBehaviour
     {
-        private const float DefaultCheckRadius = 0.1f;
-
         [SerializeField] private Transform _checkPoint;
-        [SerializeField] private float _checkRadius = DefaultCheckRadius;
+        [SerializeField] private Vector2 _checkSize = new Vector2(0.5f, 0.1f);
         [SerializeField] private LayerMask _groundLayerMask;
 
         public bool IsGrounded
@@ -16,7 +14,7 @@ namespace Shared.Sensors
             {
                 Transform point = _checkPoint != null ? _checkPoint : transform;
 
-                return Physics2D.OverlapCircle(point.position, _checkRadius, _groundLayerMask);
+                return Physics2D.OverlapBox(point.position, _checkSize, 0f, _groundLayerMask);
             }
         }
 
@@ -38,7 +36,7 @@ namespace Shared.Sensors
             Transform point = _checkPoint != null ? _checkPoint : transform;
 
             Gizmos.color = Color.green;
-            Gizmos.DrawWireSphere(point.position, _checkRadius);
+            Gizmos.DrawWireCube(point.position, _checkSize);
         }
     }
 }
