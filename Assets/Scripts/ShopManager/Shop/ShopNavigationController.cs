@@ -82,7 +82,7 @@ public sealed class ShopNavigationController
             {
                 _currentCurrency = item.CurrencyType;
                 _currentItemIndex = index;
-                _lastMoveTime = Time.time; 
+                _lastMoveTime = Time.time;
 
                 return true;
             }
@@ -96,7 +96,7 @@ public sealed class ShopNavigationController
         if (_currentCurrency != currency)
         {
             _currentCurrency = currency;
-            _currentItemIndex = NoItemSelectedIndex; 
+            _currentItemIndex = NoItemSelectedIndex;
             _lastMoveTime = Time.time;
 
             return true;

@@ -58,7 +58,7 @@ public sealed class ShopManager : MonoBehaviour
 
         if (_uiManager != null)
         {
-            _uiManager.OnCurrencyTabClicked -= HandleCurrencyTabClick; 
+            _uiManager.OnCurrencyTabClicked -= HandleCurrencyTabClick;
 
             if (_uiManager.BuyButton != null)
             {

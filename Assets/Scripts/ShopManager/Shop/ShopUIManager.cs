@@ -31,7 +31,7 @@ public sealed class ShopUIManager : MonoBehaviour
 
     [Header("Right Panel Details")]
     [SerializeField] private TextMeshProUGUI _detailsNameText;
-    [SerializeField] private GameObject _detailsTitleDivider; 
+    [SerializeField] private GameObject _detailsTitleDivider;
     [SerializeField] private TextMeshProUGUI _detailsDescriptionText;
     [SerializeField] private TextMeshProUGUI _detailsPriceText;
     [SerializeField] private Image _detailsPriceCurrencyIcon;
@@ -51,7 +51,7 @@ public sealed class ShopUIManager : MonoBehaviour
     private void Start()
     {
         Initialize();
-        SetupCurrencyClickHandlers(); 
+        SetupCurrencyClickHandlers();
     }
 
     private void SetupCurrencyClickHandlers()
