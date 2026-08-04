@@ -63,6 +63,7 @@ public sealed class ArmorManager : MonoBehaviour, IArmorManager
         _currentArmor = validArmor;
 
         UpdateArmorUI();
+
         OnArmorChanged?.Invoke(_currentArmor, _maxArmor);
     }
 

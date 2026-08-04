@@ -2,8 +2,10 @@ using GameLogic;
 using Player.Abilities;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
+using System;
 
-public sealed class ShopItemView : MonoBehaviour
+public sealed class ShopItemView : MonoBehaviour, IPointerClickHandler
 {
     [SerializeField] private Image _iconImage;
 
@@ -11,6 +13,8 @@ public sealed class ShopItemView : MonoBehaviour
     private Color _originalIconColor;
     private Vector3 _originalScale;
     private IShopItem _itemData;
+
+    public event Action<IShopItem> OnPointerSelected;
 
     public IShopItem ItemData => _itemData;
     public RectTransform RectTransform { get; private set; }
@@ -26,7 +30,6 @@ public sealed class ShopItemView : MonoBehaviour
     public void Initialize(IShopItem itemData)
     {
         _itemData = itemData;
-
         UpdateView();
     }
 
@@ -53,8 +56,22 @@ public sealed class ShopItemView : MonoBehaviour
         if (RectTransform != null)
         {
             RectTransform.localScale = _originalScale;
-        } 
+        }
     }
+
+
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (eventData.button == PointerEventData.InputButton.Left)
+        {
+            if (_itemData != null)
+            {
+                OnPointerSelected?.Invoke(_itemData);
+            }
+        }
+    }
+
 
     private void CacheOriginalVisuals()
     {
@@ -77,14 +94,12 @@ public sealed class ShopItemView : MonoBehaviour
     private bool IsLastChanceActive()
     {
         AbilityManager abilityManager = FindAbilityManager();
-
         return abilityManager != null && abilityManager.IsLastChanceActive;
     }
 
     private AbilityManager FindAbilityManager()
     {
         Hero hero = FindFirstObjectByType<Hero>();
-
         return hero != null ? hero.AbilityManager : null;
     }
 }

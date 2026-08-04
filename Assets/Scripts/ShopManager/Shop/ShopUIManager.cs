@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
+using System;
 
 public sealed class ShopUIManager : MonoBehaviour
 {
@@ -36,6 +38,8 @@ public sealed class ShopUIManager : MonoBehaviour
     [SerializeField] private Image _detailsItemIcon;
     [SerializeField] private Button _buyButton;
 
+    public event Action<WalletManager.CoinType> OnCurrencyTabClicked;
+
     public Button BuyButton => _buyButton;
 
     private readonly Dictionary<WalletManager.CoinType, List<ShopItemView>> _itemViewsByCurrency =
@@ -47,6 +51,42 @@ public sealed class ShopUIManager : MonoBehaviour
     private void Start()
     {
         Initialize();
+        SetupCurrencyClickHandlers(); 
+    }
+
+    private void SetupCurrencyClickHandlers()
+    {
+        BindCurrencyClick(_bronzeCoinIndicator, WalletManager.CoinType.Bronze);
+        BindCurrencyClick(_silverCoinIndicator, WalletManager.CoinType.Silver);
+        BindCurrencyClick(_goldCoinIndicator, WalletManager.CoinType.Gold);
+    }
+
+    private void BindCurrencyClick(Image indicator, WalletManager.CoinType currency)
+    {
+        if (indicator == null)
+        {
+            return;
+        }
+
+        EventTrigger trigger = indicator.gameObject.GetComponent<EventTrigger>();
+
+        if (trigger == null)
+        {
+            trigger = indicator.gameObject.AddComponent<EventTrigger>();
+        }
+
+        EventTrigger.Entry clickEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerClick };
+        clickEntry.callback.AddListener((data) =>
+        {
+            PointerEventData pointerData = data as PointerEventData;
+
+            if (pointerData != null && pointerData.button == PointerEventData.InputButton.Left)
+            {
+                OnCurrencyTabClicked?.Invoke(currency);
+            }
+        });
+
+        trigger.triggers.Add(clickEntry);
     }
 
     public void SwitchCurrency(WalletManager.CoinType currencyType)

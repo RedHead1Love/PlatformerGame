@@ -67,6 +67,44 @@ public sealed class ShopNavigationController
         return moved;
     }
 
+    public bool TrySetSelectedItem(IShopItem item)
+    {
+        if (item == null)
+        {
+            return false;
+        }
+
+        if (_itemsByCurrency.TryGetValue(item.CurrencyType, out List<IShopItem> items))
+        {
+            int index = items.IndexOf(item);
+
+            if (index != NoItemSelectedIndex && (_currentCurrency != item.CurrencyType || _currentItemIndex != index))
+            {
+                _currentCurrency = item.CurrencyType;
+                _currentItemIndex = index;
+                _lastMoveTime = Time.time; 
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public bool TrySetCurrency(WalletManager.CoinType currency)
+    {
+        if (_currentCurrency != currency)
+        {
+            _currentCurrency = currency;
+            _currentItemIndex = NoItemSelectedIndex; 
+            _lastMoveTime = Time.time;
+
+            return true;
+        }
+
+        return false;
+    }
+
     public IShopItem GetCurrentItem()
     {
         if (_currentItemIndex < FirstItemIndex ||

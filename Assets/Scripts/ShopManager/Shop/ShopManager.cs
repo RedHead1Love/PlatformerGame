@@ -56,9 +56,14 @@ public sealed class ShopManager : MonoBehaviour
             _closeButton.onClick.RemoveListener(CloseShop);
         }
 
-        if (_uiManager != null && _uiManager.BuyButton != null)
+        if (_uiManager != null)
         {
-            _uiManager.BuyButton.onClick.RemoveListener(ConfirmPurchase);
+            _uiManager.OnCurrencyTabClicked -= HandleCurrencyTabClick; 
+
+            if (_uiManager.BuyButton != null)
+            {
+                _uiManager.BuyButton.onClick.RemoveListener(ConfirmPurchase);
+            }
         }
     }
 
@@ -115,6 +120,23 @@ public sealed class ShopManager : MonoBehaviour
         ArmorManager armorManager = FindFirstObjectByType<ArmorManager>();
 
         _purchaseHandler = new ShopItemPurchaseHandler(hero, armorManager, this);
+
+        if (_uiManager == null)
+        {
+            _uiManager = GetComponentInChildren<ShopUIManager>(true);
+        }
+
+        if (_uiManager != null)
+        {
+            _uiManager.OnCurrencyTabClicked -= HandleCurrencyTabClick;
+            _uiManager.OnCurrencyTabClicked += HandleCurrencyTabClick;
+
+            if (_uiManager.BuyButton != null)
+            {
+                _uiManager.BuyButton.onClick.RemoveListener(ConfirmPurchase);
+                _uiManager.BuyButton.onClick.AddListener(ConfirmPurchase);
+            }
+        }
 
         FindInputProvider();
         InitializeNavigation();
@@ -216,8 +238,8 @@ public sealed class ShopManager : MonoBehaviour
 
     private void InitializeItemViews()
     {
-        if (_uiManager == null) 
-        { 
+        if (_uiManager == null)
+        {
             return;
         }
 
@@ -229,7 +251,6 @@ public sealed class ShopManager : MonoBehaviour
             {
                 itemsByCurrency[item.CurrencyType] = new List<ShopItemData>();
             }
-
             itemsByCurrency[item.CurrencyType].Add(item);
         }
 
@@ -242,8 +263,32 @@ public sealed class ShopManager : MonoBehaviour
                 if (itemView != null)
                 {
                     itemView.Initialize(kvp.Value[i]);
+
+                    itemView.OnPointerSelected -= HandlePointerSelection;
+                    itemView.OnPointerSelected += HandlePointerSelection;
                 }
             }
+        }
+    }
+
+    private void HandlePointerSelection(IShopItem selectedItem)
+    {
+        if (_navigationController == null || selectedItem == null)
+        {
+            return;
+        }
+
+        if (_navigationController.TrySetSelectedItem(selectedItem))
+        {
+            OnNavigationChanged();
+        }
+    }
+
+    private void HandleCurrencyTabClick(WalletManager.CoinType currency)
+    {
+        if (_navigationController != null && _navigationController.TrySetCurrency(currency))
+        {
+            OnNavigationChanged();
         }
     }
 
