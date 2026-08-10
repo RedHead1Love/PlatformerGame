@@ -23,6 +23,7 @@ namespace Player.Input
         public float HorizontalAxis => IsGameplayInputBlocked() ? 0f : UnityEngine.Input.GetAxisRaw(HorizontalAxisName);
 
         public bool IsJumpPressed => IsGameplayInputBlocked() == false && UnityEngine.Input.GetButtonDown(JumpButtonName);
+        public bool IsJumpHeld => IsGameplayInputBlocked() == false && UnityEngine.Input.GetButton(JumpButtonName);
         public bool IsAttackPressed => IsGameplayInputBlocked() == false && UnityEngine.Input.GetButtonDown(PrimaryAttackButtonName);
         public bool IsSecondaryAttackPressed => IsGameplayInputBlocked() == false && UnityEngine.Input.GetButtonDown(SecondaryAttackButtonName);
         public bool IsLiftPressed => IsGameplayInputBlocked() == false && UnityEngine.Input.GetKeyDown(LiftKey);
@@ -54,7 +55,7 @@ namespace Player.Input
 
         private bool IsGameplayInputBlocked()
         {
-            return _isInputBlocked || _isShopOpen || PauseMenuController.IsGamePaused;
+            return _isInputBlocked || _isShopOpen || PauseMenuController.IsGamePaused; 
         }
 
         public void BlockInput(bool isBlocked)

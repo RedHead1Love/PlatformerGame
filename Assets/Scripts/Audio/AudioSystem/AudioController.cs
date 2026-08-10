@@ -2,11 +2,16 @@ using AudioSystem;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Audio; 
 
 public sealed class AudioController : MonoBehaviour
 {
     private const float MinimumVolume = 0f;
     private const float MaximumVolume = 1f;
+
+    [Header("Audio Mixer")] 
+    [SerializeField] private AudioMixerGroup _musicMixerGroup;
+    [SerializeField] private AudioMixerGroup _sfxMixerGroup;
 
     [Header("Configuration")]
     [SerializeField] private SoundConfiguration _soundConfiguration;
@@ -292,12 +297,22 @@ public sealed class AudioController : MonoBehaviour
 
         soundEffectsAudioSource.playOnAwake = false;
 
+        if (_sfxMixerGroup != null)
+        {
+            soundEffectsAudioSource.outputAudioMixerGroup = _sfxMixerGroup;
+        }
+
         _soundEffectsPlayer = new AudioPlayer(soundEffectsAudioSource);
 
         AudioSource musicSource = gameObject.AddComponent<AudioSource>();
 
         musicSource.loop = false;
         musicSource.playOnAwake = false;
+
+        if (_musicMixerGroup != null)
+        {
+            musicSource.outputAudioMixerGroup = _musicMixerGroup;
+        }
 
         _musicPlayer = new AudioPlayer(musicSource);
     }

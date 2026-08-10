@@ -33,6 +33,9 @@ public sealed class AggregatedInputProvider : MonoBehaviour, IInputProvider
     }
 
     public bool IsJumpPressed => IsGameplayInputBlocked() == false && IsAnyButtonPressed(_joystickInput?.IsJumpPressed, _keyboardInput?.IsJumpPressed);
+
+    public bool IsJumpHeld => IsGameplayInputBlocked() == false && IsAnyButtonPressed(_joystickInput?.IsJumpHeld, _keyboardInput?.IsJumpHeld);
+
     public bool IsAttackPressed => IsGameplayInputBlocked() == false && IsAnyButtonPressed(_joystickInput?.IsAttackPressed, _keyboardInput?.IsAttackPressed);
     public bool IsSecondaryAttackPressed => IsGameplayInputBlocked() == false && IsAnyButtonPressed(_joystickInput?.IsSecondaryAttackPressed, _keyboardInput?.IsSecondaryAttackPressed);
     public bool IsSlidePressed => IsGameplayInputBlocked() == false && IsAnyButtonPressed(_joystickInput?.IsSlidePressed, _keyboardInput?.IsSlidePressed);
@@ -45,7 +48,6 @@ public sealed class AggregatedInputProvider : MonoBehaviour, IInputProvider
     private void Awake()
     {
         InitializeInputSources();
-
 #if UNITY_WEBGL
         CheckAndEnableMobileInput();
 #endif
@@ -84,10 +86,11 @@ public sealed class AggregatedInputProvider : MonoBehaviour, IInputProvider
                 _keyboardInput = FindFirstObjectByType<OldInputProvider>();
             }
         }
-
 #if UNITY_WEBGL
         if (_joystickInput != null)
+        {
             _joystickInput.gameObject.SetActive(true);
+        }
 #endif
     }
 

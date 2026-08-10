@@ -14,6 +14,8 @@ namespace Player.StateMachine
         private readonly GroundCheck _groundCheck;
         private readonly Rigidbody2D _rigidbody;
 
+        private bool _isJumpCutApplied;
+
         public JumpState(Hero hero)
         {
             _hero = hero;
@@ -24,6 +26,8 @@ namespace Player.StateMachine
 
         public void Enter()
         {
+            _isJumpCutApplied = false;
+
             if (IsGrounded())
             {
                 ApplyJumpForce();
@@ -39,6 +43,15 @@ namespace Player.StateMachine
                 _hero.StateMachine.Change<AirAttackState>();
 
                 return;
+            }
+
+            if (_isJumpCutApplied == false && _rigidbody != null && _rigidbody.velocity.y > 0f)
+            {
+                if (_inputProvider != null && !_inputProvider.IsJumpHeld)
+                {
+                    _rigidbody.velocity = new Vector2(_rigidbody.velocity.x, _rigidbody.velocity.y * _hero.Data.JumpCutMultiplier);
+                    _isJumpCutApplied = true;
+                }
             }
 
             if (_rigidbody != null && _rigidbody.velocity.y <= VelocityThreshold && IsGrounded())

@@ -54,48 +54,52 @@ public sealed class ShopItemPurchaseHandler
 
     public string GetItemDescription(string itemId)
     {
+        bool isEnglish = LocalizationManager.CurrentLanguage == LocalizationManager.Language.English;
+
         return itemId switch
         {
-            ShopItemIds.UnlockMap => "карта тюрьмы",
-            ShopItemIds.UnlockDash => "быстрый подкат",
-            ShopItemIds.UnlockAnatomy => "позволяет подбирать аптечки",
-            ShopItemIds.UnlockArmor => "получение брони",
-            ShopItemIds.UnlockSwampDamageBonus => "+100% урона по болотным",
-            ShopItemIds.ActivateLastChance => "выживание при смертельном ударе",
-            ShopItemIds.RestoreArmor => "восстановление брони",
-            ShopItemIds.UnlockSkeletonDamageBonus => "+100% урона по скелетам",
-            ShopItemIds.UnlockDemonDamageBonus => "+100% урона по демонам",
-            ShopItemIds.UnlockSpiderDamageBonus => "+100% урона по паукам",
-            ShopItemIds.UnlockZombieDamageBonus => "+100% урона по зомби",
-            ShopItemIds.UnlockPassiveHealthRegeneration => "пассивное восстановление здоровья",
-            ShopItemIds.UnlockRobocopRegeneration => "пассивное восстановление брони",
-            ShopItemIds.UnlockVampireAbility => "получение здоровья за убийство",
-            ShopItemIds.UnlockOnePunchManAbility => "шанс мгновенного убийства ",
-            ShopItemIds.UnlockBossDamageBonus => "+100% урона по боссам",
+            ShopItemIds.UnlockMap => isEnglish ? "prison map" : "карта тюрьмы",
+            ShopItemIds.UnlockDash => isEnglish ? "quick dash" : "быстрый подкат",
+            ShopItemIds.UnlockAnatomy => isEnglish ? "allows picking up medkits" : "позволяет подбирать аптечки",
+            ShopItemIds.UnlockArmor => isEnglish ? "grants armor" : "получение брони",
+            ShopItemIds.UnlockSwampDamageBonus => isEnglish ? "+100% damage  swamp monsters" : "+100% урона по болотным",
+            ShopItemIds.ActivateLastChance => isEnglish ? "survive a fatal blow" : "выживание при смертельном ударе",
+            ShopItemIds.RestoreArmor => isEnglish ? "restores armor" : "восстановление брони",
+            ShopItemIds.UnlockSkeletonDamageBonus => isEnglish ? "+100% damage to skeletons" : "+100% урона по скелетам",
+            ShopItemIds.UnlockDemonDamageBonus => isEnglish ? "+100% damage to demons" : "+100% урона по демонам",
+            ShopItemIds.UnlockSpiderDamageBonus => isEnglish ? "+100% damage to spiders" : "+100% урона по паукам",
+            ShopItemIds.UnlockZombieDamageBonus => isEnglish ? "+100% damage to zombies" : "+100% урона по зомби",
+            ShopItemIds.UnlockPassiveHealthRegeneration => isEnglish ? "passive health regeneration" : "пассивное восстановление здоровья",
+            ShopItemIds.UnlockRobocopRegeneration => isEnglish ? "passive armor regeneration" : "пассивное восстановление брони",
+            ShopItemIds.UnlockVampireAbility => isEnglish ? "restores health on kill" : "получение здоровья за убийство",
+            ShopItemIds.UnlockOnePunchManAbility => isEnglish ? "chance of instant kill" : "шанс мгновенного убийства ",
+            ShopItemIds.UnlockBossDamageBonus => isEnglish ? "+100% damage to bosses" : "+100% урона по боссам",
             _ => string.Empty
         };
     }
 
     public string GetItemName(string itemId)
     {
+        bool isEnglish = LocalizationManager.CurrentLanguage == LocalizationManager.Language.English;
+
         return itemId switch
         {
-            ShopItemIds.UnlockMap => "Карта",
-            ShopItemIds.UnlockDash => "Рывок",
-            ShopItemIds.UnlockAnatomy => "Aнатомия",
-            ShopItemIds.UnlockArmor => "Броня",
-            ShopItemIds.UnlockSwampDamageBonus => "Грязный",
-            ShopItemIds.ActivateLastChance => "Ласт Дэнс",
-            ShopItemIds.RestoreArmor => "Пластины",
-            ShopItemIds.UnlockSkeletonDamageBonus => "Гнилой",
-            ShopItemIds.UnlockDemonDamageBonus => "Девять кругов",
-            ShopItemIds.UnlockSpiderDamageBonus => "Aрахнофобия",
-            ShopItemIds.UnlockZombieDamageBonus => "Xодячий дед",
-            ShopItemIds.UnlockPassiveHealthRegeneration => "Время лечит",
-            ShopItemIds.UnlockRobocopRegeneration => "Робокоп",
-            ShopItemIds.UnlockVampireAbility => "Дракула",
-            ShopItemIds.UnlockOnePunchManAbility => "Ван Панч Мэн",
-            ShopItemIds.UnlockBossDamageBonus => "ГодСлэер",
+            ShopItemIds.UnlockMap => isEnglish ? "Map" : "Карта",
+            ShopItemIds.UnlockDash => isEnglish ? "Dash" : "Рывок",
+            ShopItemIds.UnlockAnatomy => isEnglish ? "Anatomy" : "Aнатомия",
+            ShopItemIds.UnlockArmor => isEnglish ? "Armor" : "Броня",
+            ShopItemIds.UnlockSwampDamageBonus => isEnglish ? "Dirty" : "Грязный",
+            ShopItemIds.ActivateLastChance => isEnglish ? "Last Dance" : "Ласт Дэнс",
+            ShopItemIds.RestoreArmor => isEnglish ? "Plates" : "Пластины",
+            ShopItemIds.UnlockSkeletonDamageBonus => isEnglish ? "Rotten" : "Гнилой",
+            ShopItemIds.UnlockDemonDamageBonus => isEnglish ? "Nine Circles" : "Девять кругов",
+            ShopItemIds.UnlockSpiderDamageBonus => isEnglish ? "Arachnohate" : "Aрахнофобия",
+            ShopItemIds.UnlockZombieDamageBonus => isEnglish ? "Walking Dad" : "Xодячий дед",
+            ShopItemIds.UnlockPassiveHealthRegeneration => isEnglish ? "Time Heals" : "Время лечит",
+            ShopItemIds.UnlockRobocopRegeneration => isEnglish ? "Robocop" : "Робокоп",
+            ShopItemIds.UnlockVampireAbility => isEnglish ? "Dracula" : "Дракула",
+            ShopItemIds.UnlockOnePunchManAbility => isEnglish ? "One Punch " : "Ван Панч Мэн",
+            ShopItemIds.UnlockBossDamageBonus => isEnglish ? "Godslayer" : "ГодСлэер",
             _ => string.Empty
         };
     }
@@ -298,7 +302,9 @@ public sealed class ShopItemPurchaseHandler
 
         TextMesh textMesh = effect.AddComponent<TextMesh>();
 
-        textMesh.text = "броня восстановлена";
+        bool isEnglish = LocalizationManager.CurrentLanguage == LocalizationManager.Language.English;
+        textMesh.text = isEnglish ? "armor restored" : "броня восстановлена";
+
         textMesh.color = Color.cyan;
         textMesh.fontSize = EffectFontSize;
         textMesh.anchor = TextAnchor.MiddleCenter;

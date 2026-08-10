@@ -16,8 +16,8 @@ public sealed class Door : MonoBehaviour, IOpenable
     public Sprite spriteClosed;
 
     [Header("UI Prompts")]
-    [SerializeField] private GameObject _interactionHint; // Картинка "Нажми кнопку"
-    [SerializeField] private GameObject _missingKeyHint;  // Картинка "Нужен ключ"
+    [SerializeField] private GameObject _interactionHint; 
+    [SerializeField] private GameObject _missingKeyHint;  
 
     [Header("Interaction")]
     public Vector2 triggerSize = new Vector2(1.5f, 1.5f);
@@ -67,7 +67,6 @@ public sealed class Door : MonoBehaviour, IOpenable
     {
         bool isInside = IsPlayerInsideInteractionArea();
 
-        // Обновляем подсказки только при смене состояния (вошел/вышел), чтобы не дергать SetActive каждый кадр
         if (isInside != _wasPlayerInside)
         {
             _wasPlayerInside = isInside;
@@ -94,7 +93,7 @@ public sealed class Door : MonoBehaviour, IOpenable
 
         isOpened = true;
 
-        HideAllHints(); // Прячем все подсказки при открытии
+        HideAllHints();
         SetAnimatorState(true);
         SetColliderEnabled(false);
         ApplyVisualState(true);
@@ -110,7 +109,6 @@ public sealed class Door : MonoBehaviour, IOpenable
 
         isOpened = false;
 
-        // Если игрок стоит в зоне при закрытии двери, снова показываем кнопку
         if (_wasPlayerInside && _interactionHint != null)
         {
             _interactionHint.SetActive(true);
@@ -131,7 +129,6 @@ public sealed class Door : MonoBehaviour, IOpenable
             _interactionHint.SetActive(isInside);
         }
 
-        // Обязательно прячем иконку отсутствующего ключа, если игрок отошел от двери
         if (isInside == false && _missingKeyHint != null)
         {
             _missingKeyHint.SetActive(false);
@@ -236,7 +233,6 @@ public sealed class Door : MonoBehaviour, IOpenable
         }
         else
         {
-            // У игрока нет ключа: прячем кнопку взаимодействия, показываем ошибку
             if (_interactionHint != null) _interactionHint.SetActive(false);
             if (_missingKeyHint != null) _missingKeyHint.SetActive(true);
         }

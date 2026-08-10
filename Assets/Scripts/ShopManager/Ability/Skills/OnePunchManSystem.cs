@@ -105,27 +105,5 @@ public sealed class OnePunchManSystem : MonoBehaviour, IOnePunchManSystem
         {
             _audioController.PlayOneShot(_instakillSound);
         }
-
-        if (_showInstakillEffect)
-        {
-            ShowInstakillEffect(enemy.transform.position);
-        }
-    }
-
-    private void ShowInstakillEffect(Vector3 position)
-    {
-        GameObject textObject = new GameObject("InstakillEffect");
-
-        textObject.transform.position = position + Vector3.up * DefaultInstakillTextHeight;
-
-        TextMesh textMesh = textObject.AddComponent<TextMesh>();
-
-        textMesh.text = "OneShot";
-        textMesh.color = Color.magenta;
-        textMesh.fontSize = InstakillFontSize;
-        textMesh.anchor = TextAnchor.MiddleCenter;
-        textMesh.fontStyle = FontStyle.Bold;
-
-        Destroy(textObject, DefaultTextLifetime);
     }
 }

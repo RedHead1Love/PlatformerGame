@@ -13,6 +13,7 @@ namespace Player
         [Header("Movement Settings")]
         [SerializeField] private float _movementSpeed = 3f;
         [SerializeField] private float _jumpForce = 8f;
+        [SerializeField, Range(0f, 1f)] private float _jumpCutMultiplier = 0.5f;
         [SerializeField] private float _slideSpeed = 5f;
         [SerializeField] private float _slideDuration = DefaultSlideDuration;
 
@@ -31,6 +32,7 @@ namespace Player
         public int MaxLives => _maxLives;
         public float MovementSpeed => _movementSpeed;
         public float JumpForce => _jumpForce;
+        public float JumpCutMultiplier => _jumpCutMultiplier;
         public float SlideSpeed => _slideSpeed;
         public float SlideDuration => _slideDuration;
 

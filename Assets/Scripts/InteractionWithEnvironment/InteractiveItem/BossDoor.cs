@@ -16,6 +16,8 @@ public sealed class BossDoor : MonoBehaviour
     [SerializeField] private GameObject _interactionMessagePrefab;
     [SerializeField] private GameObject _temporaryMessagePrefab;
 
+    public static event System.Action OnBossDoorOpenedGlobal;
+
     private Transform _playerTransform;
     private AudioController _audioController;
     private bool _isPlayerNear;
@@ -196,6 +198,8 @@ public sealed class BossDoor : MonoBehaviour
 
     private void OpenDoor()
     {
+        OnBossDoorOpenedGlobal?.Invoke();
+
         _audioController?.PlayBossDoorOpenSound();
 
         ShowTemporaryMessage("Дверь открыта, Вы победили", MessageDisplayDuration);

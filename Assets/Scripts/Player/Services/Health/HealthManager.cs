@@ -12,6 +12,8 @@ public sealed class HealthManager : MonoBehaviour
     [Header("Effects")]
     [SerializeField] private LowHealthEffect _lowHealthEffect;
 
+    public static event System.Action<int> OnDamageTakenGlobal;
+
     public int CurrentHealth { get; private set; }
     public int MaxHealth => _maxHealth;
     public bool IsFullHealth => CurrentHealth >= _maxHealth;
@@ -62,6 +64,8 @@ public sealed class HealthManager : MonoBehaviour
         {
             return;
         }
+
+        OnDamageTakenGlobal?.Invoke(damageAmount);
 
         int remainingDamage = damageAmount;
 

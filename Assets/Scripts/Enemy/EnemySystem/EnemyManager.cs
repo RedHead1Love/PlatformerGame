@@ -13,6 +13,7 @@ public sealed class EnemyManager : MonoBehaviour
 
     public static EnemyManager Instance { get; private set; }
 
+    public static event System.Action OnEnemyKilledGlobal;
     private readonly Dictionary<string, Entity> _enemies = new Dictionary<string, Entity>();
     private HashSet<string> _killedEnemies = new HashSet<string>();
 
@@ -76,6 +77,8 @@ public sealed class EnemyManager : MonoBehaviour
         {
             return;
         }
+
+        OnEnemyKilledGlobal?.Invoke();
 
         SaveSystem.Instance?.MarkEnemyKilled(enemyId);
 

@@ -33,6 +33,8 @@ public sealed class Hero : MonoBehaviour, IDamageable
     [Header("Passive Health Regeneration")]
     [SerializeField] private PassiveHealthRegeneration _passiveHealthRegen;
 
+    public static event System.Action OnHeroDiedGlobal;
+
     private bool _hasPerformedAirAttack;
     private bool _isGrounded;
     private bool _wasMoving;
@@ -329,6 +331,7 @@ public sealed class Hero : MonoBehaviour, IDamageable
         }
 
         _isDead = true;
+        OnHeroDiedGlobal?.Invoke();
 
         AudioController?.PlayDeathSound();
         StopMovementSounds();

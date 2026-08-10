@@ -13,6 +13,11 @@ public sealed class ShopUIManager : MonoBehaviour
     [SerializeField] private GameObject _silverMenuPanel;
     [SerializeField] private GameObject _goldMenuPanel;
 
+    [Header("Currency Tabs (Clickable Areas)")]
+    [SerializeField] private GameObject _bronzeTabArea;
+    [SerializeField] private GameObject _silverTabArea;
+    [SerializeField] private GameObject _goldTabArea;
+
     [Header("Currency Indicators")]
     [SerializeField] private Image _bronzeCoinIndicator;
     [SerializeField] private Image _silverCoinIndicator;
@@ -33,6 +38,7 @@ public sealed class ShopUIManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _detailsNameText;
     [SerializeField] private GameObject _detailsTitleDivider;
     [SerializeField] private TextMeshProUGUI _detailsDescriptionText;
+    [SerializeField] private GameObject _purchaseContainer;
     [SerializeField] private TextMeshProUGUI _detailsPriceText;
     [SerializeField] private Image _detailsPriceCurrencyIcon;
     [SerializeField] private Image _detailsItemIcon;
@@ -75,7 +81,8 @@ public sealed class ShopUIManager : MonoBehaviour
             trigger = indicator.gameObject.AddComponent<EventTrigger>();
         }
 
-        EventTrigger.Entry clickEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerClick };
+        EventTrigger.Entry clickEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerDown };
+
         clickEntry.callback.AddListener((data) =>
         {
             PointerEventData pointerData = data as PointerEventData;
@@ -177,8 +184,12 @@ public sealed class ShopUIManager : MonoBehaviour
         if (item == null)
         {
             ClearRightPanel(customMessage);
-
             return;
+        }
+
+        if (_purchaseContainer != null)
+        {
+            _purchaseContainer.SetActive(true);
         }
 
         if (_detailsNameText != null)
@@ -208,14 +219,12 @@ public sealed class ShopUIManager : MonoBehaviour
             {
                 _detailsPriceText.text = "Aктивно";
                 _detailsPriceText.color = Color.yellow;
-
                 SetDetailsCurrencyIconActive(false);
             }
             else if (item.IsSold && item.ItemId != ShopItemIds.RestoreArmor)
             {
                 _detailsPriceText.text = "Куплено";
                 _detailsPriceText.color = Color.green;
-
                 SetDetailsCurrencyIconActive(false);
             }
             else
@@ -226,7 +235,6 @@ public sealed class ShopUIManager : MonoBehaviour
                 if (_detailsPriceCurrencyIcon != null)
                 {
                     _detailsPriceCurrencyIcon.sprite = GetCurrencySprite(item.CurrencyType);
-
                     SetDetailsCurrencyIconActive(true);
                 }
             }
@@ -261,6 +269,11 @@ public sealed class ShopUIManager : MonoBehaviour
         if (_detailsDescriptionText != null)
         {
             _detailsDescriptionText.text = message ?? string.Empty;
+        }
+
+        if (_purchaseContainer != null)
+        {
+            _purchaseContainer.SetActive(false);
         }
 
         if (_detailsPriceText != null)

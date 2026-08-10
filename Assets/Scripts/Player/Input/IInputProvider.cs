@@ -5,6 +5,7 @@ namespace Player.Input
         float HorizontalAxis { get; }
 
         bool IsJumpPressed { get; }
+        bool IsJumpHeld { get; }
         bool IsAttackPressed { get; }
         bool IsSecondaryAttackPressed { get; }
         bool IsSlidePressed { get; }

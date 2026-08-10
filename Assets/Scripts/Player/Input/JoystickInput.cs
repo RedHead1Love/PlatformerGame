@@ -2,9 +2,20 @@
 using Player.Input;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems; 
 
 public sealed class JoystickInput : MonoBehaviour, IInputProvider
 {
+    private class ButtonHoldTracker : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
+    {
+        public bool IsHeld { get; private set; }
+
+        public void OnPointerDown(PointerEventData eventData) => IsHeld = true;
+        public void OnPointerUp(PointerEventData eventData) => IsHeld = false;
+
+        private void OnDisable() => IsHeld = false;
+    }
+
     [SerializeField] private JoystickController _joystick;
 
     [Header("Gameplay Buttons")]
@@ -19,6 +30,8 @@ public sealed class JoystickInput : MonoBehaviour, IInputProvider
     [SerializeField] private Button _mapButton;
     [SerializeField] private Button _menuButton;
     [SerializeField] private Button _shopOrChestButton;
+
+    private ButtonHoldTracker _jumpButtonTracker; 
 
     private bool _isJumpPressed;
     private bool _isAttackPressed;
@@ -52,6 +65,9 @@ public sealed class JoystickInput : MonoBehaviour, IInputProvider
     }
 
     public bool IsJumpPressed => IsGameplayInputBlocked() == false && _isJumpPressed;
+
+    public bool IsJumpHeld => IsGameplayInputBlocked() == false && (_jumpButtonTracker != null && _jumpButtonTracker.IsHeld);
+
     public bool IsAttackPressed => IsGameplayInputBlocked() == false && _isAttackPressed;
     public bool IsSecondaryAttackPressed => IsGameplayInputBlocked() == false && _isSecondaryAttackPressed;
     public bool IsSlidePressed => IsGameplayInputBlocked() == false && _isSlidePressed;
@@ -64,10 +80,10 @@ public sealed class JoystickInput : MonoBehaviour, IInputProvider
     private void Start()
     {
 #if UNITY_WEBGL
-    if (YG.YG2.envir.isMobile || YG.YG2.envir.isTablet)
-    {
-        gameObject.SetActive(true);
-    }
+        if (YG.YG2.envir.isMobile || YG.YG2.envir.isTablet)
+        {
+            gameObject.SetActive(true);
+        }
 #endif
     }
 
@@ -91,6 +107,12 @@ public sealed class JoystickInput : MonoBehaviour, IInputProvider
         if (_jumpButton != null)
         {
             _jumpButton.onClick.AddListener(OnJumpButtonClicked);
+
+            _jumpButtonTracker = _jumpButton.gameObject.GetComponent<ButtonHoldTracker>();
+            if (_jumpButtonTracker == null)
+            {
+                _jumpButtonTracker = _jumpButton.gameObject.AddComponent<ButtonHoldTracker>();
+            }
         }
 
         if (_attackButton != null)
