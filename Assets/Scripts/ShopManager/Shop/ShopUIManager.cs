@@ -41,11 +41,10 @@ public sealed class ShopUIManager : MonoBehaviour
     [SerializeField] private Image _detailsItemIcon;
 
     [Header("Objects to Hide When Empty")]
-    // Просто перетащи сюда 4 объекта из окна иерархии
-    [SerializeField] private GameObject _purchaseFrameObject; // Твоя новая картинка с рамкой покупки
-    [SerializeField] private GameObject _priceTextObject;     // Текст с цифрами цены
-    [SerializeField] private GameObject _priceIconObject;     // Иконка монетки рядом с ценой
-    [SerializeField] private GameObject _buyButtonObject;     // Сама кнопка "Купить"
+    [SerializeField] private GameObject _purchaseFrameObject; 
+    [SerializeField] private GameObject _priceTextObject;     
+    [SerializeField] private GameObject _priceIconObject;     
+    [SerializeField] private GameObject _buyButtonObject;     
 
     [Header("Price Data")]
     [SerializeField] private TextMeshProUGUI _detailsPriceText;
@@ -195,13 +194,11 @@ public sealed class ShopUIManager : MonoBehaviour
             return;
         }
 
-        // 1. ЖЕСТКО ВКЛЮЧАЕМ ВСЕ ОБЪЕКТЫ ПОКУПКИ
         if (_purchaseFrameObject != null) _purchaseFrameObject.SetActive(true);
         if (_priceTextObject != null) _priceTextObject.SetActive(true);
         if (_priceIconObject != null) _priceIconObject.SetActive(true);
         if (_buyButtonObject != null) _buyButtonObject.SetActive(true);
 
-        // 2. Заполняем данные
         if (_detailsNameText != null) _detailsNameText.text = !string.IsNullOrEmpty(customName) ? customName : item.DisplayName;
         if (_detailsTitleDivider != null) _detailsTitleDivider.SetActive(true);
         if (_detailsDescriptionText != null) _detailsDescriptionText.text = customMessage ?? item.Description;
@@ -218,13 +215,13 @@ public sealed class ShopUIManager : MonoBehaviour
             {
                 _detailsPriceText.text = "Aктивно";
                 _detailsPriceText.color = Color.yellow;
-                if (_priceIconObject != null) _priceIconObject.SetActive(false); // Прячем монетку
+                if (_priceIconObject != null) _priceIconObject.SetActive(false); 
             }
             else if (item.IsSold && item.ItemId != ShopItemIds.RestoreArmor)
             {
                 _detailsPriceText.text = "Куплено";
                 _detailsPriceText.color = Color.green;
-                if (_priceIconObject != null) _priceIconObject.SetActive(false); // Прячем монетку
+                if (_priceIconObject != null) _priceIconObject.SetActive(false); 
             }
             else
             {
@@ -244,13 +241,11 @@ public sealed class ShopUIManager : MonoBehaviour
 
     private void ClearRightPanel(string message)
     {
-        // 1. ЖЕСТКО ВЫКЛЮЧАЕМ ВСЕ ОБЪЕКТЫ ПОКУПКИ
         if (_purchaseFrameObject != null) _purchaseFrameObject.SetActive(false);
         if (_priceTextObject != null) _priceTextObject.SetActive(false);
         if (_priceIconObject != null) _priceIconObject.SetActive(false);
         if (_buyButtonObject != null) _buyButtonObject.SetActive(false);
 
-        // 2. Очищаем остальные тексты
         if (_detailsNameText != null) _detailsNameText.text = string.Empty;
         if (_detailsTitleDivider != null) _detailsTitleDivider.SetActive(false);
         if (_detailsDescriptionText != null) _detailsDescriptionText.text = message ?? string.Empty;
