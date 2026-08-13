@@ -10,12 +10,15 @@ public sealed class MainMenu : MonoBehaviour
 
     [Header("UI Panels")]
     [SerializeField] private GameObject _controlsPanel;
+    [SerializeField] private GameObject _settingsPanel; 
 
     [Header("Menu Buttons")]
     [SerializeField] private Button _newGameButton;
     [SerializeField] private Button _continueButton;
     [SerializeField] private Button _controlsButton;
     [SerializeField] private Button _closeControlsButton;
+    [SerializeField] private Button _settingsButton; 
+    [SerializeField] private Button _closeSettingsButton; 
     [SerializeField] private Button _exitButton;
 
     [Header("Sound Settings")]
@@ -32,6 +35,11 @@ public sealed class MainMenu : MonoBehaviour
         {
             _controlsPanel.SetActive(false);
         }
+
+        if (_settingsPanel != null)
+        {
+            _settingsPanel.SetActive(false);
+        }
     }
 
     private void Update()
@@ -43,8 +51,13 @@ public sealed class MainMenu : MonoBehaviour
     {
         _newGameButton?.onClick.RemoveListener(StartNewGame);
         _continueButton?.onClick.RemoveListener(ContinueGame);
+
         _controlsButton?.onClick.RemoveListener(OpenControls);
         _closeControlsButton?.onClick.RemoveListener(CloseControls);
+
+        _settingsButton?.onClick.RemoveListener(OpenSettings);
+        _closeSettingsButton?.onClick.RemoveListener(CloseSettings);
+
         _exitButton?.onClick.RemoveListener(ExitGame);
     }
 
@@ -89,6 +102,26 @@ public sealed class MainMenu : MonoBehaviour
         }
     }
 
+    private void OpenSettings()
+    {
+        PlayButtonSound();
+
+        if (_settingsPanel != null)
+        {
+            _settingsPanel.SetActive(true);
+        }
+    }
+
+    private void CloseSettings()
+    {
+        PlayButtonSound();
+
+        if (_settingsPanel != null)
+        {
+            _settingsPanel.SetActive(false);
+        }
+    }
+
     private void ExitGame()
     {
         PlayButtonSound();
@@ -104,8 +137,13 @@ public sealed class MainMenu : MonoBehaviour
     {
         _newGameButton?.onClick.AddListener(StartNewGame);
         _continueButton?.onClick.AddListener(ContinueGame);
+
         _controlsButton?.onClick.AddListener(OpenControls);
         _closeControlsButton?.onClick.AddListener(CloseControls);
+
+        _settingsButton?.onClick.AddListener(OpenSettings);
+        _closeSettingsButton?.onClick.AddListener(CloseSettings);
+
         _exitButton?.onClick.AddListener(ExitGame);
 
         if (_audioSource == null)
@@ -145,11 +183,17 @@ public sealed class MainMenu : MonoBehaviour
 
     private void ResetGameProgress()
     {
+        float music = PlayerPrefs.GetFloat("MusicVolume", 0.8f);
+        float sfx = PlayerPrefs.GetFloat("SFXVolume", 0.8f);
+
         SaveSystem.Instance?.DeleteSaveData();
         EnemyManager.Instance?.ResetAllEnemies();
         GameStateManager.ResetGameState();
 
         PlayerPrefs.DeleteAll();
+
+        PlayerPrefs.SetFloat("MusicVolume", music);
+        PlayerPrefs.SetFloat("SFXVolume", sfx);
         PlayerPrefs.Save();
     }
 
@@ -168,7 +212,7 @@ public sealed class MainMenu : MonoBehaviour
 
     private void QuitApplication()
     {
-#if UNITY_EDITOR
+#if UNITY_EDITOR        
         UnityEditor.EditorApplication.isPlaying = false;
 #else        
         Application.Quit();
@@ -183,7 +227,15 @@ public sealed class MainMenu : MonoBehaviour
             {
                 CloseControls();
             }
+            return;
+        }
 
+        if (_settingsPanel != null && _settingsPanel.activeSelf)
+        {
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                CloseSettings();
+            }
             return;
         }
 

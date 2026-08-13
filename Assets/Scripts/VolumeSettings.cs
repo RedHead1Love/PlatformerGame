@@ -72,6 +72,7 @@ public sealed class VolumeSettings : MonoBehaviour
     private void SetMusicVolume(float volume)
     {
         PlayerPrefs.SetFloat(MusicPrefsKey, volume);
+        PlayerPrefs.Save();
 
         if (_audioController != null)
         {
