@@ -4,6 +4,10 @@ public sealed class Checkpoint : MonoBehaviour
 {
     private const string PlayerTag = "Player";
 
+    private const float TextVerticalOffset = 1.5f;
+    private const float TextDestroyDelay = 2f;
+    private const int TextFontSize = 10;
+
     [SerializeField] private string _checkpointId;
     [SerializeField] private AudioClip _activationSound;
 
@@ -44,21 +48,48 @@ public sealed class Checkpoint : MonoBehaviour
 
         UpdateVisualState();
         PlayActivationEffects();
+        ShowSaveText(); 
 
-            if (SaveSystem.Instance != null)
-            {
-                SaveSystem.Instance.SaveGame(_checkpointId, playerPosition);
-            }
+        if (SaveSystem.Instance != null)
+        {
+            SaveSystem.Instance.SaveGame(_checkpointId, playerPosition);
+        }
 
-            GameStateManager.MarkGameSaved();
+        GameStateManager.MarkGameSaved();
     }
 
     private void PlayActivationEffects()
     {
         if (_activationSound != null)
         {
-            AudioSource.PlayClipAtPoint(_activationSound, transform.position);
+            float sfxVolume = PlayerPrefs.GetFloat("SFXVolume", 0.8f);
+            AudioSource.PlayClipAtPoint(_activationSound, transform.position, sfxVolume);
         }
+    }
+
+    private void ShowSaveText()
+    {
+        GameObject textObject = new GameObject("SaveText");
+        textObject.transform.position = transform.position + Vector3.up * TextVerticalOffset;
+
+        TextMesh textMesh = textObject.AddComponent<TextMesh>();
+
+        bool isEnglish = LocalizationManager.CurrentLanguage == LocalizationManager.Language.English;
+
+        textMesh.text = isEnglish ? "Game Saved!" : "Игра сохранена!";
+
+        textMesh.color = Color.green;
+        textMesh.fontSize = TextFontSize;
+        textMesh.anchor = TextAnchor.MiddleCenter;
+        textMesh.fontStyle = FontStyle.Bold;
+
+        MeshRenderer renderer = textObject.GetComponent<MeshRenderer>();
+        if (renderer != null)
+        {
+            renderer.sortingOrder = 10000;
+        }
+
+        Destroy(textObject, TextDestroyDelay);
     }
 
     private void UpdateVisualState()

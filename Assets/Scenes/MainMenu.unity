@@ -743,6 +743,14 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2467786383059987351, guid: f399b705217ef9e4a84633301d82cdbd, type: 3}
+      propertyPath: _englishText
+      value: "[A] \u2014 Left  \r\n[D] \u2014 Right \r\n[Spacebar ] \u2014 Jump\r\n[S]
+        \u2014 To fall through while standing on the platform\r\n[L. Shift] \u2014
+        Dash(Slider)\r\r\n\r\n[LMB] \u2014 Normal Attack\r\n[RMB] \u2014 Special
+        Attack\r\n\n[ESC] \u2014 Pause Menu\r\n\r[TAB] \u2014 Track the game objective\n\n[A]
+        \u2014 Open chest, door, trade\r\n[M] \u2014 Open map"
+      objectReference: {fileID: 0}
     - target: {fileID: 4072487761864731816, guid: f399b705217ef9e4a84633301d82cdbd, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -760,15 +768,35 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1610067987}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 236914133071633276, guid: f399b705217ef9e4a84633301d82cdbd, type: 3}
+    - {fileID: 5362309979889535032, guid: f399b705217ef9e4a84633301d82cdbd, type: 3}
+    - {fileID: 4634373380557856083, guid: f399b705217ef9e4a84633301d82cdbd, type: 3}
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4771014516852890812, guid: f399b705217ef9e4a84633301d82cdbd, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1103683575}
   m_SourcePrefab: {fileID: 100100000, guid: f399b705217ef9e4a84633301d82cdbd, type: 3}
 --- !u!224 &1103683574 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 165956449067841415, guid: f399b705217ef9e4a84633301d82cdbd, type: 3}
   m_PrefabInstance: {fileID: 1103683573}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1103683575
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 138127565}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 163bf62c4a73b8b41a1125676e412554, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _russianSprite: {fileID: 21300000, guid: 8ebaf7f7313ba104dafc37c8ea15264e, type: 3}
+  _englishSprite: {fileID: 21300000, guid: 4f6d4d2161cac4f41acf40a9181cf485, type: 3}
 --- !u!1 &1207276613
 GameObject:
   m_ObjectHideFlags: 0

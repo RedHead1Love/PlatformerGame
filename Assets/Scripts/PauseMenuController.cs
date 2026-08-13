@@ -10,11 +10,14 @@ public sealed class PauseMenuController : MonoBehaviour
     [Header("UI Panels")]
     [SerializeField] private GameObject _pausePanel;
     [SerializeField] private GameObject _controlsPanel;
+    [SerializeField] private GameObject _settingsPanel;
 
     [Header("Buttons")]
     [SerializeField] private UnityEngine.UI.Button _continueButton;
     [SerializeField] private UnityEngine.UI.Button _controlsButton;
     [SerializeField] private UnityEngine.UI.Button _closeControlsButton;
+    [SerializeField] private UnityEngine.UI.Button _settingsButton; 
+    [SerializeField] private UnityEngine.UI.Button _closeSettingsButton;
     [SerializeField] private UnityEngine.UI.Button _exitButton;
 
     private IInputProvider _inputProvider;
@@ -54,6 +57,16 @@ public sealed class PauseMenuController : MonoBehaviour
             _closeControlsButton.onClick.AddListener(CloseControls);
         }
 
+        if (_settingsButton != null)
+        {
+            _settingsButton.onClick.AddListener(OpenSettings);
+        }
+
+        if (_closeSettingsButton != null)
+        {
+            _closeSettingsButton.onClick.AddListener(CloseSettings);
+        }
+
         if (_exitButton != null)
         {
             _exitButton.onClick.AddListener(ExitToMainMenu);
@@ -85,6 +98,12 @@ public sealed class PauseMenuController : MonoBehaviour
                 return;
             }
 
+            if (_settingsPanel != null && _settingsPanel.activeSelf)
+            {
+                CloseSettings();
+                return;
+            }
+
             ResumeGame();
         }
         else
@@ -113,7 +132,8 @@ public sealed class PauseMenuController : MonoBehaviour
         AudioListener.pause = false;
 
         HidePauseMenu();
-        CloseControls(); 
+        CloseControls();
+        CloseSettings();
     }
 
     private void OpenControls()
@@ -129,6 +149,22 @@ public sealed class PauseMenuController : MonoBehaviour
         if (_controlsPanel != null)
         {
             _controlsPanel.SetActive(false);
+        }
+    }
+
+    private void OpenSettings()
+    {
+        if (_settingsPanel != null)
+        {
+            _settingsPanel.SetActive(true);
+        }
+    }
+
+    private void CloseSettings()
+    {
+        if (_settingsPanel != null)
+        {
+            _settingsPanel.SetActive(false);
         }
     }
 

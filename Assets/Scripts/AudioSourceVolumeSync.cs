@@ -7,7 +7,6 @@ public sealed class AudioSourceVolumeSync : MonoBehaviour
     private const string SFXPrefsKey = "SFXVolume";
     private const float DefaultVolume = 0.8f;
 
-    [Tooltip("Если музыка — поставьте галочку. Для врагов и эффектов оставить выключенным.")]
     [SerializeField] private bool _isMusic = false;
 
     private AudioSource _audioSource;

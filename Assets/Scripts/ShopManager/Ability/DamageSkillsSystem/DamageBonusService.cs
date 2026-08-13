@@ -7,7 +7,7 @@ public sealed class DamageBonusService
     private const int MinimumBonusDamage = 1;
     private const float EffectVerticalOffset = 1.5f;
     private const float EffectDestroyDelay = 1f;
-    private const int EffectFontSize = 20;
+    private const int EffectFontSize = 10;
 
     private readonly AbilityManager _abilityManager;
 
@@ -55,6 +55,12 @@ public sealed class DamageBonusService
         textMesh.fontSize = EffectFontSize;
         textMesh.anchor = TextAnchor.MiddleCenter;
         textMesh.fontStyle = FontStyle.Bold;
+
+        MeshRenderer renderer = textObject.GetComponent<MeshRenderer>();
+        if (renderer != null)
+        {
+            renderer.sortingOrder = 1488;
+        }
 
         Object.Destroy(textObject, EffectDestroyDelay);
     }

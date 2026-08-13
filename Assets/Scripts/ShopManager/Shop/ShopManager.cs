@@ -357,8 +357,11 @@ public sealed class ShopManager : MonoBehaviour
             string itemName = _purchaseHandler.GetItemName(item.ItemId);
             string itemDesc = _purchaseHandler.GetItemDescription(item.ItemId);
 
+            bool isEnglish = LocalizationManager.CurrentLanguage == LocalizationManager.Language.English;
+            string boughtText = isEnglish ? "[Bought]" : "[Куплено]";
+
             string statusMessage = item.IsSold && item.ItemId != ShopItemIds.RestoreArmor
-                ? "<color=green>[Куплено]</color>\n" + itemDesc
+                ? $"<color=green>{boughtText}</color>\n" + itemDesc
                 : itemDesc;
 
             _uiManager.UpdateRightPanel(item, icon, itemName, statusMessage);
@@ -372,31 +375,26 @@ public sealed class ShopManager : MonoBehaviour
     private void TryPurchaseSelectedItem()
     {
         IShopItem item = _navigationController?.GetCurrentItem();
-
-        if (item == null)
-        {
-            return;
-        }
+        if (item == null) return;
 
         if (item.CanBePurchased() == false)
         {
             ShowCannotPurchaseMessage(item);
-
             return;
         }
 
         bool success = _purchaseHandler.TryPurchaseItem(item.ItemId);
+        bool isEnglish = LocalizationManager.CurrentLanguage == LocalizationManager.Language.English;
 
         if (success == false)
         {
-            _uiManager?.ShowPurchaseMessage("<color=red>Не удалось купить предмет</color>");
-
+            _uiManager?.ShowPurchaseMessage(isEnglish ? "<color=red>Failed to purchase</color>" : "<color=red>Не удалось купить предмет</color>");
             return;
         }
 
         item.Purchase();
 
-        _uiManager?.ShowPurchaseMessage("Покупка успешна");
+        _uiManager?.ShowPurchaseMessage(isEnglish ? "Purchase successful" : "Покупка успешна");
         _uiManager?.RefreshLastChanceItems();
 
         UpdateUI();
@@ -406,13 +404,15 @@ public sealed class ShopManager : MonoBehaviour
 
     private void ShowCannotPurchaseMessage(IShopItem item)
     {
+        bool isEnglish = LocalizationManager.CurrentLanguage == LocalizationManager.Language.English;
+
         if (item.IsSold && item.ItemId != ShopItemIds.RestoreArmor)
         {
-            _uiManager?.ShowPurchaseMessage("<color=yellow>Этот предмет уже куплен</color>");
+            _uiManager?.ShowPurchaseMessage(isEnglish ? "<color=yellow>Item already bought</color>" : "<color=yellow>Этот предмет уже куплен</color>");
         }
         else
         {
-            _uiManager?.ShowPurchaseMessage("<color=red>Недостаточно средств или покупка недоступна</color>");
+            _uiManager?.ShowPurchaseMessage(isEnglish ? "<color=red>Not enough funds or locked</color>" : "<color=red>Недостаточно средств или покупка недоступна</color>");
         }
     }
 

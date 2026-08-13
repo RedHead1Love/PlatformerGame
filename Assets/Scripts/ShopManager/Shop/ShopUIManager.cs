@@ -211,17 +211,19 @@ public sealed class ShopUIManager : MonoBehaviour
 
         if (_detailsPriceText != null)
         {
+            bool isEnglish = LocalizationManager.CurrentLanguage == LocalizationManager.Language.English;
+
             if (item.ItemId == ShopItemIds.ActivateLastChance && item.IsSold)
             {
-                _detailsPriceText.text = "Aктивно";
+                _detailsPriceText.text = isEnglish ? "Active" : "Aктивно";
                 _detailsPriceText.color = Color.yellow;
-                if (_priceIconObject != null) _priceIconObject.SetActive(false); 
+                if (_priceIconObject != null) _priceIconObject.SetActive(false);
             }
             else if (item.IsSold && item.ItemId != ShopItemIds.RestoreArmor)
             {
-                _detailsPriceText.text = "Куплено";
+                _detailsPriceText.text = isEnglish ? "Bought" : "Куплено";
                 _detailsPriceText.color = Color.green;
-                if (_priceIconObject != null) _priceIconObject.SetActive(false); 
+                if (_priceIconObject != null) _priceIconObject.SetActive(false);
             }
             else
             {

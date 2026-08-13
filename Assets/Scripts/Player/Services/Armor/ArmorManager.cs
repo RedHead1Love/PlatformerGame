@@ -120,6 +120,11 @@ public sealed class ArmorManager : MonoBehaviour, IArmorManager
 
     public void UnlockArmor()
     {
+        if (_isArmorUnlocked)
+        {
+            return;
+        }
+
         _isArmorUnlocked = true;
 
         ShowArmorUI();

@@ -154,7 +154,9 @@ namespace GameLogic
                 return;
             }
 
-            AudioSource.PlayClipAtPoint(_collectSound, transform.position);
+            float sfxVolume = PlayerPrefs.GetFloat("SFXVolume", 0.8f);
+
+            AudioSource.PlayClipAtPoint(_collectSound, transform.position, sfxVolume);
         }
     }
 }

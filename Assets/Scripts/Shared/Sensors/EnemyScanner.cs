@@ -45,7 +45,6 @@ namespace Shared.Sensors
 
             if (ShouldPlayDetectionSound(hasEnemyNearby))
             {
-                PlayDetectionSound();
                 _lastSoundTime = Time.time;
             }
 
@@ -59,15 +58,5 @@ namespace Shared.Sensors
                    Time.time >= _lastSoundTime + DefaultSoundCooldown;
         }
 
-        private void PlayDetectionSound()
-        {
-            _audioController?.PlayEnemyDetectedSound();
-        }
-
-        private void OnDrawGizmosSelected()
-        {
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(transform.position, _detectionRange);
-        }
     }
 }
