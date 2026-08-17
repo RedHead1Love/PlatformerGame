@@ -64,7 +64,9 @@ public sealed class MainMenu : MonoBehaviour
     private void StartNewGame()
     {
         PlayButtonSound();
+
         ResetGameProgress();
+
         LoadFirstLevel();
     }
 
@@ -194,6 +196,7 @@ public sealed class MainMenu : MonoBehaviour
 
         PlayerPrefs.SetFloat("MusicVolume", music);
         PlayerPrefs.SetFloat("SFXVolume", sfx);
+
         PlayerPrefs.Save();
     }
 
