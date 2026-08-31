@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
+using System.Runtime.InteropServices;
 
 public sealed class AudioController : MonoBehaviour
 {
@@ -59,6 +60,12 @@ public sealed class AudioController : MonoBehaviour
     [SerializeField] private AudioClip _armorBreakSound;
     [SerializeField] private float _armorSoundVolumeMultiplier = 1f;
 
+    [DllImport("__Internal")]
+    private static extern void InitVisibilityChangeEvent();
+
+    private float _savedVolumeBeforeMute = 1f;
+    private bool _isMutedByBackground = false;
+
     private IAudioPlayer _soundEffectsPlayer;
     private IAudioPlayer _musicPlayer;
     private IMusicPlaylist _musicPlaylist;
@@ -68,6 +75,21 @@ public sealed class AudioController : MonoBehaviour
     public float MusicVolume => _musicVolume;
     public float SoundEffectsVolume => _soundEffectsVolume;
     public bool IsPlayingFootsteps => _footstepManager != null && _footstepManager.IsPlaying;
+
+
+    private void Start()
+    {
+#if !UNITY_EDITOR && UNITY_WEBGL
+        try 
+        { 
+            InitVisibilityChangeEvent(); 
+        } 
+        catch 
+        { 
+            Debug.LogWarning("Плагин видимости не загружен"); 
+        }
+#endif
+    }
 
     private void Awake()
     {
@@ -390,5 +412,22 @@ public sealed class AudioController : MonoBehaviour
     private void OnApplicationPause(bool isPaused)
     {
         AudioListener.pause = isPaused;
+    }
+
+    public void MuteAudioBackground()
+    {
+        if (_isMutedByBackground) return;
+
+        _savedVolumeBeforeMute = AudioListener.volume;
+        AudioListener.volume = 0f;
+        _isMutedByBackground = true;
+    }
+
+    public void UnmuteAudioBackground()
+    {
+        if (!_isMutedByBackground) return;
+
+        AudioListener.volume = _savedVolumeBeforeMute;
+        _isMutedByBackground = false;
     }
 }
