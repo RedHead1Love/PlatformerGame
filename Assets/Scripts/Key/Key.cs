@@ -1,4 +1,4 @@
-using Cainos.LucidEditor;
+﻿using Cainos.LucidEditor;
 using DoorControl;
 using System.Collections;
 using UnityEngine;
@@ -21,11 +21,16 @@ namespace DoorControl
         [FoldoutGroup("Collection Effects")]
         public float collectSoundVolume = 0.5f;
 
+        [Header("Map Marker")]
+        [SerializeField] private RectTransform _keyMarker;
+        [SerializeField] private RectTransform _collectedKeyMarker;
+
         private bool _isCollected;
         private SpriteRenderer _spriteRenderer;
         private Collider2D _collider;
 
         public KeyColor Color => keyColor;
+        public bool IsCollected => _isCollected;
 
         private void Start()
         {
@@ -72,8 +77,23 @@ namespace DoorControl
             };
         }
 
+        public void UpdateMarkerPosition(Vector2 uiPosition)
+        {
+            if (_keyMarker != null)
+            {
+                _keyMarker.anchoredPosition = uiPosition;
+                _keyMarker.gameObject.SetActive(true);
+            }
+        }
+
         private void CollectKey(GameObject player)
         {
+
+            Debug.Log($"Ключ {gameObject.name}: собирается!"); // ← Добавь
+
+            _isCollected = true;
+            Debug.Log($"Ключ {gameObject.name}: _isCollected = {_isCollected}"); // ← Добавь
+
             _isCollected = true;
 
             if (_collider != null)
@@ -82,6 +102,11 @@ namespace DoorControl
             }
 
             AddKeyToPlayer(player);
+
+            if (_keyMarker != null)
+                _keyMarker.gameObject.SetActive(false);
+            _collectedKeyMarker.gameObject.SetActive(true);
+
             StartCoroutine(CollectAnimation());
         }
 
