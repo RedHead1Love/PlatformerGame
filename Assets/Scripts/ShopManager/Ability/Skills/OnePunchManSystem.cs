@@ -1,6 +1,6 @@
 ﻿using GeneralLogicEnemies;
 using Player.Abilities;
-using TMPro; 
+using TMPro;
 using UnityEngine;
 
 public sealed class OnePunchManSystem : MonoBehaviour, IOnePunchManSystem
@@ -15,7 +15,7 @@ public sealed class OnePunchManSystem : MonoBehaviour, IOnePunchManSystem
     [SerializeField] private AudioClip _instakillSound;
 
     [Header("Visuals")]
-    [SerializeField] private TMP_FontAsset _textFont; 
+    [SerializeField] private TMP_FontAsset _textFont;
 
     private Hero _hero;
     private AbilityManager _abilityManager;
@@ -57,7 +57,6 @@ public sealed class OnePunchManSystem : MonoBehaviour, IOnePunchManSystem
         if (_isActive == false || enemy == null)
         {
             return false;
-
         }
 
         if (Random.value > _instakillChance)
@@ -80,7 +79,6 @@ public sealed class OnePunchManSystem : MonoBehaviour, IOnePunchManSystem
     private void CheckIfAbilityPurchased()
     {
         RefreshAbilityManagerReference();
-
         _isActive = _abilityManager?.HasOnePunchManAbility ?? false;
     }
 
@@ -108,7 +106,6 @@ public sealed class OnePunchManSystem : MonoBehaviour, IOnePunchManSystem
         enemy.Die();
     }
 
-
     private void ShowFloatingText(Vector3 position)
     {
         GameObject textObject = new GameObject("InstakillText");
@@ -116,9 +113,12 @@ public sealed class OnePunchManSystem : MonoBehaviour, IOnePunchManSystem
 
         TextMeshPro textMesh = textObject.AddComponent<TextMeshPro>();
 
-        bool isEnglish = LocalizationManager.CurrentLanguage == LocalizationManager.Language.English;
-
-        textMesh.text = isEnglish ? "InstaKill" : "Уничтожен";
+        textMesh.text = LocalizationManager.CurrentLanguage switch
+        {
+            LocalizationManager.Language.English => "InstaKill",
+            LocalizationManager.Language.Turkish => "Tek Atış",
+            _ => "Уничтожен"
+        };
 
         textMesh.color = Color.red;
         textMesh.fontSize = InstakillFontSize;
@@ -132,8 +132,7 @@ public sealed class OnePunchManSystem : MonoBehaviour, IOnePunchManSystem
         }
 
         Rigidbody2D rb = textObject.AddComponent<Rigidbody2D>();
-
-        rb.gravityScale = -0.5f; 
+        rb.gravityScale = -0.5f;
 
         Destroy(textObject, DefaultTextLifetime);
     }
