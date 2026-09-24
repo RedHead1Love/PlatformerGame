@@ -75,19 +75,13 @@ public sealed class LevelStatsTracker : MonoBehaviour
     private System.Collections.IEnumerator SendLeaderboardsRoutine()
     {
 #if UNITY_WEBGL && !UNITY_EDITOR
-        YG2.SetLeaderboard("ScoreBoard", _persistentScore);
-        yield return new WaitForSecondsRealtime(1.2f); 
+        int currentTime = Mathf.FloorToInt(_persistentTime);
+        int packedData = (_persistentScore * 1000000) + (currentTime * 100) + _persistentDeaths;
 
-        YG2.SetLeaderboard("TimeBoard", Mathf.FloorToInt(_persistentTime));
-        yield return new WaitForSecondsRealtime(1.2f);
-
-        YG2.SetLeaderboard("DamageBoard", _persistentDamage);
-        yield return new WaitForSecondsRealtime(1.2f);
-
-        YG2.SetLeaderboard("DeathsBoard", _persistentDeaths);
-#else
-        yield return null; 
+        YG2.SetLeaderboard("ScoreBoard", packedData);
 #endif
+
+        yield return null;
 
         ResetAllStats();
     }

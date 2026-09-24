@@ -29,7 +29,7 @@ public sealed class LeaderboardsMenu : MonoBehaviour
         {
             var entry = Instantiate(_entryPrefab, _contentContainer);
 
-            entry.Setup(player.rank, player.name, player.score, _currentBoardId);
+            entry.SetData(player.rank, player.name, player.score);
         }
     }
 

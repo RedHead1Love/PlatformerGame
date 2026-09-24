@@ -135,6 +135,7 @@ GameObject:
   - component: {fileID: 2952504}
   - component: {fileID: 2952503}
   - component: {fileID: 2952505}
+  - component: {fileID: 2952506}
   m_Layer: 5
   m_Name: LeaderboardPanel
   m_TagString: Untagged
@@ -216,6 +217,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _contentContainer: {fileID: 951891254}
   _entryPrefab: {fileID: 1129705333901211438, guid: b6fb702ba1093a64baa9beaa5b8b9e89, type: 3}
+--- !u!114 &2952506
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2952501}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 163bf62c4a73b8b41a1125676e412554, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _russianSprite: {fileID: 21300000, guid: 4a5363b0e383ad74ca3f57cf7ee4c696, type: 3}
+  _englishSprite: {fileID: 21300000, guid: 16d4e5cfd8cc30e4f9592edb61a49f93, type: 3}
+  _turkishSprite: {fileID: 21300000, guid: e5b1aae273c013e46939ea6f7e18e678, type: 3}
 --- !u!1 &124395329
 GameObject:
   m_ObjectHideFlags: 0

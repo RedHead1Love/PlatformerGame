@@ -1,26 +1,33 @@
-using TMPro;
 using UnityEngine;
+using TMPro;
 
-public sealed class LeaderboardEntryUI : MonoBehaviour
+public class LeaderboardEntryUI : MonoBehaviour
 {
-    [SerializeField] private TextMeshProUGUI _rankText;
-    [SerializeField] private TextMeshProUGUI _nameText;
-    [SerializeField] private TextMeshProUGUI _scoreText;
+    public TextMeshProUGUI rankText;
+    public TextMeshProUGUI nameText;
+    public TextMeshProUGUI timeText;
+    public TextMeshProUGUI deathsText;
+    public TextMeshProUGUI scoreText;
 
-    public void Setup(int rank, string playerName, int score, string boardId)
+    public void SetData(int rank, string playerName, int rawData)
     {
-        _rankText.text = rank.ToString();
-        _nameText.text = string.IsNullOrEmpty(playerName) ? "Аноним" : playerName;
+        int deaths = rawData % 100;                     
+        int timeInSeconds = (rawData / 100) % 10000;     
+        int score = rawData / 1000000;                   
 
-        if (boardId == "TimeBoard")
+        if (rawData < 100000)
         {
-            int minutes = Mathf.FloorToInt(score / 60f);
-            int seconds = score % 60;
-            _scoreText.text = $"{minutes:00}:{seconds:00}";
+            score = rawData;
+            timeInSeconds = 0;
+            deaths = 0;
         }
-        else
-        {
-            _scoreText.text = score.ToString();
-        }
+
+        rankText.text = "";
+        nameText.text = string.IsNullOrEmpty(playerName) ? "Аноним" : playerName;
+
+        timeText.text = $"{timeInSeconds / 60}:{(timeInSeconds % 60):00}";
+
+        deathsText.text = deaths.ToString();
+        scoreText.text = score.ToString();
     }
 }
