@@ -215,7 +215,6 @@ public sealed class MainMenu : MonoBehaviour
         if (_leaderboardPanel != null)
         {
             _leaderboardPanel.SetActive(true);
-            _leaderboardPanel.GetComponent<LeaderboardsMenu>().LoadBoard("ScoreBoard");
         }
     }
 

@@ -23,6 +23,8 @@ namespace GameLogic
         [SerializeField] private float _magnetRadius = 4f;
         [SerializeField] private float _magnetInitialSpeed = 3f;
         [SerializeField] private float _magnetAcceleration = 15f;
+        [SerializeField] private float _magnetTargetOffsetY = 1f; 
+        [SerializeField] private float _collectionDistance = 0.5f; 
 
         [Header("Visual Effects")]
         [SerializeField] private float _floatHeight = DefaultFloatHeight;
@@ -150,17 +152,25 @@ namespace GameLogic
                 else if (canMagnetize == false && isMagnetizing)
                 {
                     isMagnetizing = false;
-                    _originalPosition = transform.position; 
+                    _originalPosition = transform.position;
                 }
 
                 if (isMagnetizing)
                 {
+                    Vector3 targetPosition = Hero.Instance.transform.position + new Vector3(0f, _magnetTargetOffsetY, 0f);
+
                     currentSpeed += _magnetAcceleration * Time.deltaTime;
                     transform.position = Vector3.MoveTowards(
                         transform.position,
-                        Hero.Instance.transform.position,
+                        targetPosition,
                         currentSpeed * Time.deltaTime
                     );
+
+                    if (Vector3.Distance(transform.position, targetPosition) <= _collectionDistance)
+                    {
+                        Collect();
+                        yield break; 
+                    }
                 }
                 else
                 {

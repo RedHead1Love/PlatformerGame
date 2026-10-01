@@ -17,7 +17,7 @@ public sealed class LeaderboardsMenu : MonoBehaviour
         _currentBoardId = boardId;
         ClearBoard();
 
-        YG2.GetLeaderboard(boardId);
+        YG2.GetLeaderboard(boardId, 10, 0, "");
     }
 
     private void OnDataReceived(LBData lbData)
@@ -25,11 +25,16 @@ public sealed class LeaderboardsMenu : MonoBehaviour
         if (lbData.technoName != _currentBoardId) return;
 
         ClearBoard();
+
+        int count = 0;
         foreach (var player in lbData.players)
         {
-            var entry = Instantiate(_entryPrefab, _contentContainer);
+            if (count >= 10) break;
 
+            var entry = Instantiate(_entryPrefab, _contentContainer);
             entry.SetData(player.rank, player.name, player.score);
+
+            count++;
         }
     }
 
