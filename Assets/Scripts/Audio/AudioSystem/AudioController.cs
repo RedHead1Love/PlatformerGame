@@ -85,14 +85,22 @@ public sealed class AudioController : MonoBehaviour
     {
         _musicManager?.Update();
 
+        if (MiniMapController.IsCutscenePlaying)
+        {
+            AudioListener.volume = 0f;
+            AudioListener.pause = false; 
+            return; 
+        }
+
         if (PauseMenuController.IsGamePaused)
         {
-            AudioListener.volume = 0f; 
-            AudioListener.pause = true; 
+            AudioListener.volume = 0f;
+            AudioListener.pause = true;
         }
         else
         {
-            AudioListener.volume = 1f; 
+            AudioListener.volume = 1f;
+            AudioListener.pause = false;
         }
     }
 
