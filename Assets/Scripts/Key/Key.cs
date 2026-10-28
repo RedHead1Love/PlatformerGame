@@ -89,10 +89,10 @@ namespace DoorControl
         private void CollectKey(GameObject player)
         {
 
-            Debug.Log($"Ключ {gameObject.name}: собирается!"); // ← Добавь
+            Debug.Log($"Ключ {gameObject.name}: собирается!"); 
 
             _isCollected = true;
-            Debug.Log($"Ключ {gameObject.name}: _isCollected = {_isCollected}"); // ← Добавь
+            Debug.Log($"Ключ {gameObject.name}: _isCollected = {_isCollected}"); 
 
             _isCollected = true;
 
