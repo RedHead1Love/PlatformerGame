@@ -1,34 +1,78 @@
-using TMPro;
+using System.Collections.Generic;
+using System;
+using UnityEngine.Video;
 using UnityEngine;
 
 public sealed class BossDoor : MonoBehaviour
 {
     private const string PlayerTag = "Player";
     private const float MessageDisplayDuration = 2f;
+    private const float AllBossesDefeatedMessageDuration = 4.5f;
+    private const KeyCode InteractionKey = KeyCode.F;
     private const float MessageDisplayDistance = 3f;
+    private const float PausedTimeScaleThreshold = 0.01f;
 
-    [Header("Boss Settings")]
     [SerializeField] private string[] _bossIds = { "226", "227", "228", "229" };
 
-    [Header("UI Prefabs")]
     [SerializeField] private GameObject _interactionMessagePrefab;
     [SerializeField] private GameObject _temporaryMessagePrefab;
+    [SerializeField] private int _messageSortingOrder = -1;
 
+    [SerializeField] private GameObject[] _blockingUIObjects;
+
+    [SerializeField] private VideoPlayer _victoryVideoPlayer;
+    [SerializeField] private GameObject _videoPanel;
+    [SerializeField] private string _videoFileName = "Victory.mp4";
+
+    public static event Action OnBossDoorOpenedGlobal;
+
+    private BossDoorMessageView _messages;
     private Transform _playerTransform;
     private AudioController _audioController;
+    private bool _isPlayerNear;
+    private bool _isOpened;
+    private bool _hasShownAllBossesDefeatedMessage;
 
-    private GameObject _currentMessage;
-    private TextMeshProUGUI _messageText;
+    private VictorySequencePlayer _victory;
+
+    private void OnEnable()
+    {
+        EnemyManager.OnEnemyKilledGlobal += OnEnemyKilled;
+    }
+
+    private void OnDisable()
+    {
+        EnemyManager.OnEnemyKilledGlobal -= OnEnemyKilled;
+    }
 
     private void Start()
     {
         InitializeReferences();
-        CreateUIPrefabsIfNeeded();
+        _victory = new VictorySequencePlayer(this, _victoryVideoPlayer, _videoPanel,
+            _videoFileName, _audioController, DisableDoorVisualsAndColliders);
+        _messages = new BossDoorMessageView(this, _interactionMessagePrefab,
+            _temporaryMessagePrefab, _messageSortingOrder, IsMenuOrPauseActive);
+        _messages.Initialize();
+
+        if (_videoPanel != null) _videoPanel.SetActive(false);
+
+        if (AreAllBossesKilledInSave())
+        {
+            _hasShownAllBossesDefeatedMessage = true;
+        }
     }
 
     private void Update()
     {
-        if (_playerTransform == null)
+        if (_victory != null && _victory.IsPlaying)
+        {
+            if (Input.GetKeyDown(KeyCode.Escape)) _victory.SkipOrEndVideo();
+            return;
+        }
+
+        _messages?.RefreshVisibility();
+
+        if (_playerTransform == null || _isOpened || IsMenuOrPauseActive())
         {
             return;
         }
@@ -39,82 +83,188 @@ public sealed class BossDoor : MonoBehaviour
 
     private void OnDestroy()
     {
-        CleanupUI();
+        _messages?.Dispose();
+        _victory?.Dispose();
+    }
+
+    private bool IsMenuOrPauseActive()
+    {
+        if (Time.timeScale < PausedTimeScaleThreshold)
+        {
+            return true;
+        }
+
+        if (_blockingUIObjects != null)
+        {
+            foreach (GameObject uiObject in _blockingUIObjects)
+            {
+                if (uiObject != null && uiObject.activeInHierarchy)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private void OnEnemyKilled()
+    {
+        if (_hasShownAllBossesDefeatedMessage || _isOpened)
+        {
+            return;
+        }
+
+        if (AreAllBossesKilledInSave())
+        {
+            _hasShownAllBossesDefeatedMessage = true;
+            _messages?.ShowTemporaryMessage(BossDoorText.GetAllBossesDefeatedMessage(), AllBossesDefeatedMessageDuration);
+
+            if (_isPlayerNear)
+            {
+                ShowBossStatus();
+            }
+        }
+    }
+
+    private bool AreAllBossesKilledInSave()
+    {
+        if (EnemyManager.Instance == null || _bossIds == null || _bossIds.Length == 0)
+        {
+            return false;
+        }
+
+        HashSet<string> killedEnemies = EnemyManager.Instance.GetKilledEnemies();
+
+        foreach (string bossId in _bossIds)
+        {
+            if (killedEnemies.Contains(bossId) == false)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private void InitializeReferences()
     {
-        _playerTransform = GameObject.FindGameObjectWithTag(PlayerTag)?.transform;
-        _audioController = FindFirstObjectByType<AudioController>();
-    }
+        GameObject playerObject = GameObject.FindGameObjectWithTag(PlayerTag);
 
-    private void CreateUIPrefabsIfNeeded()
-    {
-        if (_interactionMessagePrefab == null)
+        if (playerObject != null)
         {
-            Debug.LogWarning("Interaction Message Prefab is missing on BossDoor.");
+            _playerTransform = playerObject.transform;
         }
+
+        _audioController = FindFirstObjectByType<AudioController>();
     }
 
     private void UpdatePlayerProximity()
     {
-        // Логика проверки расстояния до игрока
+        float distanceToPlayer = Vector2.Distance(transform.position, _playerTransform.position);
+        bool wasPlayerNear = _isPlayerNear;
+
+        _isPlayerNear = distanceToPlayer <= MessageDisplayDistance;
+
+        if (_isPlayerNear && wasPlayerNear == false)
+        {
+            ShowBossStatus();
+        }
+        else if (_isPlayerNear == false && wasPlayerNear)
+        {
+            HideBossStatus();
+        }
     }
 
     private void HandlePlayerInteraction()
     {
-        // Логика взаимодействия и проверки ключей/боссов
+        if (_isPlayerNear && Input.GetKeyDown(InteractionKey))
+        {
+            TryOpenDoor();
+        }
     }
 
-    private void ShowInteractionMessage(string message)
+    private void ShowBossStatus()
     {
-        HideInteractionMessage();
+        int aliveBossCount = CountAliveBosses();
+        string statusMessage = BossDoorText.GetBossStatusMessage(aliveBossCount, _bossIds.Length, InteractionKey);
 
-        if (_interactionMessagePrefab != null)
+        _messages?.ShowInteractionMessage(statusMessage);
+    }
+
+    private void HideBossStatus()
+    {
+        _messages?.HideInteractionMessage();
+    }
+
+    private void TryOpenDoor()
+    {
+        int aliveBossCount = CountAliveBosses();
+
+        if (aliveBossCount == 0)
         {
-            _currentMessage = Instantiate(_interactionMessagePrefab);
-            _currentMessage.SetActive(true);
+            OpenDoor();
+            return;
+        }
 
-            _messageText = _currentMessage.GetComponentInChildren<TextMeshProUGUI>();
+        int defeatedCount = _bossIds.Length - aliveBossCount;
 
-            if (_messageText != null)
+        string message = LocalizationManager.CurrentLanguage switch
+        {
+            LocalizationManager.Language.English => $"Not all bosses are defeated. ({defeatedCount}/{_bossIds.Length})",
+            LocalizationManager.Language.Turkish => $"Tüm patronlar yenilmedi. ({defeatedCount}/{_bossIds.Length})",
+            _ => $"Не все боссы побеждены. Осталось ({defeatedCount}/{_bossIds.Length})"
+        };
+
+        _messages?.ShowTemporaryMessage(message, MessageDisplayDuration);
+    }
+
+    private int CountAliveBosses()
+    {
+        int aliveCount = 0;
+
+        if (EnemyManager.Instance == null)
+        {
+            return aliveCount;
+        }
+
+        foreach (string bossId in _bossIds)
+        {
+            if (EnemyManager.Instance.IsEnemyAlive(bossId))
             {
-                _messageText.text = message;
+                aliveCount++;
             }
         }
+
+        return aliveCount;
     }
 
-    private void HideInteractionMessage()
+    private void OpenDoor()
     {
-        if (_currentMessage != null)
-        {
-            Destroy(_currentMessage);
+        _isOpened = true;
+        _messages?.Dispose();
+        OnBossDoorOpenedGlobal?.Invoke();
+        _audioController?.PlayBossDoorOpenSound();
 
-            _currentMessage = null;
-            _messageText = null;
+        _victory.Play();
+    }
+
+    private void DisableDoorVisualsAndColliders()
+    {
+        foreach (Renderer rendererComponent in GetComponentsInChildren<Renderer>())
+        {
+            rendererComponent.enabled = false;
+        }
+
+        foreach (Collider2D collider2DComponent in GetComponentsInChildren<Collider2D>())
+        {
+            collider2DComponent.enabled = false;
+        }
+
+        foreach (Collider colliderComponent in GetComponentsInChildren<Collider>())
+        {
+            colliderComponent.enabled = false;
         }
     }
 
-    private void ShowTemporaryMessage(string message, float duration)
-    {
-        if (_temporaryMessagePrefab != null)
-        {
-            GameObject tempMessage = Instantiate(_temporaryMessagePrefab);
-            tempMessage.SetActive(true);
-
-            TextMeshProUGUI textComponent = tempMessage.GetComponentInChildren<TextMeshProUGUI>();
-
-            if (textComponent != null)
-            {
-                textComponent.text = message;
-            }
-
-            Destroy(tempMessage, duration);
-        }
-    }
-
-    private void CleanupUI()
-    {
-        HideInteractionMessage();
-    }
 }

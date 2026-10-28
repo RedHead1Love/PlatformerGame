@@ -1,51 +1,128 @@
+using TMPro;
 using UnityEngine;
 
 public sealed class Checkpoint : MonoBehaviour
 {
     private const string PlayerTag = "Player";
 
+    private const float TextVerticalOffset = 1.5f;
+    private const float TextDestroyDelay = 2f;
+    private const int TextFontSize = 10;
+    private const float CooldownDuration = 5f;
+
     [SerializeField] private string _checkpointId;
     [SerializeField] private AudioClip _activationSound;
+    [SerializeField] private TMP_FontAsset _saveTextFont;
 
     private bool _isActivated;
+    private bool _isOnCooldown;
     private SpriteRenderer _spriteRenderer;
 
-    public string GetCheckpointId() => _checkpointId;
-    public Vector3 GetSpawnPosition() => transform.position;
+    private float _nextActivationTime;
 
     private void Start()
     {
         _spriteRenderer = GetComponent<SpriteRenderer>();
 
-        if (SaveSystem.Instance?.CurrentSave?.CheckpointId == _checkpointId)
-        {
-            _isActivated = true;
-        }
+        InitializeCheckpoint();
+    }
 
-        UpdateVisuals();
+    private void Update()
+    {
+        if (_isOnCooldown && Time.time >= _nextActivationTime)
+        {
+            _isOnCooldown = false; 
+            UpdateVisualState();   
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (!_isActivated && other.CompareTag(PlayerTag))
+        if (!other.CompareTag(PlayerTag))
         {
-            Activate(other.transform.position);
+            return;
         }
+
+        if (Time.time < _nextActivationTime)
+        {
+            return;
+        }
+
+        ActivateCheckpoint(other.transform.position);
     }
 
-    private void Activate(Vector3 playerPosition)
+    private void InitializeCheckpoint()
+    {
+        if (SaveSystem.Instance != null && SaveSystem.Instance.HasSave())
+        {
+            GameSaveData saveData = SaveSystem.Instance.CurrentSave;
+            _isActivated = saveData != null && saveData.CheckpointId == _checkpointId;
+        }
+
+        UpdateVisualState();
+    }
+
+    private void ActivateCheckpoint(Vector3 playerPosition)
     {
         _isActivated = true;
+        _isOnCooldown = true; 
 
-        SaveSystem.Instance?.SaveGame(_checkpointId, playerPosition);
+        _nextActivationTime = Time.time + CooldownDuration;
 
-        if (_activationSound)
+        UpdateVisualState();
+        PlayActivationEffects();
+        ShowSaveText();
+
+        if (SaveSystem.Instance != null)
         {
-            AudioSource.PlayClipAtPoint(_activationSound, transform.position);
+            SaveSystem.Instance.SaveGame(_checkpointId, playerPosition);
         }
 
-        UpdateVisuals();
+        GameStateManager.MarkGameSaved();
     }
 
-    private void UpdateVisuals() => _spriteRenderer.color = _isActivated ? Color.green : Color.white;
+    private void PlayActivationEffects()
+    {
+        if (_activationSound != null)
+        {
+            float sfxVolume = PlayerPrefs.GetFloat("SFXVolume", 0.8f);
+            AudioSource.PlayClipAtPoint(_activationSound, transform.position, sfxVolume);
+        }
+    }
+
+    private void ShowSaveText()
+    {
+        GameObject textObject = new GameObject("SaveText");
+        textObject.transform.position = transform.position + Vector3.up * TextVerticalOffset;
+
+        TextMeshPro textMesh = textObject.AddComponent<TextMeshPro>();
+
+        bool isEnglish = LocalizationManager.CurrentLanguage == LocalizationManager.Language.English;
+        textMesh.text = isEnglish ? "Game Saved" : "игра сохранена";
+
+        if (_saveTextFont != null)
+        {
+            textMesh.font = _saveTextFont;
+        }
+
+        textMesh.color = Color.green;
+        textMesh.fontSize = TextFontSize;
+        textMesh.alignment = TextAlignmentOptions.Center;
+        textMesh.fontStyle = FontStyles.Bold;
+        textMesh.sortingOrder = 10000;
+
+        Destroy(textObject, TextDestroyDelay);
+    }
+
+    private void UpdateVisualState()
+    {
+        if (_spriteRenderer != null)
+        {
+            _spriteRenderer.color = _isOnCooldown ? Color.green : Color.white;
+        }
+    }
+
+    public string GetCheckpointId() => _checkpointId;
+    public bool IsActivated() => _isActivated;
+    public Vector3 GetSpawnPosition() => transform.position;
 }

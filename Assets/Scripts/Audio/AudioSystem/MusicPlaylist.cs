@@ -5,6 +5,8 @@ namespace AudioSystem
 {
     public sealed class MusicPlaylist : IMusicPlaylist
     {
+        private const int FirstTrackIndex = 0;
+
         private List<AudioClip> _tracks = new List<AudioClip>();
         private List<AudioClip> _shuffledTracks = new List<AudioClip>();
         private int _currentTrackIndex;
@@ -13,8 +15,11 @@ namespace AudioSystem
 
         public void Initialize(List<AudioClip> tracks)
         {
-            _tracks = new List<AudioClip>(tracks);
-            _shuffledTracks = new List<AudioClip>(tracks);
+            _tracks = tracks == null
+                ? new List<AudioClip>()
+                : new List<AudioClip>(tracks);
+
+            _shuffledTracks = new List<AudioClip>(_tracks);
 
             Shuffle();
         }
@@ -40,21 +45,17 @@ namespace AudioSystem
 
         public void Shuffle()
         {
-            const int minRange = 0;
-            const int resetIndex = 0;
-
             _shuffledTracks = new List<AudioClip>(_tracks);
 
-            for (int i = _shuffledTracks.Count - 1; i > 0; i--)
+            for (int i = _shuffledTracks.Count - 1; i > FirstTrackIndex; i--)
             {
-                int randomBoundary = i + 1;
+                int randomIndex = Random.Range(FirstTrackIndex, i + 1);
 
-                int j = Random.Range(minRange, randomBoundary);
-
-                (_shuffledTracks[i], _shuffledTracks[j]) = (_shuffledTracks[j], _shuffledTracks[i]);
+                (_shuffledTracks[i], _shuffledTracks[randomIndex]) =
+                    (_shuffledTracks[randomIndex], _shuffledTracks[i]);
             }
 
-            _currentTrackIndex = resetIndex;
+            _currentTrackIndex = FirstTrackIndex;
         }
     }
 }

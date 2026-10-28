@@ -5,7 +5,6 @@ namespace Player.StateMachine
     public sealed class HurtState : IState
     {
         private const string HurtAnimationName = "Hurt";
-        private const float InitialTimerValue = 0.0f;
 
         private readonly Hero _hero;
         private float _timer;
@@ -17,15 +16,17 @@ namespace Player.StateMachine
 
         public void Enter()
         {
-            _hero.AnimationService.SetState(States.Hurt);
-            _timer = InitialTimerValue;
+            _hero.AnimationService.SetState(HeroAnimationState.Hurt);
+            _timer = 0f;
         }
 
         public void Tick()
         {
             _timer += Time.deltaTime;
 
-            if (_timer >= _hero.AnimationService.GetAnimationLength(HurtAnimationName))
+            float animationLength = _hero.AnimationService.GetAnimationLength(HurtAnimationName);
+
+            if (animationLength <= 0f || _timer >= animationLength)
             {
                 _hero.StateMachine.Change<IdleState>();
             }

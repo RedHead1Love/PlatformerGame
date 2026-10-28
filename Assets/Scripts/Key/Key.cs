@@ -1,32 +1,58 @@
-using Cainos.LucidEditor;
+using DoorControl;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace DoorControl
 {
     public sealed class Key : MonoBehaviour
     {
-        private const float EffectDestroyDelay = 2f;
+        private const string PlayerTag = "Player";
+        private const float CollectAnimationDuration = 0.5f;
         private const float RotationSpeed = 360f;
         private const float ScaleMultiplier = 0.2f;
-        private const float CollectDuration = 0.5f;
 
-        [FoldoutGroup("Key Settings")]
+        [FormerlySerializedAs("keyColor")]
         [SerializeField] private KeyColor _keyColor = KeyColor.WhiteColor;
 
-        [FoldoutGroup("Collection Effects")]
+        [FormerlySerializedAs("collectSound")]
         [SerializeField] private AudioClip _collectSound;
 
-        [FoldoutGroup("Collection Effects")]
+        [FormerlySerializedAs("collectSoundVolume")]
         [SerializeField] private float _collectSoundVolume = 0.5f;
+
+        [SerializeField] private RectTransform _keyMarker;
+        [SerializeField] private RectTransform _collectedKeyMarker;
 
         private bool _isCollected;
         private SpriteRenderer _spriteRenderer;
         private Collider2D _collider;
 
         public KeyColor Color => _keyColor;
+        public bool IsCollected => _isCollected;
+
+        public void SetKeyColor(KeyColor keyColor)
+        {
+            _keyColor = keyColor;
+            ApplyKeyColor();
+        }
 
         private void Start()
+        {
+            InitializeKey();
+        }
+
+        private void OnTriggerEnter2D(Collider2D other)
+        {
+            if (_isCollected || other.CompareTag(PlayerTag) == false)
+            {
+                return;
+            }
+
+            CollectKey(other.gameObject);
+        }
+
+        private void InitializeKey()
         {
             _spriteRenderer = GetComponent<SpriteRenderer>();
             _collider = GetComponent<Collider2D>();
@@ -41,38 +67,33 @@ namespace DoorControl
 
         private void ApplyKeyColor()
         {
-            if (_spriteRenderer != null)
-            {
-                switch (_keyColor)
-                {
-                    case KeyColor.WhiteColor:
-                        _spriteRenderer.color = UnityEngine.Color.white;
-                        break;
-                    case KeyColor.BlackColor:
-                        _spriteRenderer.color = UnityEngine.Color.black;
-                        break;
-                    case KeyColor.YellowColor:
-                        _spriteRenderer.color = UnityEngine.Color.yellow;
-                        break;
-                    case KeyColor.BlueColor:
-                        _spriteRenderer.color = UnityEngine.Color.blue;
-                        break;
-                }
-            }
-        }
-
-        private void OnTriggerEnter2D(Collider2D other)
-        {
-            if (_isCollected || !other.CompareTag("Player"))
+            if (_spriteRenderer == null)
             {
                 return;
             }
 
-            Collect(other.gameObject);
+            _spriteRenderer.color = _keyColor switch
+            {
+                KeyColor.WhiteColor => UnityEngine.Color.white,
+                KeyColor.BlackColor => UnityEngine.Color.black,
+                KeyColor.YellowColor => UnityEngine.Color.yellow,
+                KeyColor.BlueColor => UnityEngine.Color.blue,
+                _ => UnityEngine.Color.white
+            };
         }
 
-        private void Collect(GameObject player)
+        public void UpdateMarkerPosition(Vector2 uiPosition)
         {
+            if (_keyMarker != null)
+            {
+                _keyMarker.anchoredPosition = uiPosition;
+                _keyMarker.gameObject.SetActive(true);
+            }
+        }
+
+        private void CollectKey(GameObject player)
+        {
+
             _isCollected = true;
 
             if (_collider != null)
@@ -81,7 +102,11 @@ namespace DoorControl
             }
 
             AddKeyToPlayer(player);
-            StartCoroutine(CollectAnimationCoroutine());
+
+            _keyMarker?.gameObject.SetActive(false);
+            _collectedKeyMarker?.gameObject.SetActive(true);
+
+            StartCoroutine(CollectAnimation());
         }
 
         private void AddKeyToPlayer(GameObject player)
@@ -93,31 +118,31 @@ namespace DoorControl
                 keyCollection = player.GetComponentInParent<KeyCollection>();
             }
 
-            if (keyCollection != null)
-            {
-                keyCollection.AddKey(_keyColor);
-            }
+            keyCollection?.AddKey(_keyColor);
         }
 
-        private IEnumerator CollectAnimationCoroutine()
+        private IEnumerator CollectAnimation()
         {
             PlayCollectEffects();
 
-            float elapsed = 0f;
+            float elapsedTime = 0f;
             Vector3 originalScale = transform.localScale;
 
-            while (elapsed < CollectDuration)
+            while (elapsedTime < CollectAnimationDuration)
             {
-                elapsed += Time.deltaTime;
-                float progress = elapsed / CollectDuration;
+                elapsedTime += Time.deltaTime;
 
-                transform.Rotate(0, 0, RotationSpeed * Time.deltaTime);
-                transform.localScale = originalScale * (1 + progress * ScaleMultiplier);
+                float progress = elapsedTime / CollectAnimationDuration;
+
+                transform.Rotate(0f, 0f, RotationSpeed * Time.deltaTime);
+                transform.localScale = originalScale * (1f + progress * ScaleMultiplier);
 
                 if (_spriteRenderer != null)
                 {
-                    UnityEngine.Color color = _spriteRenderer.color;
-                    color.a = 1 - progress;
+                    Color color = _spriteRenderer.color;
+
+                    color.a = 1f - progress;
+
                     _spriteRenderer.color = color;
                 }
 

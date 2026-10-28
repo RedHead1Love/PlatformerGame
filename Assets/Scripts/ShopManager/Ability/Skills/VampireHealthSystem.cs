@@ -1,38 +1,164 @@
 using GeneralLogicEnemies;
+using Player.Abilities;
 using UnityEngine;
 
-namespace Player.Abilities
+public sealed class VampireHealthSystem : MonoBehaviour, IVampireHealthSystem
 {
-    public sealed class VampireHealthSystem : MonoBehaviour, IVampireHealthSystem
+    private const int DefaultHealthPerKill = 1;
+    private const float EnemyCheckInterval = 2f;
+
+    [SerializeField] private int _healthPerKill = DefaultHealthPerKill;
+    [SerializeField] private bool _showHealEffect = true;
+
+    private Hero _hero;
+    private HealthManager _healthManager;
+    private AbilityManager _abilityManager;
+    private bool _isActive;
+    private float _checkTimer;
+
+    public int HealthPerKill => _healthPerKill;
+    public bool IsActive => _isActive;
+
+    private void Awake()
     {
-        private const float VampireHealChance = 0.2f;
-        private const int HealAmount = 1;
+        InitializeReferences();
+    }
 
-        private Hero _hero;
+    private void Start()
+    {
+        CheckIfAbilityPurchased();
+    }
 
-        private void Start()
+    private void OnEnable()
+    {
+        if (_isActive)
         {
-            _hero = GetComponent<Hero>();
+            SubscribeToAllEnemies();
+        }
+    }
 
-            if (_hero == null)
-            {
-                _hero = FindFirstObjectByType<Hero>();
-            }
+    private void OnDisable()
+    {
+        UnsubscribeFromAllEnemies();
+    }
+
+    private void Update()
+    {
+        if (_isActive == false)
+        {
+            return;
         }
 
-        public void OnEnemyKilled(Entity enemy)
+        _checkTimer += Time.deltaTime;
+
+        if (_checkTimer < EnemyCheckInterval)
         {
-            if (_hero == null || _hero.AbilityManager == null || !_hero.AbilityManager.HasVampireAbility)
-            {
-                return;
-            }
+            return;
+        }
 
-            if (Random.value <= VampireHealChance && _hero.NeedsHealing())
-            {
-                HealthManager healthManager = _hero.GetComponent<HealthManager>();
+        _checkTimer = 0f;
 
-                healthManager?.Heal(HealAmount);
+        SubscribeToAllEnemies();
+    }
+
+    public void Activate()
+    {
+        _isActive = true;
+
+        RefreshAbilityManagerReference();
+
+        if (_abilityManager != null)
+        {
+            _abilityManager.UnlockVampireAbility();
+        }
+
+        SubscribeToAllEnemies();
+    }
+
+    public void Deactivate()
+    {
+        _isActive = false;
+
+        UnsubscribeFromAllEnemies();
+    }
+
+    private void InitializeReferences()
+    {
+        _hero = GetComponent<Hero>();
+        _healthManager = GetComponent<HealthManager>();
+        _abilityManager = _hero?.AbilityManager;
+    }
+
+    private void CheckIfAbilityPurchased()
+    {
+        RefreshAbilityManagerReference();
+
+        _isActive = _abilityManager?.HasVampireAbility ?? false;
+
+        if (_isActive)
+        {
+            SubscribeToAllEnemies();
+        }
+    }
+
+    private void RefreshAbilityManagerReference()
+    {
+        if (_abilityManager == null && _hero != null)
+        {
+            _abilityManager = _hero.AbilityManager;
+        }
+    }
+
+    private void SubscribeToAllEnemies()
+    {
+        Entity[] enemies = FindObjectsByType<Entity>(FindObjectsSortMode.None);
+
+        foreach (Entity enemy in enemies)
+        {
+            SubscribeToEnemy(enemy);
+        }
+    }
+
+    private void UnsubscribeFromAllEnemies()
+    {
+        Entity[] enemies = FindObjectsByType<Entity>(FindObjectsSortMode.None);
+
+        foreach (Entity enemy in enemies)
+        {
+            if (enemy != null)
+            {
+                enemy.OnEntityDeath -= OnEnemyKilled;
             }
         }
+    }
+
+    private void SubscribeToEnemy(Entity enemy)
+    {
+        if (enemy == null)
+        {
+            return;
+        }
+
+        enemy.OnEntityDeath -= OnEnemyKilled;
+        enemy.OnEntityDeath += OnEnemyKilled;
+    }
+
+    private void OnEnemyKilled(Entity enemy)
+    {
+        if (CanHealFromKill() == false)
+        {
+            return;
+        }
+
+        _healthManager.Heal(_healthPerKill);
+    }
+
+    private bool CanHealFromKill()
+    {
+        return _isActive &&
+               _healthManager != null &&
+               _hero != null &&
+               _hero.IsAlive() &&
+               _healthManager.IsFullHealth == false;
     }
 }

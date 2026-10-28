@@ -1,15 +1,19 @@
 using Cainos.LucidEditor;
 using DoorControl;
+using Player.Input;
 using UnityEngine;
+using YG;
 
 namespace ChestControl
 {
     public sealed class Chest : MonoBehaviour
     {
-        private const KeyCode DefaultInteractKey = KeyCode.E;
         private const float DefaultCheckRadius = 0.5f;
         private const float DefaultKeySpawnForce = 2f;
         private const float GizmoSphereRadius = 0.2f;
+
+        [FoldoutGroup("Input")]
+        [SerializeField] private IInputProvider _inputProvider;
 
         [FoldoutGroup("Reference")]
         [SerializeField] private SpriteRenderer _spriteRenderer;
@@ -21,7 +25,7 @@ namespace ChestControl
         [SerializeField] private Sprite _spriteClosed;
 
         [FoldoutGroup("Interaction")]
-        [SerializeField] private KeyCode _interactKey = DefaultInteractKey;
+        [SerializeField] private GameObject _interactionHint;
 
         [FoldoutGroup("Interaction")]
         [SerializeField] private float _checkRadius = DefaultCheckRadius;
@@ -33,7 +37,7 @@ namespace ChestControl
         [SerializeField] private GameObject _keyPrefab;
 
         [FoldoutGroup("Key Settings")]
-        [SerializeField] private DoorControl.KeyColor _keyColor = DoorControl.KeyColor.WhiteColor;
+        [SerializeField] private KeyColor _keyColor = KeyColor.WhiteColor;
 
         [FoldoutGroup("Key Settings")]
         [SerializeField] private Vector2 _keySpawnOffset = new Vector2(0f, 1f);
@@ -45,33 +49,224 @@ namespace ChestControl
         [SerializeField] private AudioClip _openSound;
 
         [FoldoutGroup("Sound Settings")]
+        [SerializeField] private AudioClip _closeSound;
+
+        [FoldoutGroup("Sound Settings")]
         [SerializeField] private AudioClip _keySpawnSound;
 
         [FoldoutGroup("Sound Settings")]
         [SerializeField] private float _soundVolume = 1f;
 
-        private bool _isOpened;
-        private bool _isPlayerInRange;
+        [FoldoutGroup("Save Settings")]
+        [SerializeField, HideInInspector] private bool _isOpened;
 
-        private void Update()
+        [SerializeField, HideInInspector] private bool _isKeySpawned = false;
+
+        [SerializeField] private string _chestId;
+
+        private bool _isPlayerInRange;
+        private bool _wasPlayerInside;
+        private Animator _animator;
+        private AudioSource _audioSource;
+        private AudioController _audioController;
+
+        [FoldoutGroup("Runtime"), ShowInInspector]
+        public bool IsOpened => _isOpened;
+
+        private Animator CachedAnimator
         {
-            if (_isPlayerInRange && !_isOpened && Input.GetKeyDown(_interactKey))
+            get
             {
-                OpenChest();
+                if (_animator == null)
+                {
+                    _animator = GetComponent<Animator>();
+                }
+
+                return _animator;
             }
         }
 
-        private void OpenChest()
+        private AudioSource CachedAudioSource
         {
-            _isOpened = true;
-
-            if (_spriteRenderer != null)
+            get
             {
-                _spriteRenderer.sprite = _spriteOpened;
+                if (_audioSource == null)
+                {
+                    _audioSource = GetComponent<AudioSource>();
+                }
+
+                return _audioSource;
+            }
+        }
+
+        private void Start()
+        {
+            InitializeChest();
+            FindInputProvider();
+        }
+
+        private void Update()
+        {
+            if (_inputProvider == null)
+            {
+                FindInputProvider();
             }
 
-            PlaySound(_openSound);
-            SpawnKey();
+            HandlePlayerInteraction();
+        }
+
+        [FoldoutGroup("Runtime"), HorizontalGroup("Runtime/Button"), Button("Open")]
+        public void Open()
+        {
+            SetOpened(true);
+        }
+
+        [FoldoutGroup("Runtime"), HorizontalGroup("Runtime/Button"), Button("Close")]
+        public void Close()
+        {
+            SetOpened(false);
+        }
+
+        [FoldoutGroup("Runtime"), Button("Reset Chest")]
+        public void ResetChest()
+        {
+            _isOpened = false;
+            _isKeySpawned = false;
+
+            ApplyVisualState(_isOpened);
+        }
+
+        private void InitializeChest()
+        {
+            _audioController = FindFirstObjectByType<AudioController>();
+
+            if (_interactionHint != null)
+            {
+                _interactionHint.SetActive(false);
+            }
+
+            if (string.IsNullOrEmpty(_chestId))
+            {
+                _chestId = GenerateChestId();
+            }
+
+            LoadChestState();
+
+            if (CachedAnimator != null)
+            {
+                CachedAnimator.Play(_isOpened ? "Opened" : "Closed");
+            }
+
+            ApplyVisualState(_isOpened);
+        }
+
+        private void FindInputProvider()
+        {
+            if (_inputProvider != null) return;
+
+            _inputProvider = FindFirstObjectByType<AggregatedInputProvider>();
+
+            if (_inputProvider == null && YG2.envir.isDesktop)
+                _inputProvider = FindFirstObjectByType<LegacyInputProvider>();
+
+            if (_inputProvider == null && YG2.envir.isMobile)
+                _inputProvider = FindFirstObjectByType<JoystickInput>();
+        }
+
+        private string GenerateChestId()
+        {
+            return $"Chest_{gameObject.scene.name}_{transform.position.x:F2}_{transform.position.y:F2}";
+        }
+
+        private void LoadChestState()
+        {
+            _isOpened = GameStateManager.IsChestOpened(_chestId);
+            _isKeySpawned = GameStateManager.IsKeySpawned(_chestId);
+        }
+
+        private void HandlePlayerInteraction()
+        {
+            _isPlayerInRange = Physics2D.OverlapCircle(transform.position, _checkRadius, _playerLayer) != null;
+
+            if (_isPlayerInRange != _wasPlayerInside)
+            {
+                _wasPlayerInside = _isPlayerInRange;
+                UpdateInteractionHint(_isPlayerInRange);
+            }
+
+            if (_isPlayerInRange && _inputProvider != null && _inputProvider.IsOpenShopOrChestPressed && _isOpened == false)
+            {
+                Open();
+            }
+        }
+
+        private void UpdateInteractionHint(bool isInside)
+        {
+            if (_isOpened) return;
+
+            if (_interactionHint != null)
+            {
+                _interactionHint.SetActive(isInside);
+            }
+        }
+
+        private void SetOpened(bool opened)
+        {
+            if (_isOpened == opened)
+            {
+                return;
+            }
+
+            _isOpened = opened;
+
+            if (_interactionHint != null && opened)
+            {
+                _interactionHint.SetActive(false);
+            }
+
+            if (Application.isPlaying)
+            {
+                ApplyRuntimeState(opened);
+            }
+            else
+            {
+                ApplyVisualState(_isOpened);
+            }
+        }
+
+        private void ApplyRuntimeState(bool opened)
+        {
+            if (CachedAnimator != null)
+            {
+                CachedAnimator.SetBool("IsOpened", _isOpened);
+            }
+
+            PlayChestSound(opened);
+
+            if (_isOpened && _isKeySpawned == false)
+            {
+                SpawnKey();
+
+                _isKeySpawned = true;
+            }
+
+            GameStateManager.SetChestOpened(_chestId, _isOpened);
+            GameStateManager.SetKeySpawned(_chestId, _isKeySpawned);
+        }
+
+        private void PlayChestSound(bool opened)
+        {
+            AudioClip soundToPlay = opened ? _openSound : _closeSound;
+
+            PlaySound(soundToPlay);
+        }
+
+        private void ApplyVisualState(bool opened)
+        {
+            if (_spriteRenderer != null)
+            {
+                _spriteRenderer.sprite = opened ? _spriteOpened : _spriteClosed;
+            }
         }
 
         private void SpawnKey()
@@ -84,36 +279,70 @@ namespace ChestControl
             Vector3 spawnPosition = transform.position + (Vector3)_keySpawnOffset;
             GameObject keyInstance = Instantiate(_keyPrefab, spawnPosition, Quaternion.identity);
 
+            keyInstance.SetActive(true);
+
+            ConfigureKeyComponent(keyInstance);
+            ApplyKeyPhysics(keyInstance);
             PlaySound(_keySpawnSound);
         }
 
-        private void PlaySound(AudioClip clip)
+        private void ConfigureKeyComponent(GameObject keyInstance)
         {
-            if (clip != null)
+            Key keyComponent = keyInstance.GetComponent<Key>();
+
+            if (keyComponent != null)
             {
-                AudioSource.PlayClipAtPoint(clip, transform.position, _soundVolume);
+                keyComponent.SetKeyColor(_keyColor);
+
+                return;
+            }
+
+            SimpleKey simpleKeyComponent = keyInstance.GetComponent<SimpleKey>();
+
+            if (simpleKeyComponent != null)
+            {
+                simpleKeyComponent.SetKeyColor(_keyColor);
             }
         }
 
-        private void OnTriggerEnter2D(Collider2D other)
+        private void ApplyKeyPhysics(GameObject keyInstance)
         {
-            int bitShiftAmount = 1;
-            int noLayerMatch = 0;
+            float minHorizontalForce = -0.3f;
+            float maxHorizontalForce = 0.3f;
+            float verticalForce = 1f;
 
-            if ((_playerLayer.value & (bitShiftAmount << other.gameObject.layer)) != noLayerMatch)
+            Rigidbody2D keyRigidbody = keyInstance.GetComponent<Rigidbody2D>();
+
+            if (keyRigidbody == null)
             {
-                _isPlayerInRange = true;
+                return;
             }
+
+            Vector2 forceDirection = new Vector2(
+                Random.Range(minHorizontalForce, maxHorizontalForce),
+                verticalForce).normalized;
+
+            keyRigidbody.AddForce(forceDirection * _keySpawnForce, ForceMode2D.Impulse);
         }
 
-        private void OnTriggerExit2D(Collider2D other)
+        private void PlaySound(AudioClip sound)
         {
-            int bitShiftAmount = 1;
-            int noLayerMatch = 0;
-
-            if ((_playerLayer.value & (bitShiftAmount << other.gameObject.layer)) != noLayerMatch)
+            if (sound == null)
             {
-                _isPlayerInRange = false;
+                return;
+            }
+
+            if (_audioController != null)
+            {
+                _audioController.PlayOneShotWithVolume(sound, _soundVolume);
+            }
+            else if (CachedAudioSource != null)
+            {
+                CachedAudioSource.PlayOneShot(sound, _soundVolume);
+            }
+            else
+            {
+                AudioSource.PlayClipAtPoint(sound, transform.position, _soundVolume);
             }
         }
 
@@ -122,15 +351,17 @@ namespace ChestControl
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(transform.position, _checkRadius);
 
-            if (_keyPrefab != null)
+            if (_keyPrefab == null)
             {
-                Gizmos.color = Color.green;
-
-                Vector3 spawnPosition = transform.position + (Vector3)_keySpawnOffset;
-
-                Gizmos.DrawWireSphere(spawnPosition, GizmoSphereRadius);
-                Gizmos.DrawLine(transform.position, spawnPosition);
+                return;
             }
+
+            Gizmos.color = Color.green;
+
+            Vector3 spawnPosition = transform.position + (Vector3)_keySpawnOffset;
+
+            Gizmos.DrawWireSphere(spawnPosition, GizmoSphereRadius);
+            Gizmos.DrawLine(transform.position, spawnPosition);
         }
     }
 }

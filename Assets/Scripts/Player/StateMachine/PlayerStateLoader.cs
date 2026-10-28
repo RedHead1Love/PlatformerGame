@@ -1,4 +1,3 @@
-using Player;
 using UnityEngine;
 
 public sealed class PlayerStateLoader : MonoBehaviour
@@ -20,8 +19,15 @@ public sealed class PlayerStateLoader : MonoBehaviour
 
     private void InitializeReferences()
     {
-        _player ??= FindFirstObjectByType<Hero>();
-        _healthBarUI ??= FindFirstObjectByType<HealthBarUI>();
+        if (_player == null)
+        {
+            _player = FindFirstObjectByType<Hero>();
+        }
+
+        if (_healthBarUI == null)
+        {
+            _healthBarUI = FindFirstObjectByType<HealthBarUI>();
+        }
     }
 
     private void SubscribeToEvents()
@@ -45,11 +51,11 @@ public sealed class PlayerStateLoader : MonoBehaviour
         if (SaveSystem.Instance != null && SaveSystem.Instance.HasSave())
         {
             HandleGameLoaded(SaveSystem.Instance.CurrentSave);
+
+            return;
         }
-        else
-        {
-            SetDefaultPlayerHealth();
-        }
+
+        SetDefaultPlayerHealth();
     }
 
     private void HandleGameLoaded(GameSaveData saveData)
@@ -70,9 +76,11 @@ public sealed class PlayerStateLoader : MonoBehaviour
 
     private void SetDefaultPlayerHealth()
     {
-        if (_player != null)
+        if (_player == null)
         {
-            _player.SetHealth(_player.Data.MaxLives);
+            return;
         }
+
+        _player.SetHealth(_player.Data.MaxLives);
     }
 }

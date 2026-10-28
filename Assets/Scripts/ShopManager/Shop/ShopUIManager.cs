@@ -1,76 +1,421 @@
-using UnityEngine;
+using GameLogic;
+using System.Collections.Generic;
+using System;
+using TMPro;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using UnityEngine;
 
-namespace ShopLogic
+public sealed class ShopUIManager : MonoBehaviour
 {
-    public sealed class ShopUIManager : MonoBehaviour
+
+    [SerializeField] private GameObject _bronzeMenuPanel;
+    [SerializeField] private GameObject _silverMenuPanel;
+    [SerializeField] private GameObject _goldMenuPanel;
+
+    [SerializeField] private GameObject _bronzeTabArea;
+    [SerializeField] private GameObject _silverTabArea;
+    [SerializeField] private GameObject _goldTabArea;
+
+    [SerializeField] private Sprite _bronzeCoinSprite;
+    [SerializeField] private Sprite _silverCoinSprite;
+    [SerializeField] private Sprite _goldCoinSprite;
+
+    [SerializeField] private Image _bronzeCoinIndicator;
+    [SerializeField] private Image _silverCoinIndicator;
+    [SerializeField] private Image _goldCoinIndicator;
+    [SerializeField] private Color _selectedCoinColor = Color.white;
+    [SerializeField] private Color _unselectedCoinColor = new Color(0.5f, 0.5f, 0.5f, 0.5f);
+
+    [SerializeField] private Color _bronzeTextColor = new Color(0.8f, 0.5f, 0.2f);
+    [SerializeField] private Color _silverTextColor = new Color(0.75f, 0.75f, 0.75f);
+    [SerializeField] private Color _goldTextColor = new Color(1f, 0.84f, 0f);
+
+    [SerializeField] private TextMeshProUGUI _currentCurrencyText;
+    [SerializeField] private Image _currentCurrencyIcon;
+
+    [SerializeField] private TextMeshProUGUI _detailsNameText;
+    [SerializeField] private GameObject _detailsTitleDivider;
+    [SerializeField] private TextMeshProUGUI _detailsDescriptionText;
+    [SerializeField] private Image _detailsItemIcon;
+
+    [SerializeField] private GameObject _purchaseFrameObject;
+    [SerializeField] private GameObject _priceTextObject;
+    [SerializeField] private GameObject _priceIconObject;
+    [SerializeField] private GameObject _buyButtonObject;
+
+    [SerializeField] private TextMeshProUGUI _detailsPriceText;
+    [SerializeField] private Image _detailsPriceCurrencyIcon;
+    [SerializeField] private Button _buyButton;
+
+    public event Action<WalletManager.CoinType> OnCurrencyTabClicked;
+
+    public Button BuyButton => _buyButton;
+
+    private readonly Dictionary<WalletManager.CoinType, List<ShopItemView>> _itemViewsByCurrency =
+        new Dictionary<WalletManager.CoinType, List<ShopItemView>>();
+
+    private WalletManager.CoinType _currentCurrency = WalletManager.CoinType.Bronze;
+    private bool _isInitialized;
+
+    private void Start()
     {
-        private const float PausedTimeScale = 0f;
-        private const float NormalTimeScale = 1f;
-        private const string OpenTrigger = "Open";
-        private const string CloseTrigger = "Close";
+        Initialize();
+        SetupCurrencyClickHandlers();
+    }
 
-        [Header("UI Panels")]
-        [SerializeField] private GameObject _shopPanel;
-        [SerializeField] private Button _closeButton;
+    private void SetupCurrencyClickHandlers()
+    {
+        BindCurrencyClick(_bronzeTabArea, WalletManager.CoinType.Bronze);
+        BindCurrencyClick(_silverTabArea, WalletManager.CoinType.Silver);
+        BindCurrencyClick(_goldTabArea, WalletManager.CoinType.Gold);
+    }
 
-        [Header("Animation")]
-        [SerializeField] private Animator _shopAnimator;
-
-        public bool IsShopOpen { get; private set; }
-
-        private void Start()
+    private void BindCurrencyClick(GameObject tabObject, WalletManager.CoinType currency)
+    {
+        if (tabObject == null)
         {
-            _closeButton?.onClick.AddListener(CloseShop);
+            return;
+        }
 
-            if (_shopPanel != null)
+        EventTrigger trigger = tabObject.GetComponent<EventTrigger>();
+
+        if (trigger == null)
+        {
+            trigger = tabObject.AddComponent<EventTrigger>();
+        }
+
+        EventTrigger.Entry clickEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerDown };
+
+        clickEntry.callback.AddListener((data) =>
+        {
+            PointerEventData pointerData = data as PointerEventData;
+
+            if (pointerData != null && pointerData.button == PointerEventData.InputButton.Left)
             {
-                _shopPanel.SetActive(false);
+                OnCurrencyTabClicked?.Invoke(currency);
+            }
+        });
+
+        trigger.triggers.Add(clickEntry);
+    }
+
+    public void SwitchCurrency(WalletManager.CoinType currencyType)
+    {
+        Initialize();
+
+        _currentCurrency = currencyType;
+
+        UpdateCurrencyDisplay();
+        ShowCurrencyMenu(currencyType);
+    }
+
+    public void ShowCurrencyMenu(WalletManager.CoinType currencyType)
+    {
+        HideAllMenus();
+
+        GameObject menu = GetPanel(currencyType);
+
+        if (menu != null)
+        {
+            menu.SetActive(true);
+        }
+    }
+
+    public void UpdateItemSelection(WalletManager.CoinType currency, int selectedIndex)
+    {
+        Initialize();
+
+        ResetAllItemSelection();
+
+        if (_itemViewsByCurrency.TryGetValue(currency, out List<ShopItemView> itemViews) == false)
+        {
+            return;
+        }
+
+        if (selectedIndex < 0 || selectedIndex >= itemViews.Count)
+        {
+            return;
+        }
+
+        ShopItemView selectedView = itemViews[selectedIndex];
+
+        if (selectedView == null)
+        {
+            return;
+        }
+
+        bool canPurchase = selectedView.ItemData != null && selectedView.ItemData.CanBePurchased();
+
+        selectedView.SetSelected(true, canPurchase);
+    }
+
+    public ShopItemView GetItemView(WalletManager.CoinType currency, int index)
+    {
+        Initialize();
+
+        if (_itemViewsByCurrency.TryGetValue(currency, out List<ShopItemView> itemViews) == false)
+        {
+            return null;
+        }
+
+        return index >= 0 && index < itemViews.Count ? itemViews[index] : null;
+    }
+
+    public ShopItemView GetItemViewById(WalletManager.CoinType currency, string itemId)
+    {
+        Initialize();
+
+        if (_itemViewsByCurrency.TryGetValue(currency, out List<ShopItemView> itemViews) == false)
+        {
+            return null;
+        }
+
+        foreach (ShopItemView itemView in itemViews)
+        {
+            if (itemView != null && itemView.ItemData != null && itemView.ItemData.ItemId == itemId)
+            {
+                return itemView;
             }
         }
 
-        private void OnDestroy()
+        return null;
+    }
+
+    public void UpdateRightPanel(IShopItem item, Sprite icon, string customName = null, string customMessage = null)
+    {
+        if (item == null)
         {
-            _closeButton?.onClick.RemoveListener(CloseShop);
+            ClearRightPanel(customMessage);
+            return;
         }
 
-        public void OpenShop()
+        if (_purchaseFrameObject != null) _purchaseFrameObject.SetActive(true);
+        if (_priceTextObject != null) _priceTextObject.SetActive(true);
+        if (_priceIconObject != null) _priceIconObject.SetActive(true);
+        if (_buyButtonObject != null) _buyButtonObject.SetActive(true);
+
+        if (_detailsNameText != null) _detailsNameText.text = !string.IsNullOrEmpty(customName) ? customName : item.DisplayName;
+        if (_detailsTitleDivider != null) _detailsTitleDivider.SetActive(true);
+        if (_detailsDescriptionText != null) _detailsDescriptionText.text = customMessage ?? item.Description;
+
+        if (_detailsItemIcon != null)
         {
-            if (IsShopOpen || _shopPanel == null)
-            {
-                return;
-            }
-
-            IsShopOpen = true;
-            _shopPanel.SetActive(true);
-
-            if (_shopAnimator != null)
-            {
-                _shopAnimator.SetTrigger(OpenTrigger);
-            }
-
-            Time.timeScale = PausedTimeScale;
+            _detailsItemIcon.sprite = icon;
+            _detailsItemIcon.gameObject.SetActive(icon != null);
         }
 
-        public void CloseShop()
+        if (_detailsPriceText != null)
         {
-            if (!IsShopOpen || _shopPanel == null)
+            bool isEnglish = LocalizationManager.CurrentLanguage == LocalizationManager.Language.English;
+
+            if (item.ItemId == ShopItemIds.ActivateLastChance && item.IsSold)
             {
-                return;
+                _detailsPriceText.text = isEnglish ? "Active" : "Aктивно";
+                _detailsPriceText.color = Color.yellow;
+                if (_priceIconObject != null) _priceIconObject.SetActive(false);
             }
-
-            IsShopOpen = false;
-
-            if (_shopAnimator != null)
+            else if (item.IsSold && item.ItemId != ShopItemIds.RestoreArmor)
             {
-                _shopAnimator.SetTrigger(CloseTrigger);
+                _detailsPriceText.text = isEnglish ? "Bought" : "Куплено";
+                _detailsPriceText.color = Color.green;
+                if (_priceIconObject != null) _priceIconObject.SetActive(false);
             }
             else
             {
-                _shopPanel.SetActive(false);
-            }
+                _detailsPriceText.text = $"{item.Price}";
+                _detailsPriceText.color = GetCurrencyColor(item.CurrencyType);
 
-            Time.timeScale = NormalTimeScale;
+                if (_detailsPriceCurrencyIcon != null)
+                {
+                    _detailsPriceCurrencyIcon.sprite = GetCurrencySprite(item.CurrencyType);
+                    if (_priceIconObject != null) _priceIconObject.SetActive(true);
+                }
+            }
         }
+
+        if (_buyButton != null) _buyButton.interactable = item.CanBePurchased();
+    }
+
+    private void ClearRightPanel(string message)
+    {
+        if (_purchaseFrameObject != null) _purchaseFrameObject.SetActive(false);
+        if (_priceTextObject != null) _priceTextObject.SetActive(false);
+        if (_priceIconObject != null) _priceIconObject.SetActive(false);
+        if (_buyButtonObject != null) _buyButtonObject.SetActive(false);
+
+        if (_detailsNameText != null) _detailsNameText.text = string.Empty;
+        if (_detailsTitleDivider != null) _detailsTitleDivider.SetActive(false);
+        if (_detailsDescriptionText != null) _detailsDescriptionText.text = message ?? string.Empty;
+
+        if (_detailsItemIcon != null) _detailsItemIcon.gameObject.SetActive(false);
+    }
+
+    public void ShowPurchaseMessage(string message)
+    {
+        if (_detailsDescriptionText != null)
+        {
+            _detailsDescriptionText.text = $"<color=green>✓ {message}</color>";
+        }
+    }
+
+    private void SetDetailsCurrencyIconActive(bool isActive)
+    {
+        if (_detailsPriceCurrencyIcon != null)
+        {
+            _detailsPriceCurrencyIcon.gameObject.SetActive(isActive);
+        }
+    }
+
+    public void RefreshItemViews()
+    {
+        _isInitialized = false;
+
+        Initialize();
+    }
+
+    public void RefreshLastChanceItems()
+    {
+        Initialize();
+
+        foreach (List<ShopItemView> viewList in _itemViewsByCurrency.Values)
+        {
+            foreach (ShopItemView view in viewList)
+            {
+                if (view != null && view.ItemData != null && view.ItemData.ItemId == ShopItemIds.ActivateLastChance)
+                {
+                    view.UpdateView();
+                }
+            }
+        }
+    }
+
+    private void Initialize()
+    {
+        if (_isInitialized)
+        {
+            return;
+        }
+
+        _itemViewsByCurrency.Clear();
+
+        foreach (WalletManager.CoinType currency in System.Enum.GetValues(typeof(WalletManager.CoinType)))
+        {
+            _itemViewsByCurrency[currency] = new List<ShopItemView>();
+        }
+
+        FindAllItemViews();
+
+        _isInitialized = true;
+    }
+
+    private void FindAllItemViews()
+    {
+        FindItemViewsInPanel(_bronzeMenuPanel, WalletManager.CoinType.Bronze);
+        FindItemViewsInPanel(_silverMenuPanel, WalletManager.CoinType.Silver);
+        FindItemViewsInPanel(_goldMenuPanel, WalletManager.CoinType.Gold);
+    }
+
+    private void FindItemViewsInPanel(GameObject panel, WalletManager.CoinType currencyType)
+    {
+        if (panel == null)
+        {
+            return;
+        }
+
+        ShopItemView[] itemViews = panel.GetComponentsInChildren<ShopItemView>(true);
+
+        foreach (ShopItemView itemView in itemViews)
+        {
+            if (itemView != null)
+            {
+                _itemViewsByCurrency[currencyType].Add(itemView);
+            }
+        }
+    }
+
+    private void ResetAllItemSelection()
+    {
+        foreach (List<ShopItemView> itemViews in _itemViewsByCurrency.Values)
+        {
+            foreach (ShopItemView itemView in itemViews)
+            {
+                itemView?.SetSelected(false, true);
+            }
+        }
+    }
+
+    private void UpdateCurrencyDisplay()
+    {
+        if (WalletManager.Instance == null || _currentCurrencyText == null)
+        {
+            return;
+        }
+
+        _currentCurrencyText.text = WalletManager.Instance.GetCoins(_currentCurrency).ToString();
+
+        if (_currentCurrencyIcon != null)
+        {
+            _currentCurrencyIcon.sprite = GetCurrencySprite(_currentCurrency);
+        }
+    }
+
+    private void SetIndicatorColor(Image indicator, WalletManager.CoinType currency)
+    {
+        if (indicator != null)
+        {
+            indicator.color = _currentCurrency == currency ? _selectedCoinColor : _unselectedCoinColor;
+        }
+    }
+
+    private void HideAllMenus()
+    {
+        if (_bronzeMenuPanel != null)
+        {
+            _bronzeMenuPanel.SetActive(false);
+        }
+
+        if (_silverMenuPanel != null)
+        {
+            _silverMenuPanel.SetActive(false);
+        }
+
+        if (_goldMenuPanel != null)
+        {
+            _goldMenuPanel.SetActive(false);
+        }
+    }
+
+    private GameObject GetPanel(WalletManager.CoinType currencyType)
+    {
+        return currencyType switch
+        {
+            WalletManager.CoinType.Bronze => _bronzeMenuPanel,
+            WalletManager.CoinType.Silver => _silverMenuPanel,
+            WalletManager.CoinType.Gold => _goldMenuPanel,
+            _ => null
+        };
+    }
+
+    private Sprite GetCurrencySprite(WalletManager.CoinType coinType)
+    {
+        return coinType switch
+        {
+            WalletManager.CoinType.Bronze => _bronzeCoinSprite,
+            WalletManager.CoinType.Silver => _silverCoinSprite,
+            WalletManager.CoinType.Gold => _goldCoinSprite,
+            _ => null
+        };
+    }
+
+    private Color GetCurrencyColor(WalletManager.CoinType coinType)
+    {
+        return coinType switch
+        {
+            WalletManager.CoinType.Bronze => _bronzeTextColor,
+            WalletManager.CoinType.Silver => _silverTextColor,
+            WalletManager.CoinType.Gold => _goldTextColor,
+            _ => Color.white
+        };
     }
 }

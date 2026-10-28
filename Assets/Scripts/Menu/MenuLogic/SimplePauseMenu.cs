@@ -1,24 +1,28 @@
-using UnityEngine;
+using Player.Input;
 using UnityEngine.SceneManagement;
+using UnityEngine;
+using YG;
 
 public sealed class SimplePauseMenu : MonoBehaviour
 {
-    private const KeyCode PauseKey = KeyCode.Escape;
     private const string MainMenuSceneName = "MainMenu";
     private const float NormalTimeScale = 1f;
     private const float PausedTimeScale = 0f;
 
-    private bool _isPaused = false;
+    [SerializeField] private IInputProvider _inputProvider;
+
+    private bool _isPaused;
     private Rect _pauseWindowRect;
 
     private void Start()
     {
         InitializePauseWindow();
+        FindInputProvider();
     }
 
     private void Update()
     {
-        if (Input.GetKeyDown(PauseKey))
+        if (_inputProvider != null && _inputProvider.IsMenuPressed)
         {
             TogglePauseState();
         }
@@ -26,7 +30,7 @@ public sealed class SimplePauseMenu : MonoBehaviour
 
     private void OnGUI()
     {
-        if (!_isPaused)
+        if (_isPaused == false)
         {
             return;
         }
@@ -37,6 +41,31 @@ public sealed class SimplePauseMenu : MonoBehaviour
     private void OnDestroy()
     {
         ResumeGame();
+    }
+
+    private void FindInputProvider()
+    {
+        if (_inputProvider != null)
+        {
+            return;
+        }
+
+        _inputProvider = FindFirstObjectByType<AggregatedInputProvider>();
+
+        if (_inputProvider == null && YG2.envir.isDesktop)
+        {
+            _inputProvider = FindFirstObjectByType<LegacyInputProvider>();
+        }
+
+        if (_inputProvider == null && YG2.envir.isMobile)
+        {
+            _inputProvider = FindFirstObjectByType<JoystickInput>();
+        }
+
+        if (_inputProvider == null)
+        {
+            Debug.LogWarning("IInputProvider not found! Pause menu won't work.");
+        }
     }
 
     private void InitializePauseWindow()
@@ -77,12 +106,15 @@ public sealed class SimplePauseMenu : MonoBehaviour
     private void ExitToMainMenu()
     {
         ResumeGame();
+
         SceneManager.LoadScene(MainMenuSceneName);
     }
 
     private void DrawPauseWindow(int windowID)
     {
         float topPadding = 20f;
+        float dragAreaHeight = 20f;
+        float dragAreaWidth = 10000f;
         float buttonHeight = 30f;
         float verticalSpacing = 10f;
 
@@ -100,6 +132,6 @@ public sealed class SimplePauseMenu : MonoBehaviour
             ExitToMainMenu();
         }
 
-        GUI.DragWindow(new Rect(0, 0, 10000, 20));
+        GUI.DragWindow(new Rect(0f, 0f, dragAreaWidth, dragAreaHeight));
     }
 }

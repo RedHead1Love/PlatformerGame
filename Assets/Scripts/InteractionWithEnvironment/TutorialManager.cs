@@ -1,8 +1,8 @@
+using Player.Input;
 using UnityEngine;
 
 public sealed class TutorialManager : MonoBehaviour
 {
-    private const KeyCode CloseTutorialKey = KeyCode.V;
     private const float PausedTimeScale = 0f;
     private const float NormalTimeScale = 1f;
 
@@ -17,10 +17,7 @@ public sealed class TutorialManager : MonoBehaviour
 
     private void Update()
     {
-        if (_tutorialPanel.activeInHierarchy && Input.GetKeyDown(CloseTutorialKey))
-        {
-            CloseTutorial();
-        }
+        TryCloseTutorial();   
     }
 
     private void InitializeTutorial()
@@ -33,29 +30,20 @@ public sealed class TutorialManager : MonoBehaviour
         {
             ResumeGame();
 
-            if (_tutorialPanel != null)
-            {
-                _tutorialPanel.SetActive(false);
-            }
+            _tutorialPanel.SetActive(false);
         }
     }
 
     private void ShowTutorial()
     {
-        if (_tutorialPanel != null)
-        {
-            _tutorialPanel.SetActive(true);
-        }
+        _tutorialPanel.SetActive(true);
 
         PauseGame();
     }
 
     public void CloseTutorial()
     {
-        if (_tutorialPanel != null)
-        {
-            _tutorialPanel.SetActive(false);
-        }
+        _tutorialPanel.SetActive(false);
 
         ResumeGame();
 
@@ -75,5 +63,18 @@ public sealed class TutorialManager : MonoBehaviour
     private void ResumeGame()
     {
         Time.timeScale = NormalTimeScale;
+    }
+
+    public void TryCloseTutorial()
+    {
+        if (_tutorialPanel.activeInHierarchy == false)
+        {
+            return;
+        }
+
+        if (Input.anyKeyDown)
+        {
+            CloseTutorial();
+        }
     }
 }

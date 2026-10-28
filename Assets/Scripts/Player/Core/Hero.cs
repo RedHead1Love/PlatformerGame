@@ -1,141 +1,370 @@
-using Player;
 using Player.Abilities;
 using Player.Input;
 using Player.StateMachine;
+using Player;
 using Shared.Damage;
 using Shared.Sensors;
-using System;
 using UnityEngine;
 
-namespace Player
+[RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(SpriteRenderer))]
+[RequireComponent(typeof(BoxCollider2D))]
+[RequireComponent(typeof(Animator))]
+public sealed class Hero : MonoBehaviour, IDamageable
 {
-    [RequireComponent(typeof(Rigidbody2D))]
-    [RequireComponent(typeof(SpriteRenderer))]
-    [RequireComponent(typeof(BoxCollider2D))]
-    [RequireComponent(typeof(Animator))]
-    public sealed class Hero : MonoBehaviour, IDamageable
+    private const string PlayerChildName = "Player";
+    private const float ZeroDirectionThreshold = 0f;
+    private const float WallCheckDistance = 0.5f;
+
+    [SerializeField] private HeroData _heroData;
+
+    [SerializeField] private Transform _groundCheckPoint;
+    [SerializeField] private LayerMask _groundLayerMask;
+
+    [SerializeField] private Transform _attackPoint;
+
+    [SerializeField] private Transform _leftWallCheckPoint;
+    [SerializeField] private Transform _rightWallCheckPoint;
+
+    [SerializeField] private PassiveHealthRegeneration _passiveHealthRegen;
+
+    public static event System.Action OnHeroDiedGlobal;
+
+    private bool _hasPerformedAirAttack;
+    private bool _isGrounded;
+    private bool _wasMoving;
+    private bool _isDead;
+
+    private DamageService _damageService;
+    private SpriteRenderer _spriteRenderer;
+    private HealthManager _healthManager;
+    private ArmorManager _armorManager;
+    private GroundSensor _groundCheck;
+    private IInputProvider _inputProvider;
+
+    public AudioController AudioController { get; private set; }
+    public AbilityManager AbilityManager { get; private set; }
+    public HeroStateMachine StateMachine { get; private set; }
+    public AnimationService AnimationService { get; private set; }
+    public Rigidbody2D Rigidbody { get; private set; }
+    public static Hero Instance { get; private set; }
+
+    public HeroData Data => _heroData;
+    public Transform AttackPoint => _attackPoint;
+    public int Lives => _healthManager != null ? _healthManager.CurrentHealth : 0;
+    public float FacingDirection => _spriteRenderer != null && _spriteRenderer.flipX ? -1f : 1f;
+    public bool HasPerformedAirAttack => _hasPerformedAirAttack;
+
+    private void Awake()
     {
-        private const string PlayerChildName = "Player";
-        private const float ZeroDirectionThreshold = 0.0f;
-        private const float WallCheckDistance = 0.5f;
+        Instance = this;
 
-        [Header("Core Hero Parameters")]
-        [SerializeField] private HeroData _heroData;
+        InitializeAbilityManager();
+        InitializeComponents();
+        InitializeStateMachine();
+        InitializeSensors();
+        SubscribeToEvents();
+    }
 
-        [Header("Ground Detection")]
-        [SerializeField] private Transform _groundCheckPoint;
-        [SerializeField] private LayerMask _groundLayerMask;
-
-        [Header("Attack Settings")]
-        [SerializeField] private Transform _attackPoint;
-
-        [Header("Wall Detection")]
-        [SerializeField] private Transform _leftWallCheckPoint;
-        [SerializeField] private Transform _rightWallCheckPoint;
-
-        [Header("Passive Health Regeneration")]
-        [SerializeField] private PassiveHealthRegeneration _passiveHealthRegen;
-
-        private DamageService _damageService;
-        private SpriteRenderer _spriteRenderer;
-        private HealthManager _healthManager;
-        private ArmorManager _armorManager;
-        private Rigidbody2D _rigidbody;
-        private bool _hasPerformedAirAttack;
-
-        public AudioController AudioController { get; private set; }
-        public AbilityManager AbilityManager { get; private set; }
-        public HeroStateMachine StateMachine { get; private set; }
-        public AnimationService AnimationService { get; private set; }
-
-        public HeroData Data => _heroData;
-        public Rigidbody2D Rigidbody => _rigidbody;
-        public Transform AttackPoint => _attackPoint;
-        public float FacingDirection => _spriteRenderer.flipX ? -1f : 1f;
-
-        private void Awake()
+    private void Start()
+    {
+        if (_passiveHealthRegen == null)
         {
-            _rigidbody = GetComponent<Rigidbody2D>();
-            _spriteRenderer = GetComponent<SpriteRenderer>();
-            _healthManager = GetComponent<HealthManager>();
-            _armorManager = GetComponent<ArmorManager>();
+            _passiveHealthRegen = GetComponent<PassiveHealthRegeneration>();
+        }
+    }
 
+    private void Update()
+    {
+        StateMachine?.Tick();
+
+        if (_isDead)
+        {
+            return;
+        }
+
+        UpdateMovementSounds();
+    }
+
+    private void FixedUpdate()
+    {
+        if (_isDead)
+        {
+            return;
+        }
+
+        StateMachine?.FixedTick();
+        UpdateGroundCheck();
+    }
+
+    private void OnDestroy()
+    {
+        UnsubscribeFromEvents();
+        StopMovementSounds();
+    }
+
+    public void SetAirAttackPerformed(bool isPerformed)
+    {
+        _hasPerformedAirAttack = isPerformed;
+    }
+
+    public void DecreaseLives(int amount)
+    {
+        _healthManager?.TakeDamage(amount);
+    }
+
+    public void SetHealth(int health)
+    {
+        _healthManager?.SetHealth(health);
+    }
+
+    public void OnAttackHit()
+    {
+        if (StateMachine.Current is IDamageDealer damageDealer)
+        {
+            damageDealer.DealDamage();
+        }
+    }
+
+    public void OnAttackEnd()
+    {
+        if (StateMachine.Current is IAnimationEndHandler animationEndHandler)
+        {
+            animationEndHandler.OnAnimationEnd();
+        }
+    }
+
+    public void TakeDamage(int amount)
+    {
+        if (_isDead)
+        {
+            return;
+        }
+
+        _damageService.ApplyDamage(amount);
+    }
+
+    public void SetFacing(float direction)
+    {
+        if (_spriteRenderer == null || Mathf.Abs(direction) <= ZeroDirectionThreshold)
+        {
+            return;
+        }
+
+        _spriteRenderer.flipX = direction < ZeroDirectionThreshold;
+    }
+
+    public bool HasArmor()
+    {
+        return _armorManager != null && _armorManager.HasArmor;
+    }
+
+    public void AddArmor(int amount)
+    {
+        _armorManager?.AddArmor(amount);
+    }
+
+    public bool IsAlive()
+    {
+        return _isDead == false && _healthManager != null && _healthManager.CurrentHealth > 0;
+    }
+
+    public bool NeedsHealing()
+    {
+        return _healthManager != null && _healthManager.CurrentHealth < _healthManager.MaxHealth;
+    }
+
+    public bool IsTouchingWall()
+    {
+        if (_leftWallCheckPoint == null || _rightWallCheckPoint == null)
+        {
+            return false;
+        }
+
+        bool leftWallDetected = Physics2D.Raycast(
+            _leftWallCheckPoint.position,
+            Vector2.left,
+            WallCheckDistance,
+            _groundLayerMask);
+
+        bool rightWallDetected = Physics2D.Raycast(
+            _rightWallCheckPoint.position,
+            Vector2.right,
+            WallCheckDistance,
+            _groundLayerMask);
+
+        return leftWallDetected || rightWallDetected;
+    }
+
+    private void InitializeComponents()
+    {
+        _healthManager = GetComponent<HealthManager>();
+
+        if (_healthManager == null)
+        {
+            _healthManager = FindFirstObjectByType<HealthManager>();
+        }
+
+        _armorManager = GetComponent<ArmorManager>();
+
+        if (_armorManager == null)
+        {
+            _armorManager = FindFirstObjectByType<ArmorManager>();
+        }
+
+        Rigidbody = GetComponent<Rigidbody2D>();
+        AnimationService = new AnimationService(GetComponent<Animator>());
+
+        AudioController = GetComponent<AudioController>();
+
+        if (AudioController == null)
+        {
+            AudioController = GetComponentInChildren<AudioController>(true);
+        }
+
+        if (AudioController == null)
+        {
             AudioController = FindFirstObjectByType<AudioController>();
-            AbilityManager = new AbilityManager(this);
-            StateMachine = new HeroStateMachine(this);
-            AnimationService = new AnimationService(GetComponent<Animator>());
-            _damageService = new DamageService(this, _healthManager);
         }
 
-        private void Start()
+        _inputProvider = GetComponent<IInputProvider>();
+        _groundCheck = _groundCheckPoint != null ? _groundCheckPoint.GetComponent<GroundSensor>() : null;
+
+        InitializeSpriteRenderer();
+
+        _damageService = new DamageService(this, _healthManager);
+    }
+
+    private void InitializeSpriteRenderer()
+    {
+        Transform playerTransform = transform.Find(PlayerChildName);
+
+        _spriteRenderer = playerTransform != null
+            ? playerTransform.GetComponent<SpriteRenderer>()
+            : null;
+
+        if (_spriteRenderer == null)
         {
-            StateMachine.Change<IdleState>();
+            _spriteRenderer = GetComponentInChildren<SpriteRenderer>(true);
         }
+    }
 
-        private void Update()
+    private void InitializeAbilityManager()
+    {
+        AbilityManager = new AbilityManager(this);
+    }
+
+    private void InitializeStateMachine()
+    {
+        StateMachine = new HeroStateMachine(this);
+        StateMachine.Change<IdleState>();
+    }
+
+    private void InitializeSensors()
+    {
+        InitializeGroundSensor();
+        InitializeEnemyScanner();
+        EnsureInputProvider();
+    }
+
+    private void InitializeGroundSensor()
+    {
+        if (_groundCheckPoint == null)
         {
-            StateMachine.Tick();
+            return;
         }
 
-        private void FixedUpdate()
+        if (_groundCheck == null)
         {
-            StateMachine.FixedTick();
+            _groundCheck = _groundCheckPoint.gameObject.AddComponent<GroundSensor>();
         }
 
-        public void SetHealth(int health)
+        _groundCheck.SetLayers(_groundLayerMask);
+    }
+
+    private void InitializeEnemyScanner()
+    {
+        if (GetComponentInChildren<EnemyScanner>() != null)
         {
-            _healthManager?.SetHealth(health);
+            return;
         }
 
-        public void OnAttackHit()
+        gameObject.AddComponent<EnemyScanner>();
+    }
+
+    private void EnsureInputProvider()
+    {
+        if (_inputProvider != null)
         {
-            (StateMachine.Current as IDamageDealer)?.DealDamage();
+            return;
         }
 
-        public void OnAttackEnd()
+        _inputProvider = gameObject.AddComponent<LegacyInputProvider>();
+    }
+
+    private void SubscribeToEvents()
+    {
+        if (_healthManager != null)
         {
-            (StateMachine.Current as IAnimationEndHandler)?.OnAnimationEnd();
+            _healthManager.OnDeath += HandleHeroDeath;
         }
+    }
 
-        public void TakeDamage(int amount)
+    private void UnsubscribeFromEvents()
+    {
+        if (_healthManager != null)
         {
-            _damageService.ApplyDamage(amount);
+            _healthManager.OnDeath -= HandleHeroDeath;
         }
+    }
 
-        public void SetFacing(float direction)
+    private void HandleHeroDeath()
+    {
+        if (_isDead)
         {
-            if (Mathf.Abs(direction) > ZeroDirectionThreshold)
-            {
-                _spriteRenderer.flipX = direction < ZeroDirectionThreshold;
-            }
+            return;
         }
 
-        public bool HasArmor()
+        _isDead = true;
+        OnHeroDiedGlobal?.Invoke();
+
+        AudioController?.PlayDeathSound();
+        StopMovementSounds();
+
+        StateMachine.Change<DeathState>();
+    }
+
+    private void UpdateGroundCheck()
+    {
+        _isGrounded = _groundCheck != null && _groundCheck.IsGrounded;
+    }
+
+    private void UpdateMovementSounds()
+    {
+        if (AudioController == null || _isDead)
         {
-            return _armorManager?.HasArmor ?? false;
+            return;
         }
 
-        public void AddArmor(int amount)
+        float horizontalInput = _inputProvider != null ? _inputProvider.HorizontalAxis : 0f;
+
+        bool hasMovementInput = Mathf.Abs(horizontalInput) > ZeroDirectionThreshold;
+        bool shouldPlayFootsteps = hasMovementInput && _isGrounded;
+
+        if (shouldPlayFootsteps && _wasMoving == false)
         {
-            _armorManager?.AddArmor(amount);
+            AudioController.StartFootsteps();
+            _wasMoving = true;
         }
-
-        public bool IsAlive()
+        else if (shouldPlayFootsteps == false && _wasMoving)
         {
-            return _healthManager?.CurrentHealth > 0;
+            AudioController.StopFootsteps();
+            _wasMoving = false;
         }
+    }
 
-        public bool NeedsHealing()
-        {
-            return _healthManager != null && _healthManager.CurrentHealth < _healthManager.MaxHealth;
-        }
-
-        public bool IsTouchingWall()
-        {
-            bool leftWallDetected = Physics2D.Raycast(_leftWallCheckPoint.position, Vector2.left, WallCheckDistance, _groundLayerMask);
-            bool rightWallDetected = Physics2D.Raycast(_rightWallCheckPoint.position, Vector2.right, WallCheckDistance, _groundLayerMask);
-
-            return leftWallDetected || rightWallDetected;
-        }
+    private void StopMovementSounds()
+    {
+        AudioController?.StopFootsteps();
     }
 }

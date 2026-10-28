@@ -1,14 +1,13 @@
 using GameLogic;
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody2D), typeof(Collider2D))]
 public sealed class CoinPhysicsHandler : MonoBehaviour, ICoinPhysicsHandler
 {
     private const float DefaultStopVelocityThreshold = 0.1f;
     private const float DefaultBounceDamping = 0.7f;
     private const float MaxAirTime = 5f;
-    private const float VelocityMultiplierFactor = 2f;
     private const float StopDelaySeconds = 0.5f;
+    private const float CollectableStopVelocityMultiplier = 2f;
 
     [SerializeField] private LayerMask _groundLayer;
     [SerializeField] private float _stopVelocityThreshold = DefaultStopVelocityThreshold;
@@ -18,51 +17,47 @@ public sealed class CoinPhysicsHandler : MonoBehaviour, ICoinPhysicsHandler
     private Collider2D _collider;
     private ICoin _coin;
     private bool _isOnGround;
+    private bool _isStopped;
     private float _timeInAir;
 
     public void Initialize(LayerMask groundLayer)
     {
         _groundLayer = groundLayer;
+
+        InitializeComponents();
     }
 
     private void Awake()
     {
-        _rigidbody = GetComponent<Rigidbody2D>();
-        _collider = GetComponent<Collider2D>();
-        _coin = GetComponent<ICoin>();
+        InitializeComponents();
     }
 
     private void Update()
     {
-        if (!_isOnGround)
+        if (_isStopped || _rigidbody == null)
         {
-            _timeInAir += Time.deltaTime;
+            return;
+        }
 
-            if (_timeInAir > MaxAirTime)
-            {
-                StopPhysics();
-            }
-        }
-        else if (_rigidbody.velocity.magnitude < _stopVelocityThreshold)
-        {
-            StopPhysics();
-        }
+        UpdateAirTimer();
+        StopWhenRestingOnGround();
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (IsGroundLayer(collision.gameObject.layer))
+        if (IsGroundLayer(collision.gameObject.layer) == false)
         {
-            _isOnGround = true;
+            return;
+        }
 
-            _rigidbody.velocity *= _bounceDamping;
-            _rigidbody.angularVelocity *= _bounceDamping;
+        _isOnGround = true;
+        _timeInAir = 0f;
 
-            if (_coin != null && _coin.IsCollectable &&
-                _rigidbody.velocity.magnitude < _stopVelocityThreshold * VelocityMultiplierFactor)
-            {
-                Invoke(nameof(StopPhysics), StopDelaySeconds);
-            }
+        ApplyBounceDamping();
+
+        if (ShouldStopAfterGroundHit())
+        {
+            Invoke(nameof(StopPhysics), StopDelaySeconds);
         }
     }
 
@@ -76,10 +71,12 @@ public sealed class CoinPhysicsHandler : MonoBehaviour, ICoinPhysicsHandler
 
     public void StopPhysics()
     {
-        if (_rigidbody == null)
+        if (_isStopped || _rigidbody == null)
         {
             return;
         }
+
+        _isStopped = true;
 
         _rigidbody.bodyType = RigidbodyType2D.Kinematic;
         _rigidbody.velocity = Vector2.zero;
@@ -90,16 +87,65 @@ public sealed class CoinPhysicsHandler : MonoBehaviour, ICoinPhysicsHandler
             _collider.isTrigger = true;
         }
 
-        if (_coin != null)
-        {
-            _coin.EnableCollection();
-        }
-
-        enabled = false;
+        Destroy(this);
     }
 
-    private bool IsGroundLayer(int layerIndex)
+    private void InitializeComponents()
     {
-        return ((1 << layerIndex) & _groundLayer) != 0;
+        _rigidbody = GetComponent<Rigidbody2D>();
+        _collider = GetComponent<Collider2D>();
+        _coin = GetComponent<ICoin>();
+    }
+
+    private void UpdateAirTimer()
+    {
+        if (_isOnGround)
+        {
+            return;
+        }
+
+        _timeInAir += Time.deltaTime;
+
+        if (_timeInAir > MaxAirTime)
+        {
+            StopPhysics();
+        }
+    }
+
+    private void StopWhenRestingOnGround()
+    {
+        if (_isOnGround == false)
+        {
+            return;
+        }
+
+        if (_rigidbody.velocity.magnitude < _stopVelocityThreshold)
+        {
+            StopPhysics();
+        }
+    }
+
+    private bool IsGroundLayer(int layer)
+    {
+        return (_groundLayer.value & (1 << layer)) != 0;
+    }
+
+    private void ApplyBounceDamping()
+    {
+        if (_rigidbody == null)
+        {
+            return;
+        }
+
+        _rigidbody.velocity *= _bounceDamping;
+        _rigidbody.angularVelocity *= _bounceDamping;
+    }
+
+    private bool ShouldStopAfterGroundHit()
+    {
+        return _coin != null &&
+               _coin.IsCollectable &&
+               _rigidbody != null &&
+               _rigidbody.velocity.magnitude < _stopVelocityThreshold * CollectableStopVelocityMultiplier;
     }
 }

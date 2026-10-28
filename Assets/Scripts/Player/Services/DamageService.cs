@@ -1,5 +1,4 @@
 using Player.StateMachine;
-using UnityEngine;
 
 namespace Player
 {
@@ -19,14 +18,12 @@ namespace Player
 
         public void ApplyDamage(int damageAmount)
         {
-            if (_healthManager == null)
+            if (_hero == null || _healthManager == null || damageAmount <= 0)
             {
                 return;
             }
 
-            int currentHealth = _healthManager.CurrentHealth;
-
-            if (_hero.AbilityManager != null && _hero.AbilityManager.IsLastChanceActive && damageAmount >= currentHealth)
+            if (CanUseLastChance(damageAmount))
             {
                 _hero.AbilityManager.UseLastChance();
                 _hero.SetHealth(LastChanceHealth);
@@ -36,19 +33,21 @@ namespace Player
 
             _healthManager.TakeDamage(damageAmount);
 
-            HandleDamageResponse(currentHealth, damageAmount);
+            if (_healthManager.CurrentHealth <= FatalHealthThreshold)
+            {
+                _hero.StateMachine?.Change<DeathState>();
+
+                return;
+            }
+
+            _hero.StateMachine?.Change<HurtState>();
         }
 
-        private void HandleDamageResponse(int currentHealth, int damageAmount)
+        private bool CanUseLastChance(int damageAmount)
         {
-            if (currentHealth - damageAmount <= FatalHealthThreshold)
-            {
-                _hero.StateMachine.Change<DieState>();
-            }
-            else
-            {
-                _hero.StateMachine.Change<HurtState>();
-            }
+            return _hero.AbilityManager != null &&
+                   _hero.AbilityManager.IsLastChanceActive &&
+                   damageAmount >= _healthManager.CurrentHealth;
         }
     }
 }

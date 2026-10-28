@@ -1,132 +1,71 @@
-using Player;
-using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine;
 
 public sealed class ArmorManager : MonoBehaviour, IArmorManager
 {
     private const string ArmorPanelName = "ArmorPanel_Runtime";
     private const int MinimumArmorValue = 0;
+    private const float DisabledArmorAlpha = 0.3f;
 
-    [Header("Armor Settings")]
     [SerializeField] private int _maxArmor = 6;
     [SerializeField] private int _currentArmor = 6;
     [SerializeField] private bool _startEnabled = false;
 
-    [Header("UI References")]
     [SerializeField] private GameObject _armorPanelPrefab;
 
-    [Header("Sound Settings")]
     [SerializeField] private bool _useAudioController = true;
 
     private GameObject _armorPanelInstance;
     private Image[] _armorIcons;
     private AudioController _audioController;
     private Hero _hero;
-
-    private bool _isArmorUnlocked = false;
-
-    public int CurrentArmor => _currentArmor;
-    public int MaxArmor => _maxArmor;
-
-    public bool HasArmor => _currentArmor > 0 && IsArmorUnlocked();
+    private bool _isArmorUnlocked;
 
     public event System.Action<int, int> OnArmorChanged;
 
+    public int CurrentArmor => _currentArmor;
+    public int MaxArmor => _maxArmor;
+    public bool HasArmor => IsArmorUnlocked() && _currentArmor > MinimumArmorValue;
+
     private void Start()
     {
-        InitializeAudioController();
-        FindHero();
-
-        _isArmorUnlocked = _startEnabled || (_hero != null && _hero.AbilityManager != null && _hero.AbilityManager.HasArmor);
-
-        if (IsArmorUnlocked())
-        {
-            InitializeArmorUI();
-            UpdateArmorUI();
-        }
-        else
-        {
-            HideArmorUI();
-        }
-    }
-
-    private void InitializeAudioController()
-    {
-        if (_useAudioController && _audioController == null)
-        {
-            _audioController = GetComponent<AudioController>();
-
-            if (_audioController == null)
-            {
-                _audioController = FindFirstObjectByType<AudioController>();
-            }
-        }
-    }
-
-    private void FindHero()
-    {
-        _hero = GetComponent<Hero>();
-
-        if (_hero == null)
-        {
-            _hero = FindFirstObjectByType<Hero>();
-        }
+        InitializeReferences();
+        InitializeArmorState();
     }
 
     public bool IsArmorUnlocked()
     {
-        return _isArmorUnlocked;
+        return _isArmorUnlocked ||
+               (_hero != null &&
+                _hero.AbilityManager != null &&
+                _hero.AbilityManager.HasArmor);
     }
 
     public void SetArmor(int amount)
     {
-        if (!IsArmorUnlocked())
+        if (IsArmorUnlocked() == false)
         {
             return;
         }
 
-        _currentArmor = Mathf.Clamp(amount, MinimumArmorValue, _maxArmor);
+        int validArmor = Mathf.Clamp(amount, MinimumArmorValue, _maxArmor);
+
+        if (_currentArmor == validArmor)
+        {
+            UpdateArmorUI();
+
+            return;
+        }
+
+        _currentArmor = validArmor;
 
         UpdateArmorUI();
         OnArmorChanged?.Invoke(_currentArmor, _maxArmor);
     }
 
-    public int TakeArmorDamage(int damageAmount)
-    {
-        if (!IsArmorUnlocked() || _currentArmor <= 0)
-        {
-            return damageAmount;
-        }
-
-        int oldArmor = _currentArmor;
-        int remainingDamage = 0;
-
-        if (damageAmount >= _currentArmor)
-        {
-            remainingDamage = damageAmount - _currentArmor;
-            SetArmor(MinimumArmorValue);
-        }
-        else
-        {
-            SetArmor(_currentArmor - damageAmount);
-        }
-
-        PlayArmorDamageSound(oldArmor, _currentArmor);
-
-        return remainingDamage;
-    }
-
-    private void PlayArmorDamageSound(int oldArmor, int newArmor)
-    {
-        if (!_useAudioController || _audioController == null)
-        {
-            return;
-        }
-    }
-
     public void AddArmor(int amount)
     {
-        if (!IsArmorUnlocked())
+        if (amount <= MinimumArmorValue || IsArmorUnlocked() == false)
         {
             return;
         }
@@ -134,24 +73,55 @@ public sealed class ArmorManager : MonoBehaviour, IArmorManager
         SetArmor(_currentArmor + amount);
     }
 
+    public int TakeArmorDamage(int damageAmount)
+    {
+        if (damageAmount <= MinimumArmorValue)
+        {
+            return MinimumArmorValue;
+        }
+
+        if (HasArmor == false)
+        {
+            return damageAmount;
+        }
+
+        int oldArmor = _currentArmor;
+        int absorbedDamage = Mathf.Min(damageAmount, _currentArmor);
+        int remainingDamage = damageAmount - absorbedDamage;
+
+        SetArmor(_currentArmor - absorbedDamage);
+        PlayArmorDamageSound(oldArmor, _currentArmor);
+
+        return remainingDamage;
+    }
+
     public void FillArmor()
     {
-        if (IsArmorUnlocked())
+        if (IsArmorUnlocked() == false)
         {
-            SetArmor(_maxArmor);
+            return;
         }
+
+        SetArmor(_maxArmor);
     }
 
     public void ResetArmor()
     {
-        if (IsArmorUnlocked())
+        if (IsArmorUnlocked() == false)
         {
-            SetArmor(MinimumArmorValue);
+            return;
         }
+
+        SetArmor(MinimumArmorValue);
     }
 
     public void UnlockArmor()
     {
+        if (_isArmorUnlocked)
+        {
+            return;
+        }
+
         _isArmorUnlocked = true;
 
         ShowArmorUI();
@@ -165,29 +135,154 @@ public sealed class ArmorManager : MonoBehaviour, IArmorManager
 
     public void LoadArmorFromSave(int armorFromSave)
     {
-        if (!IsArmorUnlocked())
+        if (IsArmorUnlocked() == false)
         {
             return;
         }
 
         int validArmor = Mathf.Clamp(armorFromSave, MinimumArmorValue, _maxArmor);
 
-        if (validArmor != _currentArmor)
+        SetArmor(validArmor);
+    }
+
+    public void UpdateArmorUI()
+    {
+        if (_armorIcons == null)
         {
-            SetArmor(validArmor);
+            return;
+        }
+
+        int iconCount = Mathf.Min(_armorIcons.Length, _maxArmor);
+
+        for (int i = 0; i < iconCount; i++)
+        {
+            Image armorIcon = _armorIcons[i];
+
+            if (armorIcon == null)
+            {
+                continue;
+            }
+
+            armorIcon.enabled = true;
+            armorIcon.color = i < _currentArmor
+                ? Color.white
+                : new Color(1f, 1f, 1f, DisabledArmorAlpha);
         }
     }
 
     public bool CanPurchaseArmorPlates()
     {
-        return IsArmorUnlocked() && CurrentArmor < MaxArmor;
+        return IsArmorUnlocked() && _currentArmor < _maxArmor;
     }
 
-    public void UpdateArmorUI()
+    public bool NeedArmorPlates()
     {
+        return CanPurchaseArmorPlates();
     }
 
-    private void InitializeArmorUI() { }
-    private void HideArmorUI() { }
-    private void ShowArmorUI() { }
+    private void InitializeReferences()
+    {
+        _hero = GetComponent<Hero>();
+
+        if (_hero == null)
+        {
+            _hero = FindFirstObjectByType<Hero>();
+        }
+
+        if (_useAudioController)
+        {
+            _audioController = GetComponentInParent<AudioController>();
+
+            if (_audioController == null)
+            {
+                _audioController = FindFirstObjectByType<AudioController>();
+            }
+        }
+    }
+
+    private void InitializeArmorState()
+    {
+        _isArmorUnlocked = _startEnabled ||
+                           (_hero != null &&
+                            _hero.AbilityManager != null &&
+                            _hero.AbilityManager.HasArmor);
+
+        if (IsArmorUnlocked())
+        {
+            ShowArmorUI();
+            UpdateArmorUI();
+        }
+        else
+        {
+            HideArmorUI();
+        }
+    }
+
+    private void ShowArmorUI()
+    {
+        if (_armorPanelInstance == null)
+        {
+            InitializeArmorUI();
+        }
+
+        if (_armorPanelInstance != null)
+        {
+            _armorPanelInstance.SetActive(true);
+        }
+    }
+
+    private void HideArmorUI()
+    {
+        if (_armorPanelInstance != null)
+        {
+            _armorPanelInstance.SetActive(false);
+        }
+    }
+
+    private void InitializeArmorUI()
+    {
+        if (_armorPanelPrefab == null)
+        {
+            return;
+        }
+
+        GameObject armorContainer = GameObject.FindGameObjectWithTag("ArmorContainer");
+
+        if (armorContainer == null)
+        {
+            return;
+        }
+
+        _armorPanelInstance = Instantiate(_armorPanelPrefab, armorContainer.transform);
+
+        RectTransform rectTransform = _armorPanelInstance.GetComponent<RectTransform>();
+        if (rectTransform != null)
+        {
+            rectTransform.anchoredPosition = Vector2.zero;
+            rectTransform.localPosition = Vector3.zero;
+            rectTransform.localScale = Vector3.one;
+        }
+
+        _armorPanelInstance.name = ArmorPanelName;
+        _armorPanelInstance.SetActive(true);
+
+        _armorIcons = _armorPanelInstance.GetComponentsInChildren<Image>(true);
+    }
+
+    private void PlayArmorDamageSound(int oldArmor, int newArmor)
+    {
+        if (_useAudioController == false || _audioController == null)
+        {
+            return;
+        }
+
+        if (newArmor <= MinimumArmorValue && oldArmor > MinimumArmorValue)
+        {
+            _audioController.PlayArmorBreakSound();
+
+            return;
+        }
+
+        _audioController.PlayArmorDamageSound();
+    }
 }

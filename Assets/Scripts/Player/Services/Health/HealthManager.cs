@@ -1,33 +1,33 @@
-using Player;
 using UnityEngine;
 
 public sealed class HealthManager : MonoBehaviour
 {
-    private const int DeathThreshold = 0;
+    private const int MinimumHealth = 0;
 
     [SerializeField] private int _maxHealth = 6;
     [SerializeField] private HealthBarUI _healthBarUI;
     [SerializeField] private ArmorManager _armorManager;
     [SerializeField] private AudioController _audioController;
 
+    [SerializeField] private LowHealthEffect _lowHealthEffect;
+
+    public static event System.Action<int> OnDamageTakenGlobal;
+
     public int CurrentHealth { get; private set; }
     public int MaxHealth => _maxHealth;
-    public bool IsFullHealth => CurrentHealth >= MaxHealth;
+    public bool IsFullHealth => CurrentHealth >= _maxHealth;
 
     public event System.Action<int> OnHealthChanged;
     public event System.Action OnDeath;
 
-    private Hero _hero;
-
     private void Awake()
     {
         InitializeComponents();
-        FindHero();
     }
 
     private void Start()
     {
-        if (CurrentHealth == 0)
+        if (CurrentHealth <= MinimumHealth)
         {
             CurrentHealth = _maxHealth;
         }
@@ -35,42 +35,23 @@ public sealed class HealthManager : MonoBehaviour
         UpdateHealthUI();
     }
 
-    private void InitializeComponents()
+    public void SetHealth(int health)
     {
-        if (_audioController == null)
-        {
-            _audioController = GetComponent<AudioController>();
+        int newHealth = Mathf.Clamp(health, MinimumHealth, _maxHealth);
 
-            if (_audioController == null)
-            {
-                _audioController = FindFirstObjectByType<AudioController>();
-            }
-        }
-    }
-
-    private void FindHero()
-    {
-        _hero = GetComponent<Hero>();
-
-        if (_hero == null)
-        {
-            _hero = FindFirstObjectByType<Hero>();
-        }
-    }
-
-    public void SetHealth(int newHealth)
-    {
         if (CurrentHealth == newHealth)
         {
+            UpdateHealthUI();
+
             return;
         }
 
         CurrentHealth = newHealth;
-        OnHealthChanged?.Invoke(CurrentHealth);
 
+        OnHealthChanged?.Invoke(CurrentHealth);
         UpdateHealthUI();
 
-        if (CurrentHealth <= DeathThreshold)
+        if (CurrentHealth <= MinimumHealth)
         {
             OnDeath?.Invoke();
         }
@@ -78,31 +59,38 @@ public sealed class HealthManager : MonoBehaviour
 
     public void TakeDamage(int damageAmount)
     {
+        if (damageAmount <= MinimumHealth || CurrentHealth <= MinimumHealth)
+        {
+            return;
+        }
+
+        OnDamageTakenGlobal?.Invoke(damageAmount);
+
         int remainingDamage = damageAmount;
-        int noDamageRemaining = 0;
 
         if (_armorManager != null && _armorManager.HasArmor)
         {
             remainingDamage = _armorManager.TakeArmorDamage(damageAmount);
-
-            if (remainingDamage > noDamageRemaining)
-            {
-                SetHealth(CurrentHealth - remainingDamage);
-
-                _audioController?.PlayTakeDamageSound();
-            }
         }
-        else
+
+        if (remainingDamage <= MinimumHealth)
         {
-            SetHealth(CurrentHealth - damageAmount);
-
-            _audioController?.PlayTakeDamageSound();
+            return;
         }
+
+        SetHealth(CurrentHealth - remainingDamage);
+
+        _audioController?.PlayTakeDamageSound();
     }
 
     public void Heal(int healAmount)
     {
-        SetHealth(Mathf.Min(CurrentHealth + healAmount, _maxHealth));
+        if (healAmount <= MinimumHealth)
+        {
+            return;
+        }
+
+        SetHealth(CurrentHealth + healAmount);
     }
 
     public void FullHeal()
@@ -130,8 +118,43 @@ public sealed class HealthManager : MonoBehaviour
         _armorManager?.AddArmor(1);
     }
 
+    private void InitializeComponents()
+    {
+        if (_healthBarUI == null)
+        {
+            _healthBarUI = FindFirstObjectByType<HealthBarUI>();
+        }
+
+        if (_armorManager == null)
+        {
+            _armorManager = GetComponent<ArmorManager>();
+
+            if (_armorManager == null)
+            {
+                _armorManager = FindFirstObjectByType<ArmorManager>();
+            }
+        }
+
+        if (_audioController == null)
+        {
+            _audioController = GetComponent<AudioController>();
+
+            if (_audioController == null)
+            {
+                _audioController = FindFirstObjectByType<AudioController>();
+            }
+        }
+
+        if (_lowHealthEffect == null)
+        {
+            _lowHealthEffect = FindFirstObjectByType<LowHealthEffect>();
+        }
+    }
+
     private void UpdateHealthUI()
     {
         _healthBarUI?.SetHealth(CurrentHealth);
+
+        _lowHealthEffect?.UpdateHealthState(CurrentHealth, _maxHealth);
     }
 }

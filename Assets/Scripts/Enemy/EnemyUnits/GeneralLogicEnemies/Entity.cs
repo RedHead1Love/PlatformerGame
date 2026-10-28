@@ -8,39 +8,34 @@ namespace GeneralLogicEnemies
         private const float DefaultDeathAnimationDelay = 1f;
         private const float GrayColorValue = 0.5f;
         private const float GrayAlphaValue = 0.7f;
+        private const int DeathThreshold = 0;
 
-        [SerializeField] private int _lives = DefaultMaxLives;
-        [SerializeField] private float _deathAnimationDelay = DefaultDeathAnimationDelay;
+        [SerializeField] protected int _lives = DefaultMaxLives;
+        [SerializeField] protected float _deathAnimationDelay = DefaultDeathAnimationDelay;
 
         public int MaxLives { get; protected set; } = DefaultMaxLives;
         public bool IsDead { get; protected set; }
-        public bool IsAlive => _lives > 0 && !IsDead;
-
-        protected int Lives
-        {
-            get => _lives;
-            set => _lives = value;
-        }
+        public bool IsAlive => _lives > DeathThreshold && IsDead == false;
+        public int CurrentLives => _lives;
 
         public event System.Action<Entity> OnEntityDeath;
 
         protected virtual void Awake()
         {
             IsDead = false;
+            MaxLives = Mathf.Max(MaxLives, _lives);
         }
 
         public virtual void TakeDamage(int amount)
         {
-            int deathThreshold = 1;
-
-            if (IsDead)
+            if (IsDead || amount <= 0)
             {
                 return;
             }
 
-            _lives -= amount;
+            _lives = Mathf.Max(DeathThreshold, _lives - amount);
 
-            if (_lives < deathThreshold)
+            if (_lives <= DeathThreshold)
             {
                 Die();
             }
@@ -57,9 +52,9 @@ namespace GeneralLogicEnemies
 
             OnEntityDeath?.Invoke(this);
 
+            MarkEnemyAsKilled();
             DisablePhysics();
             PlayDeathAnimation();
-            MarkEnemyAsKilled();
 
             Invoke(nameof(DestroyAfterAnimation), _deathAnimationDelay);
         }
@@ -94,6 +89,7 @@ namespace GeneralLogicEnemies
 
             if (entityRigidbody != null)
             {
+                entityRigidbody.velocity = Vector2.zero;
                 entityRigidbody.simulated = false;
             }
         }
@@ -102,18 +98,19 @@ namespace GeneralLogicEnemies
         {
             EnemyRegistration enemyRegistration = GetComponent<EnemyRegistration>();
 
-            if (enemyRegistration != null)
+            if (enemyRegistration == null)
             {
-                string enemyId = enemyRegistration.GetEnemyId();
-
-                if (!string.IsNullOrEmpty(enemyId))
-                {
-                    if (EnemyManager.Instance != null)
-                    {
-                        EnemyManager.Instance.MarkEnemyKilled(enemyId);
-                    }
-                }
+                return;
             }
+
+            string enemyId = enemyRegistration.GetEnemyId();
+
+            if (string.IsNullOrEmpty(enemyId))
+            {
+                return;
+            }
+
+            EnemyManager.Instance?.MarkEnemyKilled(enemyId);
         }
 
         protected virtual void DestroyAfterAnimation()

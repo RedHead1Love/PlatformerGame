@@ -1,5 +1,3 @@
-using UnityEngine;
-
 namespace GameLogic
 {
     public interface ICoin

@@ -1,53 +1,66 @@
-using GeneralLogicEnemies;
+using Player.Abilities;
+using TMPro;
 using UnityEngine;
 
-namespace Player.Abilities
+public sealed class DamageBonusService
 {
-    public sealed class DamageBonusService
+    private const float NeutralMultiplier = 1f;
+    private const int MinimumBonusDamage = 1;
+    private const float EffectVerticalOffset = 1.5f;
+    private const float EffectDestroyDelay = 1f;
+
+
+    private const int EffectFontSize = 10;
+
+    private readonly AbilityManager _abilityManager;
+
+    public DamageBonusService(AbilityManager abilityManager)
     {
-        private const int SwampBonus = 2;
-        private const int SkeletonBonus = 2;
-        private const int DemonBonus = 2;
-        private const int SpiderBonus = 2;
-        private const int ZombieBonus = 2;
-        private const int BossBonus = 3;
+        _abilityManager = abilityManager;
+    }
 
-        private readonly AbilityManager _abilityManager;
-
-        public DamageBonusService(AbilityManager abilityManager)
+    public int CalculateDamageWithBonuses(int baseDamage, GameObject target)
+    {
+        if (_abilityManager == null || target == null)
         {
-            _abilityManager = abilityManager;
+            return baseDamage;
         }
 
-        public int CalculateDamageWithBonuses(int baseDamage, GameObject enemyObject)
+        float multiplier = _abilityManager.GetDamageMultiplierForEnemy(target);
+
+        if (multiplier <= NeutralMultiplier)
         {
-            if (_abilityManager == null)
-            {
-                return baseDamage;
-            }
-
-            IEnemyTypeComponent enemyTypeComponent = enemyObject.GetComponent<IEnemyTypeComponent>();
-
-            if (enemyTypeComponent == null)
-            {
-                return baseDamage;
-            }
-
-            return CalculateFinalDamage(baseDamage, enemyTypeComponent.EnemyType);
+            return baseDamage;
         }
 
-        private int CalculateFinalDamage(int baseDamage, EnemyType type)
+        int finalDamage = Mathf.CeilToInt(baseDamage * multiplier);
+
+        if (finalDamage <= baseDamage)
         {
-            int finalDamage = baseDamage;
-
-            if (type == EnemyType.Swamp && _abilityManager.HasSwampDamageBonus) finalDamage += SwampBonus;
-            else if (type == EnemyType.Skeleton && _abilityManager.HasSkeletonDamageBonus) finalDamage += SkeletonBonus;
-            else if (type == EnemyType.Demon && _abilityManager.HasDemonDamageBonus) finalDamage += DemonBonus;
-            else if (type == EnemyType.Spider && _abilityManager.HasSpiderDamageBonus) finalDamage += SpiderBonus;
-            else if (type == EnemyType.Zombie && _abilityManager.HasZombieDamageBonus) finalDamage += ZombieBonus;
-            else if (type == EnemyType.Boss && _abilityManager.HasBossDamageBonus) finalDamage += BossBonus;
-
-            return finalDamage;
+            finalDamage = baseDamage + MinimumBonusDamage;
         }
+
+        ShowEffect(target, multiplier);
+
+        return finalDamage;
+    }
+
+    private void ShowEffect(GameObject target, float multiplier)
+    {
+        GameObject textObject = new GameObject("BonusEffect");
+        textObject.transform.position = target.transform.position + Vector3.up * EffectVerticalOffset;
+
+        TextMeshPro textMesh = textObject.AddComponent<TextMeshPro>();
+
+        textMesh.text = $"x{multiplier}";
+        textMesh.color = Color.red;
+        textMesh.fontSize = EffectFontSize;
+
+        textMesh.alignment = TextAlignmentOptions.Center;
+        textMesh.fontStyle = FontStyles.Bold;
+
+        textMesh.sortingOrder = 1488;
+
+        Object.Destroy(textObject, EffectDestroyDelay);
     }
 }

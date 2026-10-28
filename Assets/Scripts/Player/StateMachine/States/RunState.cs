@@ -7,35 +7,42 @@ namespace Player.StateMachine
     public sealed class RunState : IState
     {
         private const float HorizontalDeadZone = 0.1f;
-        private const float ZeroVelocityX = 0.0f;
+        private const float SprintMultiplier = 3.6f;
 
         private readonly Hero _hero;
         private readonly IInputProvider _inputProvider;
-        private readonly GroundCheck _groundCheck;
+        private readonly GroundSensor _groundCheck;
         private readonly Rigidbody2D _rigidbody;
+
+        private bool _isSprinting;
 
         public RunState(Hero hero)
         {
             _hero = hero;
             _inputProvider = hero.GetComponent<IInputProvider>();
-            _groundCheck = hero.GetComponentInChildren<GroundCheck>();
+            _groundCheck = hero.GetComponentInChildren<GroundSensor>();
             _rigidbody = hero.Rigidbody;
         }
 
         public void Enter()
         {
-            _hero.AnimationService.SetState(States.Run);
+            _hero.AnimationService.SetState(HeroAnimationState.Run);
         }
 
         public void Tick()
         {
-            if (_inputProvider.IsJumpPressed && _groundCheck.IsGrounded)
+            if (_inputProvider == null)
+            {
+                return;
+            }
+
+            if (_inputProvider.IsJumpPressed && IsGrounded())
             {
                 _hero.StateMachine.Change<JumpState>();
                 return;
             }
 
-            if (_inputProvider.IsSlidePressed && _groundCheck.IsGrounded)
+            if (_inputProvider.IsSlidePressed && IsGrounded())
             {
                 _hero.StateMachine.Change<SlideState>();
                 return;
@@ -47,7 +54,7 @@ namespace Player.StateMachine
                 return;
             }
 
-            if (!_groundCheck.IsGrounded)
+            if (IsGrounded() == false)
             {
                 _hero.StateMachine.Change<JumpState>();
             }
@@ -55,6 +62,11 @@ namespace Player.StateMachine
 
         public void FixedTick()
         {
+            if (_inputProvider == null || _rigidbody == null)
+            {
+                return;
+            }
+
             float horizontalInput = _inputProvider.HorizontalAxis;
 
             if (Mathf.Abs(horizontalInput) < HorizontalDeadZone)
@@ -68,16 +80,27 @@ namespace Player.StateMachine
             }
         }
 
-        public void Exit() { }
+        public void Exit()
+        {
+        }
+
+        private bool IsGrounded()
+        {
+            return _groundCheck != null && _groundCheck.IsGrounded;
+        }
 
         private void StopHorizontalMovement()
         {
-            _rigidbody.velocity = new Vector2(ZeroVelocityX, _rigidbody.velocity.y);
+            _rigidbody.velocity = new Vector2(0f, _rigidbody.velocity.y);
         }
 
         private void MoveHorizontally(float direction)
         {
-            _rigidbody.velocity = new Vector2(direction * _hero.Data.MovementSpeed, _rigidbody.velocity.y);
+            float currentSpeed = _isSprinting
+                ? _hero.Data.MovementSpeed * SprintMultiplier
+                : _hero.Data.MovementSpeed;
+
+            _rigidbody.velocity = new Vector2(direction * currentSpeed, _rigidbody.velocity.y);
         }
     }
 }

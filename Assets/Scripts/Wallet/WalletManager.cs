@@ -1,86 +1,170 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace GameLogic
 {
-    public class WalletManager : MonoBehaviour, IWalletManager
+    public sealed class WalletManager : MonoBehaviour, IWalletManager
     {
+        private const string CoinsPrefix = "Coins_";
+        private const int DefaultCoinAmount = 0;
+        private const int MinimumCoinAmount = 0;
+
         public enum CoinType
         {
-            Bronze,
-            Silver,
-            Gold
+            Bronze = 0,
+            Silver = 1,
+            Gold = 2
         }
 
-        public static WalletManager Instance { get; protected set; }
+        public static WalletManager Instance { get; private set; }
+
+        private readonly Dictionary<CoinType, int> _coins = new Dictionary<CoinType, int>();
 
         public event Action<CoinType, int> OnCoinsChanged;
 
-        protected Wallet _internalWallet;
-
-        protected virtual void Awake()
+        private void Awake()
         {
             InitializeSingleton();
         }
 
-        protected void InitializeSingleton()
+        private void OnDestroy()
         {
-            if (Instance == null)
+            if (Instance == this)
             {
-                Instance = this;
-                _internalWallet = new Wallet();
-
-                DontDestroyOnLoad(gameObject);
-            }
-            else if (Instance != this)
-            {
-                Destroy(gameObject);
+                Instance = null;
             }
         }
 
-        public virtual int GetCoins(CoinType type)
+        public void AddCoins(CoinType type, int amount)
         {
-            return _internalWallet?.GetCoins(type) ?? 0;
-        }
-
-        public virtual void AddCoins(CoinType type, int amount)
-        {
-            if (_internalWallet == null)
+            if (amount <= MinimumCoinAmount)
             {
                 return;
             }
 
-            _internalWallet.AddCoins(type, amount);
-            NotifyCoinsChanged(type);
+            EnsureCoinTypeExists(type);
+
+            _coins[type] += amount;
+
+            NotifyCoinChanged(type);
+            SaveWallet();
         }
 
-        public virtual bool SpendCoins(CoinType type, int amount)
+        public bool TrySpendCoins(CoinType type, int amount)
         {
-            if (_internalWallet != null && _internalWallet.SpendCoins(type, amount))
+            if (amount <= MinimumCoinAmount)
             {
-                NotifyCoinsChanged(type);
-                return true;
+                return false;
             }
 
-            return false;
+            EnsureCoinTypeExists(type);
+
+            if (_coins[type] < amount)
+            {
+                return false;
+            }
+
+            _coins[type] -= amount;
+
+            NotifyCoinChanged(type);
+            SaveWallet();
+
+            return true;
         }
 
-        public virtual void ResetWallets()
+        public int GetCoins(CoinType type)
         {
-            _internalWallet?.Reset();
+            EnsureCoinTypeExists(type);
 
-            NotifyCoinsChanged(CoinType.Bronze);
-            NotifyCoinsChanged(CoinType.Silver);
-            NotifyCoinsChanged(CoinType.Gold);
+            return _coins[type];
         }
 
-        public virtual void LoadFromSaveData(CoinData data)
+        public Dictionary<CoinType, int> GetAllCoins()
         {
+            return new Dictionary<CoinType, int>(_coins);
         }
 
-        protected void NotifyCoinsChanged(CoinType type)
+        public void SaveWallet()
         {
-            OnCoinsChanged?.Invoke(type, GetCoins(type));
+            foreach (KeyValuePair<CoinType, int> pair in _coins)
+            {
+                PlayerPrefs.SetInt($"{CoinsPrefix}{pair.Key}", pair.Value);
+            }
+
+            PlayerPrefs.Save();
+        }
+
+        public void LoadWallet()
+        {
+            foreach (CoinType type in Enum.GetValues(typeof(CoinType)))
+            {
+                _coins[type] = Mathf.Max(MinimumCoinAmount,
+                    PlayerPrefs.GetInt($"{CoinsPrefix}{type}", DefaultCoinAmount));
+
+                NotifyCoinChanged(type);
+            }
+        }
+
+        public void LoadFromSaveData(CoinData saveData)
+        {
+            if (saveData.IsInitialized == false)
+            {
+                return;
+            }
+
+            SetCoins(CoinType.Bronze, saveData.Bronze);
+            SetCoins(CoinType.Silver, saveData.Silver);
+            SetCoins(CoinType.Gold, saveData.Gold);
+
+            SaveWallet();
+        }
+
+        private void InitializeSingleton()
+        {
+            if (Instance == null)
+            {
+                Instance = this;
+
+                DontDestroyOnLoad(gameObject);
+                InitializeWallet();
+
+                return;
+            }
+
+            Destroy(gameObject);
+        }
+
+        private void InitializeWallet()
+        {
+            foreach (CoinType type in Enum.GetValues(typeof(CoinType)))
+            {
+                _coins[type] = DefaultCoinAmount;
+            }
+
+            LoadWallet();
+        }
+
+        private void SetCoins(CoinType type, int amount)
+        {
+            _coins[type] = Mathf.Max(MinimumCoinAmount, amount);
+
+            NotifyCoinChanged(type);
+        }
+
+        private void EnsureCoinTypeExists(CoinType type)
+        {
+            if (_coins.ContainsKey(type))
+            {
+                return;
+            }
+
+            _coins[type] = MinimumCoinAmount;
+        }
+
+        private void NotifyCoinChanged(CoinType type)
+        {
+            OnCoinsChanged?.Invoke(type, _coins[type]);
         }
     }
 }

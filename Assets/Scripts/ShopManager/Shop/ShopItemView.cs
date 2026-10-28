@@ -1,67 +1,102 @@
-using TMPro;
-using UnityEngine;
+using GameLogic;
+using Player.Abilities;
+using System;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using UnityEngine;
 
-namespace ShopLogic
+public sealed class ShopItemView : MonoBehaviour, IPointerClickHandler
 {
-    public sealed class ShopItemView : MonoBehaviour
+    [SerializeField] private Image _iconImage;
+
+    private readonly Color _overlayColor = new Color(0f, 1f, 0f, 0.2f);
+    private Color _originalIconColor;
+    private Vector3 _originalScale;
+    private IShopItem _itemData;
+
+    public event Action<IShopItem> OnPointerSelected;
+
+    public IShopItem ItemData => _itemData;
+    public RectTransform RectTransform { get; private set; }
+
+    public Sprite ItemIcon => _iconImage != null ? _iconImage.sprite : null;
+
+    private void Awake()
     {
-        [Header("UI References")]
-        [SerializeField] private TextMeshProUGUI _nameText;
-        [SerializeField] private TextMeshProUGUI _priceText;
-        [SerializeField] private TextMeshProUGUI _descriptionText;
-        [SerializeField] private Image _iconImage;
-        [SerializeField] private Button _purchaseButton;
-        [SerializeField] private GameObject _soldOutOverlay;
+        RectTransform = GetComponent<RectTransform>();
+        CacheOriginalVisuals();
+    }
 
-        private ShopItemData _itemData;
-        private ShopItemPurchaseHandler _purchaseHandler;
+    public void Initialize(IShopItem itemData)
+    {
+        _itemData = itemData;
+        UpdateView();
+    }
 
-        public void Initialize(ShopItemData itemData, ShopItemPurchaseHandler purchaseHandler)
+    public void UpdateView()
+    {
+        if (_itemData == null)
         {
-            _itemData = itemData;
-            _purchaseHandler = purchaseHandler;
+            return;
+        }
+    }
 
-            UpdateUI();
+    public void SetSelected(bool isSelected, bool isAvailable)
+    {
+        UpdateScaleSelection(isSelected);
+    }
 
-            _purchaseButton.onClick.AddListener(OnPurchaseClicked);
+    public void ResetVisuals()
+    {
+        if (_iconImage != null)
+        {
+            _iconImage.color = _originalIconColor;
         }
 
-        private void OnDestroy()
+        if (RectTransform != null)
         {
-            _purchaseButton.onClick.RemoveListener(OnPurchaseClicked);
+            RectTransform.localScale = _originalScale;
         }
+    }
 
-        public void RefreshState()
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (eventData.button == PointerEventData.InputButton.Left)
         {
-            UpdateUI();
-        }
-
-        private void UpdateUI()
-        {
-            if (_itemData == null)
+            if (_itemData != null)
             {
-                return;
+                OnPointerSelected?.Invoke(_itemData);
             }
-
-            _nameText.text = _itemData.ItemName;
-            _priceText.text = _itemData.Price.ToString();
-            _descriptionText.text = _itemData.Description;
-            _iconImage.sprite = _itemData.Icon;
-
-            bool isPurchased = !_itemData.IsConsumable && ShopSaveManager.Instance.IsItemPurchased(_itemData.ItemId);
-
-            if (_soldOutOverlay != null)
-            {
-                _soldOutOverlay.SetActive(isPurchased);
-            }
-
-            _purchaseButton.interactable = !isPurchased;
         }
+    }
 
-        private void OnPurchaseClicked()
+    private void CacheOriginalVisuals()
+    {
+        if (_iconImage != null)
         {
-            _purchaseHandler?.TryPurchaseItem(_itemData, this);
+            _originalIconColor = _iconImage.color;
         }
+
+        _originalScale = RectTransform != null ? RectTransform.localScale : Vector3.one;
+    }
+
+    private void UpdateScaleSelection(bool isSelected)
+    {
+        if (RectTransform != null)
+        {
+            RectTransform.localScale = isSelected ? _originalScale * 1.05f : _originalScale;
+        }
+    }
+
+    private bool IsLastChanceActive()
+    {
+        AbilityManager abilityManager = FindAbilityManager();
+        return abilityManager != null && abilityManager.IsLastChanceActive;
+    }
+
+    private AbilityManager FindAbilityManager()
+    {
+        Hero hero = FindFirstObjectByType<Hero>();
+        return hero != null ? hero.AbilityManager : null;
     }
 }

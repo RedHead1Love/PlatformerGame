@@ -13,6 +13,8 @@ TagManager:
   - Weapon
   - PlayerAttack
   - SwampEnemy
+  - MainCanvas
+  - ArmorContainer
   layers:
   - Default
   - TransparentFX
@@ -33,8 +35,8 @@ TagManager:
   - Chest
   - Map
   - IgnoreRaycast
-  - 
-  - 
+  - Door
+  - Edge
   - 
   - 
   - 

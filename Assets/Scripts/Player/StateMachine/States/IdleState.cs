@@ -7,11 +7,10 @@ namespace Player.StateMachine
     public sealed class IdleState : IState
     {
         private const float HorizontalDeadZone = 0.1f;
-        private const float ZeroVelocityX = 0.0f;
 
         private readonly Hero _hero;
         private readonly IInputProvider _inputProvider;
-        private readonly GroundCheck _groundCheck;
+        private readonly GroundSensor _groundCheck;
         private readonly EnemyScanner _enemyScanner;
         private readonly Rigidbody2D _rigidbody;
 
@@ -19,7 +18,7 @@ namespace Player.StateMachine
         {
             _hero = hero;
             _inputProvider = hero.GetComponent<IInputProvider>();
-            _groundCheck = hero.GetComponentInChildren<GroundCheck>();
+            _groundCheck = hero.GetComponentInChildren<GroundSensor>();
             _enemyScanner = hero.GetComponentInChildren<EnemyScanner>();
             _rigidbody = hero.Rigidbody;
         }
@@ -33,7 +32,7 @@ namespace Player.StateMachine
         {
             UpdateAnimationState();
 
-            if (!_groundCheck.IsGrounded)
+            if (_groundCheck != null && _groundCheck.IsGrounded == false)
             {
                 _hero.StateMachine.Change<JumpState>();
 
@@ -52,13 +51,19 @@ namespace Player.StateMachine
 
         private void UpdateAnimationState()
         {
-            States targetState = _enemyScanner.HasEnemyNearby ? States.Idle2 : States.Idle;
+            bool hasEnemyNearby = _enemyScanner != null && _enemyScanner.HasEnemyNearby;
+            HeroAnimationState targetState = hasEnemyNearby ? HeroAnimationState.Idle2 : HeroAnimationState.Idle;
 
             _hero.AnimationService.SetState(targetState);
         }
 
         private void HandleInput()
         {
+            if (_inputProvider == null)
+            {
+                return;
+            }
+
             if (Mathf.Abs(_inputProvider.HorizontalAxis) > HorizontalDeadZone)
             {
                 _hero.StateMachine.Change<RunState>();
@@ -90,16 +95,19 @@ namespace Player.StateMachine
             if (_inputProvider.IsSecondaryAttackPressed)
             {
                 _hero.StateMachine.Change<Attack3State>();
-
-                return;
             }
         }
 
         private void StopHorizontalMovement()
         {
+            if (_rigidbody == null)
+            {
+                return;
+            }
+
             Vector2 velocity = _rigidbody.velocity;
 
-            _rigidbody.velocity = new Vector2(ZeroVelocityX, velocity.y);
+            _rigidbody.velocity = new Vector2(0f, velocity.y);
         }
     }
 }

@@ -1,25 +1,64 @@
-using Player.Abilities;
+using Shared.Damage;
 using UnityEngine;
 
-namespace Shared.Damage
+namespace Player
 {
     public sealed class EnhancedDamageService
     {
-        private readonly DamageBonusService _bonusService;
+        private const float TextVerticalOffset = 1.5f;
+        private const float TextLifetime = 1f;
+        private const int TextFontSize = 20;
 
-        public EnhancedDamageService(DamageBonusService bonusService)
+        private readonly DamageCalculator _damageCalculator;
+
+        public EnhancedDamageService(Hero hero)
         {
-            _bonusService = bonusService;
+            _damageCalculator = new DamageCalculator(hero.AbilityManager);
         }
 
-        public int ProcessDamage(int baseDamage, GameObject target)
+        public void ApplyDamageToTarget(int baseDamage, GameObject target)
         {
-            if (_bonusService != null)
+            if (target == null)
             {
-                return _bonusService.CalculateDamageWithBonuses(baseDamage, target);
+                return;
             }
 
-            return baseDamage;
+            IDamageable damageable = target.GetComponent<IDamageable>();
+
+            if (damageable == null)
+            {
+                damageable = target.GetComponentInParent<IDamageable>();
+            }
+
+            if (damageable == null)
+            {
+                return;
+            }
+
+            int finalDamage = _damageCalculator.CalculateDamageWithBonuses(baseDamage, target);
+
+            damageable.TakeDamage(finalDamage);
+
+            if (finalDamage > baseDamage)
+            {
+                ShowBonusDamageEffect(target);
+            }
+        }
+
+        private void ShowBonusDamageEffect(GameObject target)
+        {
+            GameObject textObject = new GameObject("BonusDamageText");
+
+            textObject.transform.position = target.transform.position + Vector3.up * TextVerticalOffset;
+
+            TextMesh textMesh = textObject.AddComponent<TextMesh>();
+
+            textMesh.text = "!";
+            textMesh.color = Color.green;
+            textMesh.fontSize = TextFontSize;
+            textMesh.anchor = TextAnchor.MiddleCenter;
+
+            Object.Destroy(textObject, TextLifetime);
         }
     }
 }

@@ -1,5 +1,6 @@
-using System;
 using System.Collections.Generic;
+using System;
+using UnityEngine;
 
 namespace Player.StateMachine
 {
@@ -8,7 +9,7 @@ namespace Player.StateMachine
         private const int MinimumAttackNumber = 0;
         private const int MaximumAttackNumber = 2;
 
-        private readonly Dictionary<Type, IState> _states;
+        private readonly Dictionary<Type, IState> _states = new Dictionary<Type, IState>();
         private readonly Hero _hero;
 
         private IState _currentState;
@@ -19,15 +20,18 @@ namespace Player.StateMachine
         {
             _hero = hero;
 
-            _states = new Dictionary<Type, IState>();
-
             InitializeStates();
         }
 
         public void Change<TState>() where TState : IState
         {
+            if (_states.TryGetValue(typeof(TState), out IState nextState) == false)
+            {
+                return;
+            }
+
             _currentState?.Exit();
-            _currentState = _states[typeof(TState)];
+            _currentState = nextState;
             _currentState.Enter();
         }
 
@@ -66,7 +70,7 @@ namespace Player.StateMachine
             _states[typeof(Attack3State)] = new Attack3State(_hero, _hero.AttackPoint);
             _states[typeof(AirAttackState)] = new AirAttackState(_hero, _hero.AttackPoint);
             _states[typeof(HurtState)] = new HurtState(_hero);
-            _states[typeof(DieState)] = new DieState(_hero);
+            _states[typeof(DeathState)] = new DeathState(_hero);
         }
     }
 }

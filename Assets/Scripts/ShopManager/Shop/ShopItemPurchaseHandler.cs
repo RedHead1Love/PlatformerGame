@@ -1,77 +1,206 @@
 using GameLogic;
+using Player.Abilities;
 using UnityEngine;
 
-namespace ShopLogic
+public sealed class ShopItemPurchaseHandler
 {
-    public sealed class ShopItemPurchaseHandler : MonoBehaviour
+    private const float EffectVerticalOffset = 2f;
+    private const float EffectDestroyDelay = 2f;
+    private const int EffectFontSize = 20;
+
+    private readonly Hero _hero;
+    private readonly AbilityManager _abilityManager;
+
+    private ArmorManager _armorManager;
+    private ShopManager _shopManager;
+
+    public ShopItemPurchaseHandler(Hero hero = null, ArmorManager armorManager = null, ShopManager shopManager = null)
     {
-        private const float SoundVolume = 1f;
+        _hero = hero;
+        _abilityManager = _hero != null ? _hero.AbilityManager : null;
+        _armorManager = armorManager;
+        _shopManager = shopManager;
 
-        [SerializeField] private AudioController _audioController;
-        [SerializeField] private AudioClip _purchaseSuccessSound;
-        [SerializeField] private AudioClip _purchaseFailSound;
-
-        private void Awake()
+        if (_armorManager == null && _hero != null)
         {
-            if (_audioController == null)
-            {
-                _audioController = FindFirstObjectByType<AudioController>();
-            }
+            _armorManager = _hero.GetComponent<ArmorManager>();
+        }
+    }
+
+    public bool TryPurchaseItem(string itemId)
+    {
+        if (string.IsNullOrEmpty(itemId))
+        {
+            return false;
         }
 
-        public void TryPurchaseItem(ShopItemData itemData, ShopItemView view)
-        {
-            if (itemData == null || WalletManager.Instance == null)
-            {
-                return;
-            }
+        ShopItemData item = FindShopItem(itemId);
 
-            if (WalletManager.Instance.GetCoins(WalletManager.CoinType.Bronze) >= itemData.Price)
-            {
-                CompletePurchase(itemData, view);
-            }
-            else
-            {
-                PlayErrorSound();
-            }
+        if (item == null || item.CanBePurchased() == false)
+        {
+            return false;
         }
 
-        private void CompletePurchase(ShopItemData itemData, ShopItemView view)
+        if (ProcessPayment(item) == false)
         {
-            WalletManager.Instance.SpendCoins(WalletManager.CoinType.Bronze, itemData.Price);
-
-            if (!itemData.IsConsumable && ShopSaveManager.Instance != null)
-            {
-                ShopSaveManager.Instance.SavePurchasedItem(itemData.ItemId);
-            }
-
-            ApplyItemEffect();
-            PlayPurchaseSound();
-
-            view.RefreshState();
+            return false;
         }
 
-        private void ApplyItemEffect()
-        {
-            ShopEffectsInitializer initializer = FindFirstObjectByType<ShopEffectsInitializer>();
+        ApplyItemEffect(itemId);
+        SavePurchase(itemId);
 
-            initializer?.InitializeShopEffects();
+        return true;
+    }
+
+    public string GetItemDescription(string itemId) => ShopItemDescriptions.GetItemDescription(itemId);
+
+    public string GetItemName(string itemId) => ShopItemNames.GetItemName(itemId);
+
+    private bool ProcessPayment(ShopItemData item)
+    {
+        return WalletManager.Instance != null &&
+               WalletManager.Instance.TrySpendCoins(item.CurrencyType, item.Price);
+    }
+
+    private ShopItemData FindShopItem(string itemId)
+    {
+        if (_shopManager == null)
+        {
+            _shopManager = Object.FindFirstObjectByType<ShopManager>();
         }
 
-        private void PlayPurchaseSound()
+        if (_shopManager == null || _shopManager.ShopItems == null)
         {
-            if (_audioController != null && _purchaseSuccessSound != null)
-            {
-                _audioController.PlayOneShotWithVolume(_purchaseSuccessSound, SoundVolume);
-            }
+            return null;
         }
 
-        private void PlayErrorSound()
+        return _shopManager.ShopItems.Find(item => item.ItemId == itemId);
+    }
+
+    private void ApplyItemEffect(string itemId)
+    {
+        if (_abilityManager == null)
         {
-            if (_audioController != null && _purchaseFailSound != null)
-            {
-                _audioController.PlayOneShotWithVolume(_purchaseFailSound, SoundVolume);
-            }
+            return;
         }
+
+        switch (itemId)
+        {
+            case ShopItemIds.UnlockMap: _abilityManager.UnlockMap(); break;
+
+            case ShopItemIds.UnlockDash: _abilityManager.UnlockDash(); break;
+
+            case ShopItemIds.UnlockAnatomy:
+                _abilityManager.UnlockAnatomy();
+
+                break;
+
+            case ShopItemIds.UnlockArmor:
+                _abilityManager.UnlockArmor();
+                _armorManager?.FillArmor();
+
+                break;
+
+            case ShopItemIds.UnlockSwampDamageBonus: _abilityManager.UnlockSwampDamageBonus(); break;
+
+            case ShopItemIds.ActivateLastChance: _abilityManager.PurchaseLastChance(); break;
+
+            case ShopItemIds.RestoreArmor: RestoreArmor(); break;
+
+            case ShopItemIds.UnlockSkeletonDamageBonus: _abilityManager.UnlockSkeletonDamageBonus(); break;
+
+            case ShopItemIds.UnlockDemonDamageBonus: _abilityManager.UnlockDemonDamageBonus(); break;
+
+            case ShopItemIds.UnlockSpiderDamageBonus: _abilityManager.UnlockSpiderDamageBonus(); break;
+
+            case ShopItemIds.UnlockPassiveHealthRegeneration: _abilityManager.UnlockPassiveHealthRegeneration(); break;
+
+            case ShopItemIds.UnlockRobocopRegeneration: _abilityManager.UnlockRobocopRegeneration(); break;
+
+            case ShopItemIds.UnlockVampireAbility: _abilityManager.UnlockVampireAbility(); break;
+
+            case ShopItemIds.UnlockOnePunchManAbility: _abilityManager.UnlockOnePunchManAbility(); break;
+
+            case ShopItemIds.UnlockBossDamageBonus: _abilityManager.UnlockBossDamageBonus(); break;
+        }
+    }
+
+    private void RestoreArmor()
+    {
+        if (_armorManager == null && _hero != null)
+        {
+            _armorManager = _hero.GetComponent<ArmorManager>();
+        }
+
+        if (_armorManager == null || _armorManager.IsArmorUnlocked() == false)
+        {
+            return;
+        }
+
+        _armorManager.FillArmor();
+        ShowArmorRestoredEffect();
+    }
+
+    private void SavePurchase(string itemId)
+    {
+        if (itemId == ShopItemIds.RestoreArmor)
+        {
+            int uses = PlayerPrefs.GetInt("ArmorPlates_Used", 0);
+
+            PlayerPrefs.SetInt("ArmorPlates_Used", uses + 1);
+            PlayerPrefs.Save();
+
+            return;
+        }
+
+        if (itemId != ShopItemIds.ActivateLastChance)
+        {
+            SaveSystem.Instance?.MarkItemPurchased(itemId);
+        }
+
+        if (_abilityManager != null)
+        {
+            SaveSystem.Instance?.UpdateAbilityData(_abilityManager);
+            ShopSaveManager.Instance?.OnItemPurchased(itemId, _abilityManager);
+        }
+
+        SaveGameAfterPurchase();
+    }
+
+    private void SaveGameAfterPurchase()
+    {
+        if (SaveSystem.Instance == null || _hero == null)
+        {
+            return;
+        }
+
+        SaveSystem.Instance.SaveGame(string.Empty, _hero.transform.position);
+    }
+
+    private void ShowArmorRestoredEffect()
+    {
+        if (_hero == null)
+        {
+            return;
+        }
+
+        GameObject effect = new GameObject("ArmorRestoredEffect");
+        effect.transform.position = _hero.transform.position + Vector3.up * EffectVerticalOffset;
+
+        TextMesh textMesh = effect.AddComponent<TextMesh>();
+
+        textMesh.text = LocalizationManager.CurrentLanguage switch
+        {
+            LocalizationManager.Language.English => "armor restored",
+            LocalizationManager.Language.Turkish => "zırh yenilendi",
+            _ => "броня восстановлена"
+        };
+
+        textMesh.color = Color.cyan;
+        textMesh.fontSize = EffectFontSize;
+        textMesh.anchor = TextAnchor.MiddleCenter;
+        textMesh.fontStyle = FontStyle.Bold;
+
+        Object.Destroy(effect, EffectDestroyDelay);
     }
 }

@@ -1,16 +1,14 @@
 using DoorControl;
-using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine;
 
 public sealed class GameManager : MonoBehaviour
 {
     private const string MainMenuSceneName = "MainMenu";
-    private const string LastChancePrefKey = "LastChance_Active";
-    private const string ArmorPlatesPrefKey = "ArmorPlates_Used";
 
     public static GameManager Instance { get; private set; }
 
-    [SerializeField] private bool _shouldStartNewGame;
+    [SerializeField] private bool _shouldStartNewGame = false;
 
     private void Awake()
     {
@@ -22,37 +20,14 @@ public sealed class GameManager : MonoBehaviour
         SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
-    private void InitializeSingleton()
-    {
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-
-            SceneManager.sceneLoaded += OnSceneLoaded;
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
-    }
-
-    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        if (scene.name == MainMenuSceneName || _shouldStartNewGame)
-        {
-            StartNewGame();
-        }
-    }
-
     public void StartNewGame()
     {
         GameStateManager.ResetGameState();
 
         _shouldStartNewGame = false;
 
-        PlayerPrefs.DeleteKey(LastChancePrefKey);
-        PlayerPrefs.DeleteKey(ArmorPlatesPrefKey);
+        PlayerPrefs.DeleteKey("LastChance_Active");
+        PlayerPrefs.DeleteKey("ArmorPlates_Used");
 
         SaveSystem.Instance?.DeleteSaveData();
 
@@ -62,6 +37,29 @@ public sealed class GameManager : MonoBehaviour
     public void SetNewGameFlag()
     {
         _shouldStartNewGame = true;
+    }
+
+    private void InitializeSingleton()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+
+            DontDestroyOnLoad(gameObject);
+            SceneManager.sceneLoaded += OnSceneLoaded;
+
+            return;
+        }
+
+        Destroy(gameObject);
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name == MainMenuSceneName || _shouldStartNewGame)
+        {
+            StartNewGame();
+        }
     }
 
     private void ResetKeyCollectionUI()

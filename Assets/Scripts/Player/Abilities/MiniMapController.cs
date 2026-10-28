@@ -1,197 +1,192 @@
-using Player;
+using NPC;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public sealed class MiniMapController : MonoBehaviour
 {
-    [System.Serializable]
-    public sealed class MiniMapData
-    {
-        private const float DefaultMapWidth = 50f;
-        private const float DefaultMapHeight = 50f;
-
-        public string LocationName;
-        public Sprite MapTexture;
-        public Vector2 MapWorldSize = new Vector2(DefaultMapWidth, DefaultMapHeight);
-        public Vector2 MapWorldCenter = Vector2.zero;
-    }
-
     private const KeyCode DefaultToggleKey = KeyCode.M;
-    private const string MapUnlockedKey = "MapUnlocked";
+    public static bool IsCutscenePlaying { get; set; }
 
-    [Header("MiniMap Settings")]
     [SerializeField] private GameObject _miniMapPanel;
     [SerializeField] private KeyCode _toggleKey = DefaultToggleKey;
 
-    [Header("Lock State")]
     [SerializeField] private bool _isMapLocked = true;
     [SerializeField] private GameObject _lockOverlay;
 
-    [Header("Player Marker")]
     [SerializeField] private RectTransform _playerMarker;
     [SerializeField] private Transform _playerTransform;
     [SerializeField] private Vector2 _mapUISize = new Vector2(400f, 250f);
 
-    [Header("MiniMap Textures")]
+    [SerializeField] private List<Merchant> _shops;
+    [SerializeField] private List<RectTransform> _keyMarkers;
+    [SerializeField] private List<RectTransform> _keyCollectedMarkers;
+    [SerializeField] private List<Transform> _keyAnchors;
+
+    [SerializeField] private List<Checkpoint> _checkpoints;
+    [SerializeField] private List<RectTransform> _checkpointMarkers;
+    [SerializeField] private GameObject _checkpointMarkerPrefab;
+
     [SerializeField] private List<MiniMapData> _miniMapDataList;
     [SerializeField] private Image _miniMapImage;
 
-    private bool _isMiniMapVisible;
-    private RectTransform _miniMapRectTransform;
-    private int _currentMapIndex;
+    private MiniMapView _view;
+    private MiniMapLocationSelector _locations;
+    private MiniMapMarkerController _markers;
+    private MiniMapInputHandler _input;
+    private MiniMapAccessPolicy _access;
+
+    private void Awake()
+    {
+        IsCutscenePlaying = false;
+        EnsureInitialized();
+    }
+
+    private void OnEnable()
+    {
+        SceneManager.activeSceneChanged += OnActiveSceneChanged;
+    }
+
+    private void OnDisable()
+    {
+        SceneManager.activeSceneChanged -= OnActiveSceneChanged;
+        if (_view != null)
+        {
+            CloseMiniMap();
+        }
+    }
 
     private void Start()
     {
-        _miniMapRectTransform = _miniMapImage?.GetComponent<RectTransform>();
-
-        LoadMapState();
-        InitializePlayerTransform();
-
-        if (_miniMapPanel != null)
-        {
-            _miniMapPanel.SetActive(false);
-        }
-
-        _isMiniMapVisible = false;
-
-        UpdateLockOverlayVisibility();
+        EnsureInitialized();
+        _markers.CreateCheckpointMarkers();
+        _markers.Hide();
+        _view.SetLocked(_access.IsLocked);
     }
 
     private void Update()
     {
-        if (Input.GetKeyDown(_toggleKey))
+        if (_access.MustClose(IsCutscenePlaying, _markers.HasPlayer))
+        {
+            CloseMiniMap();
+            _view.SetLocked(false);
+            return;
+        }
+        _access.RefreshUnlock();
+        _view.SetLocked(_access.IsLocked);
+        if (_access.IsLocked)
+        {
+            CloseMiniMap();
+            return;
+        }
+        if (_input.IsTogglePressed())
         {
             ToggleMiniMap();
         }
-
-        if (_isMiniMapVisible && !_isMapLocked)
+        if (_view.IsVisible)
         {
-            UpdatePlayerMarker();
-        }
-    }
-
-    private void InitializePlayerTransform()
-    {
-        if (_playerTransform == null)
-        {
-            _playerTransform = FindFirstObjectByType<Hero>()?.transform;
+            _markers.Refresh();
         }
     }
 
     public void ToggleMiniMap()
     {
-        _isMiniMapVisible = !_isMiniMapVisible;
-
-        if (_miniMapPanel != null)
-        {
-            _miniMapPanel.SetActive(_isMiniMapVisible);
-        }
-
-        UpdateLockOverlayVisibility();
-
-        if (_isMiniMapVisible && !_isMapLocked)
-        {
-            UpdatePlayerMarker();
-        }
-    }
-
-    private void UpdateLockOverlayVisibility()
-    {
-        if (_lockOverlay != null)
-        {
-            _lockOverlay.SetActive(_isMiniMapVisible && _isMapLocked);
-        }
-    }
-
-    private void UpdatePlayerMarker()
-    {
-        if (_playerTransform == null || _miniMapRectTransform == null || _playerMarker == null)
+        EnsureInitialized();
+        if (_access.IsLocked || !_view.CanShow ||
+            _access.MustClose(IsCutscenePlaying, _markers.HasPlayer))
         {
             return;
         }
-
-        if (_currentMapIndex < 0 || _currentMapIndex >= _miniMapDataList.Count)
+        if (_view.IsVisible)
         {
+            CloseMiniMap();
             return;
         }
+        _view.SetVisible(true);
+        _markers.Refresh();
+    }
 
-        MiniMapData currentMap = _miniMapDataList[_currentMapIndex];
-
-        Vector3 playerPos = _playerTransform.position;
-        Vector2 normalizedPos = new Vector2(
-            (playerPos.x - currentMap.MapWorldCenter.x) / currentMap.MapWorldSize.x,
-            (playerPos.y - currentMap.MapWorldCenter.y) / currentMap.MapWorldSize.y
-        );
-
-        normalizedPos.x = Mathf.Clamp(normalizedPos.x, -0.5f, 0.5f);
-        normalizedPos.y = Mathf.Clamp(normalizedPos.y, -0.5f, 0.5f);
-
-        _playerMarker.anchoredPosition = new Vector2(
-            normalizedPos.x * _mapUISize.x,
-            normalizedPos.y * _mapUISize.y
-        );
-
-        _playerMarker.localRotation = Quaternion.Euler(0, 0, _playerTransform.rotation.eulerAngles.z);
+    public void CloseMiniMap()
+    {
+        EnsureInitialized();
+        _view.SetVisible(false);
+        _markers.Hide();
     }
 
     public void UnlockMap()
     {
-        _isMapLocked = false;
-
-        PlayerPrefs.SetInt(MapUnlockedKey, 1);
-        PlayerPrefs.Save();
-
-        UpdateLockOverlayVisibility();
-    }
-
-    private void LoadMapState()
-    {
-        if (PlayerPrefs.HasKey(MapUnlockedKey))
-        {
-            _isMapLocked = PlayerPrefs.GetInt(MapUnlockedKey, 0) == 0;
-        }
-        else
-        {
-            var hero = FindFirstObjectByType<Hero>();
-            if (hero != null && hero.AbilityManager != null && hero.AbilityManager.HasMap)
-            {
-                _isMapLocked = false;
-            }
-        }
+        EnsureInitialized();
+        _access.Unlock();
+        _view.SetLocked(false);
     }
 
     public void SetMiniMap(int mapIndex)
     {
-        if (mapIndex < 0 || mapIndex >= _miniMapDataList.Count)
+        EnsureInitialized();
+        if (_locations.TrySelect(mapIndex))
         {
-            return;
-        }
-
-        MiniMapData newMap = _miniMapDataList[mapIndex];
-
-        if (_miniMapImage == null || newMap.MapTexture == null)
-        {
-            return;
-        }
-
-        _currentMapIndex = mapIndex;
-        _miniMapImage.sprite = newMap.MapTexture;
-
-        if (_isMiniMapVisible)
-        {
-            UpdatePlayerMarker();
+            RefreshMap();
         }
     }
 
     public void SetMiniMap(string locationName)
     {
-        for (int i = 0; i < _miniMapDataList.Count; i++)
+        EnsureInitialized();
+        if (_locations.TrySelect(locationName))
         {
-            if (_miniMapDataList[i].LocationName == locationName)
+            RefreshMap();
+        }
+    }
+
+    private void RefreshMap()
+    {
+        _view.ShowMap(_locations.CurrentMap);
+        if (_view.IsVisible)
+        {
+            _markers.Refresh();
+        }
+    }
+
+    private void OnActiveSceneChanged(Scene current, Scene next)
+    {
+        IsCutscenePlaying = false;
+        CloseMiniMap();
+        _markers.ResetPlayer();
+        _input.Reset();
+        _access.ResetScene();
+    }
+
+    private void EnsureInitialized()
+    {
+        if (_view != null)
+        {
+            return;
+        }
+        _locations = new MiniMapLocationSelector(_miniMapDataList);
+        _input = new MiniMapInputHandler(_toggleKey);
+        _access = new MiniMapAccessPolicy(_isMapLocked);
+        _access.Load();
+        _markers = new MiniMapMarkerController(_miniMapPanel, _playerMarker, _playerTransform,
+            _shops, _keyMarkers, _keyCollectedMarkers, _keyAnchors, _checkpoints,
+            _checkpointMarkers, _checkpointMarkerPrefab, new MiniMapProjection(_locations, _mapUISize));
+        _view = new MiniMapView(_miniMapPanel, _lockOverlay, _miniMapImage);
+        _markers.Hide();
+    }
+    private void OnDrawGizmosSelected()
+    {
+        if (_miniMapDataList == null)
+        {
+            return;
+        }
+
+        Gizmos.color = Color.cyan;
+
+        foreach (var map in _miniMapDataList)
+        {
+            if (map != null)
             {
-                SetMiniMap(i);
-                return;
+                Gizmos.DrawWireCube(map.MapWorldCenter, map.MapWorldSize);
             }
         }
     }

@@ -6,6 +6,9 @@ namespace Player.Abilities
     public sealed class MeleeAttack
     {
         private const float AngleMultiplier = 0.5f;
+        private const int InstakillDamage = 9999;
+        private const float DefaultMultiplier = 1f;
+        private const int MinimumBonusDamage = 1;
 
         private readonly Transform _attackOrigin;
         private readonly LayerMask _enemyLayerMask;
@@ -14,11 +17,16 @@ namespace Player.Abilities
         private readonly Hero _hero;
 
         private OnePunchManSystem _onePunchSystem;
-        private bool _onePunchSystemChecked;
         private DamageBonusService _damageBonusService;
-        private bool _serviceInitialized;
+        private bool _onePunchSystemChecked;
+        private bool _damageBonusServiceInitialized;
 
-        public MeleeAttack(Transform attackOrigin, float attackRange, float attackAngle, LayerMask enemyLayerMask, Hero hero)
+        public MeleeAttack(
+            Transform attackOrigin,
+            float attackRange,
+            float attackAngle,
+            LayerMask enemyLayerMask,
+            Hero hero)
         {
             _attackOrigin = attackOrigin;
             _attackRange = attackRange;
@@ -27,104 +35,174 @@ namespace Player.Abilities
             _hero = hero;
         }
 
-        private void InitializeDamageBonusService()
+        public bool Perform(int baseDamage, Vector2 attackDirection)
         {
-            if (_serviceInitialized)
+            if (_attackOrigin == null)
+            {
+                return false;
+            }
+
+            InitializeDamageBonusService();
+
+            Collider2D[] hitColliders = Physics2D.OverlapCircleAll(
+                _attackOrigin.position,
+                _attackRange,
+                _enemyLayerMask);
+
+            bool hitConnected = false;
+            OnePunchManSystem onePunchSystem = GetOnePunchSystem();
+
+            foreach (Collider2D hitCollider in hitColliders)
+            {
+                if (hitCollider == null)
+                {
+                    continue;
+                }
+
+                Vector2 closestPointOnEnemy = hitCollider.ClosestPoint(_attackOrigin.position);
+
+                if (IsWithinAttackAngle(closestPointOnEnemy, attackDirection) == false)
+                {
+                    continue;
+                }
+
+                Entity enemyEntity = hitCollider.GetComponent<Entity>();
+
+                if (enemyEntity == null)
+                {
+                    enemyEntity = hitCollider.GetComponentInParent<Entity>();
+                }
+
+                if (enemyEntity == null)
+                {
+                    continue;
+                }
+
+                ApplyDamageToEnemy(enemyEntity, hitCollider.gameObject, baseDamage, onePunchSystem);
+
+                hitConnected = true;
+            }
+
+            return hitConnected;
+        }
+
+        public void DrawGizmos()
+        {
+            if (_attackOrigin == null)
             {
                 return;
             }
 
-            if (_hero == null || _hero.AbilityManager == null)
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(_attackOrigin.position, _attackRange);
+        }
+
+        private void ApplyDamageToEnemy(
+            Entity enemyEntity,
+            GameObject enemyObject,
+            int baseDamage,
+            OnePunchManSystem onePunchSystem)
+        {
+            bool wasInstakill = onePunchSystem != null &&
+                                onePunchSystem.IsActive &&
+                                onePunchSystem.CheckForInstakill(enemyEntity);
+
+            if (wasInstakill)
+            {
+                enemyEntity.TakeDamage(InstakillDamage);
+
+                return;
+            }
+
+            int finalDamage = CalculateFinalDamage(baseDamage, enemyObject);
+
+            enemyEntity.TakeDamage(finalDamage);
+        }
+
+        private void InitializeDamageBonusService()
+        {
+            if (_damageBonusServiceInitialized || _hero == null || _hero.AbilityManager == null)
             {
                 return;
             }
 
             _damageBonusService = new DamageBonusService(_hero.AbilityManager);
-            _serviceInitialized = true;
+            _damageBonusServiceInitialized = true;
         }
 
-        public bool Perform(int baseDamage, Vector2 attackDirection)
+        private OnePunchManSystem GetOnePunchSystem()
         {
-            InitializeDamageBonusService();
-
-            Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(_attackOrigin.position, _attackRange, _enemyLayerMask);
-            bool hasHitConnected = hitEnemies.Length > 0;
-
-            foreach (Collider2D enemyCollider in hitEnemies)
+            if (_onePunchSystemChecked)
             {
-                if (IsWithinAttackAngle(enemyCollider.transform.position, attackDirection))
-                {
-                    ProcessEnemyHit(enemyCollider.gameObject, baseDamage);
-                }
+                return _onePunchSystem;
             }
 
-            return hasHitConnected;
-        }
-
-        private void ProcessEnemyHit(GameObject enemyObject, int baseDamage)
-        {
-            Entity enemyEntity = enemyObject.GetComponent<Entity>() ?? enemyObject.GetComponentInParent<Entity>();
-
-            if (enemyEntity == null || !enemyEntity.IsAlive)
+            if (_hero != null)
             {
-                return;
+                _onePunchSystem = _hero.GetComponent<OnePunchManSystem>();
             }
 
-            if (CheckOnePunchKill(enemyEntity))
-            {
-                return;
-            }
+            _onePunchSystemChecked = true;
 
-            int finalDamage = CalculateFinalDamage(baseDamage, enemyObject);
-            enemyEntity.TakeDamage(finalDamage);
-        }
-
-        private bool CheckOnePunchKill(Entity enemyEntity)
-        {
-            if (!_onePunchSystemChecked)
-            {
-                _onePunchSystem = _hero?.GetComponent<OnePunchManSystem>();
-                _onePunchSystemChecked = true;
-            }
-
-            return _onePunchSystem != null && _onePunchSystem.CheckForInstakill(enemyEntity);
+            return _onePunchSystem;
         }
 
         private int CalculateFinalDamage(int baseDamage, GameObject enemyObject)
         {
-            if (_damageBonusService != null)
+            if (_damageBonusServiceInitialized && _damageBonusService != null)
             {
-                int finalDamage = _damageBonusService.CalculateDamageWithBonuses(baseDamage, enemyObject);
-
-                if (finalDamage > baseDamage)
-                {
-                    CreateBonusEffect(enemyObject, (float)finalDamage / baseDamage);
-                }
-
-                return finalDamage;
+                return _damageBonusService.CalculateDamageWithBonuses(baseDamage, enemyObject);
             }
 
-            return baseDamage;
+            return CalculateDamageDirectly(baseDamage, enemyObject);
+        }
+
+        private int CalculateDamageDirectly(int baseDamage, GameObject enemyObject)
+        {
+            if (_hero == null || _hero.AbilityManager == null || enemyObject == null)
+            {
+                return baseDamage;
+            }
+
+            float multiplier = _hero.AbilityManager.GetDamageMultiplierForEnemy(enemyObject);
+
+            if (multiplier <= DefaultMultiplier)
+            {
+                return baseDamage;
+            }
+
+            int finalDamage = Mathf.CeilToInt(baseDamage * multiplier);
+
+            if (finalDamage <= baseDamage)
+            {
+                finalDamage = baseDamage + MinimumBonusDamage;
+            }
+
+            CreateBonusEffect(enemyObject, multiplier);
+
+            return finalDamage;
         }
 
         private void CreateBonusEffect(GameObject target, float multiplier)
         {
-            float verticalOffset = 1.5f;
-            string effectName = "DirectBonusEffect";
-            float destroyDelay = 1f;
-            int fontSize = 24;
+            const float verticalOffset = 1.5f;
+            const string effectName = "DirectBonusEffect";
+            const float destroyDelay = 1f;
+            const int fontSize = 24;
 
-            GameObject textObj = new GameObject(effectName);
-            textObj.transform.position = target.transform.position + Vector3.up * verticalOffset;
+            GameObject textObject = new GameObject(effectName);
 
-            TextMesh textMesh = textObj.AddComponent<TextMesh>();
+            textObject.transform.position = target.transform.position + Vector3.up * verticalOffset;
+
+            TextMesh textMesh = textObject.AddComponent<TextMesh>();
+
             textMesh.text = $"x{multiplier}!";
             textMesh.color = Color.magenta;
             textMesh.fontSize = fontSize;
             textMesh.anchor = TextAnchor.MiddleCenter;
             textMesh.fontStyle = FontStyle.Bold;
 
-            Object.Destroy(textObj, destroyDelay);
+            Object.Destroy(textObject, destroyDelay);
         }
 
         private bool IsWithinAttackAngle(Vector3 enemyPosition, Vector2 attackDirection)
@@ -133,15 +211,6 @@ namespace Player.Abilities
             float angle = Vector2.Angle(attackDirection, directionToEnemy);
 
             return angle <= _attackAngleHalf;
-        }
-
-        public void DrawGizmos()
-        {
-            if (_attackOrigin != null)
-            {
-                Gizmos.color = Color.red;
-                Gizmos.DrawWireSphere(_attackOrigin.position, _attackRange);
-            }
         }
     }
 }

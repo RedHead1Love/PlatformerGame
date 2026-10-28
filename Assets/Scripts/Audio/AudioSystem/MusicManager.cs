@@ -4,8 +4,6 @@ namespace AudioSystem
 {
     public sealed class MusicManager
     {
-        private const float MinimumTrackCount = 0;
-
         private readonly IAudioPlayer _audioPlayer;
         private readonly IMusicPlaylist _playlist;
 
@@ -23,10 +21,27 @@ namespace AudioSystem
 
         public void Update()
         {
-            if (_isBossFightActive == false && _isBackgroundMusicPlaying && _audioPlayer.IsPlaying == false)
+            if (_isBossFightActive)
+            {
+                return;
+            }
+
+            if (_isBackgroundMusicPlaying && _audioPlayer.IsPlaying == false)
             {
                 PlayNextTrack();
             }
+        }
+
+        public void StartBackgroundMusic()
+        {
+            if (_playlist.HasTracks == false || _isBossFightActive)
+            {
+                return;
+            }
+
+            _isBackgroundMusicPlaying = true;
+
+            PlayNextTrack();
         }
 
         public void PlayNextTrack()
@@ -38,13 +53,15 @@ namespace AudioSystem
 
             AudioClip nextTrack = _playlist.GetNextTrack();
 
-            if (nextTrack != null)
+            if (nextTrack == null)
             {
-                _audioPlayer.Play(nextTrack);
+                return;
             }
+
+            _audioPlayer.Play(nextTrack);
         }
 
-        public void PlayBoss(AudioClip bossMusic)
+        public void PlayBossMusic(AudioClip bossMusic)
         {
             if (bossMusic == null)
             {
@@ -58,50 +75,42 @@ namespace AudioSystem
             _audioPlayer.Play(bossMusic);
         }
 
-        public void StopBoss()
+        public void StopBossMusic()
         {
             _isBossFightActive = false;
+            _isBackgroundMusicPlaying = true;
 
             _audioPlayer.Stop();
+            PlayNextTrack();
+        }
+
+        public void PauseBackgroundMusic()
+        {
+            if (_isBossFightActive)
+            {
+                return;
+            }
+
+            _isBackgroundMusicPlaying = false;
+
+            _audioPlayer.Stop();
+        }
+
+        public void ResumeBackgroundMusic()
+        {
+            if (_isBossFightActive)
+            {
+                return;
+            }
 
             _isBackgroundMusicPlaying = true;
 
             PlayNextTrack();
         }
 
-        public void Pause()
-        {
-            if (_isBossFightActive == false)
-            {
-                _audioPlayer.Stop();
-
-                _isBackgroundMusicPlaying = false;
-            }
-        }
-
-        public void Resume()
-        {
-            if (_isBossFightActive == false)
-            {
-                _isBackgroundMusicPlaying = true;
-
-                PlayNextTrack();
-            }
-        }
-
         public void SetVolume(float volume)
         {
             _audioPlayer.SetVolume(volume);
-        }
-
-        public void StartBackground()
-        {
-            if (_playlist.HasTracks && _isBossFightActive == false)
-            {
-                _isBackgroundMusicPlaying = true;
-
-                PlayNextTrack();
-            }
         }
     }
 }

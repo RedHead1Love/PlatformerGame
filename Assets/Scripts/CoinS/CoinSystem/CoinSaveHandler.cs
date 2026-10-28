@@ -4,32 +4,25 @@ using UnityEngine;
 
 public sealed class CoinSaveHandler : MonoBehaviour
 {
-    private const float InitializationDelaySeconds = 0.3f;
-
-    private WaitForSeconds _initializationDelay;
-
-    private void Awake()
-    {
-        _initializationDelay = new WaitForSeconds(InitializationDelaySeconds);
-    }
+    private const float InitializationDelay = 0.3f;
 
     private void Start()
     {
-        StartCoroutine(InitializeCoinsCoroutine());
+        StartCoroutine(InitializeCoins());
     }
 
-    private IEnumerator InitializeCoinsCoroutine()
+    private IEnumerator InitializeCoins()
     {
-        yield return _initializationDelay;
+        yield return new WaitForSeconds(InitializationDelay);
 
-        if (SaveSystem.Instance == null || !SaveSystem.Instance.HasSave())
+        if (SaveSystem.Instance == null || SaveSystem.Instance.HasSave() == false)
         {
             yield break;
         }
 
-        var saveData = SaveSystem.Instance.CurrentSave;
+        GameSaveData saveData = SaveSystem.Instance.CurrentSave;
 
-        if (saveData == null || !saveData.Coins.IsInitialized)
+        if (saveData == null || saveData.Coins.IsInitialized == false)
         {
             yield break;
         }
@@ -39,13 +32,7 @@ public sealed class CoinSaveHandler : MonoBehaviour
 
     private void InitializeFromSave(CoinData savedCoins)
     {
-        if (PersistentWallet.Instance != null)
-        {
-            PersistentWallet.Instance.LoadFromSaveData(savedCoins);
-        }
-        else if (WalletManager.Instance != null)
-        {
-            WalletManager.Instance.LoadFromSaveData(savedCoins);
-        }
+        PersistentWallet.Instance?.LoadFromSaveData(savedCoins);
+        WalletManager.Instance?.LoadFromSaveData(savedCoins);
     }
 }

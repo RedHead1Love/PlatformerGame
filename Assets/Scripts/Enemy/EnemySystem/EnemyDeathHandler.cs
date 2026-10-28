@@ -1,11 +1,10 @@
 using GeneralLogicEnemies;
-using System.Linq;
+using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(Entity))]
 public sealed class EnemyDeathHandler : MonoBehaviour, IEnemyDeathHandler
 {
-    [Header("Death Settings")]
+
     [SerializeField] private bool _disableColliderOnDeath = true;
     [SerializeField] private bool _disablePhysicsOnDeath = true;
     [SerializeField] private bool _disableAIOnDeath = true;
@@ -14,7 +13,7 @@ public sealed class EnemyDeathHandler : MonoBehaviour, IEnemyDeathHandler
     private EnemyRegistration _registration;
     private Collider2D[] _colliders;
     private Rigidbody2D _rigidbody;
-    private MonoBehaviour[] _aiComponents;
+    private MonoBehaviour[] _componentsToDisable;
 
     private void Awake()
     {
@@ -59,14 +58,35 @@ public sealed class EnemyDeathHandler : MonoBehaviour, IEnemyDeathHandler
         _colliders = GetComponents<Collider2D>();
         _rigidbody = GetComponent<Rigidbody2D>();
 
-        _aiComponents = GetComponents<MonoBehaviour>()
-            .Where(component => component != this &&
-                                component != _entity &&
-                                component != _registration &&
-                                !(component is Transform) &&
-                                !(component is Animator) &&
-                                !(component is SpriteRenderer))
-            .ToArray();
+        _componentsToDisable = CollectComponentsToDisable();
+    }
+
+    private MonoBehaviour[] CollectComponentsToDisable()
+    {
+        MonoBehaviour[] allComponents = GetComponents<MonoBehaviour>();
+        List<MonoBehaviour> result = new List<MonoBehaviour>();
+
+        foreach (MonoBehaviour component in allComponents)
+        {
+            if (component == null)
+            {
+                continue;
+            }
+
+            if (component == this ||
+                component == _entity ||
+                component == _registration ||
+                component is EnemyDeathHandler ||
+                component is EnemyRegistration ||
+                component is CoinDropSystem)
+            {
+                continue;
+            }
+
+            result.Add(component);
+        }
+
+        return result.ToArray();
     }
 
     private void OnEntityDeath(Entity entity)
@@ -76,31 +96,51 @@ public sealed class EnemyDeathHandler : MonoBehaviour, IEnemyDeathHandler
 
     private void DisableComponents()
     {
-        if (_disableColliderOnDeath)
+        DisableCollidersIfNeeded();
+        DisablePhysicsIfNeeded();
+        DisableAIIfNeeded();
+    }
+
+    private void DisableCollidersIfNeeded()
+    {
+        if (_disableColliderOnDeath == false || _colliders == null)
         {
-            foreach (Collider2D col in _colliders)
+            return;
+        }
+
+        foreach (Collider2D enemyCollider in _colliders)
+        {
+            if (enemyCollider != null)
             {
-                if (col != null)
-                {
-                    col.enabled = false;
-                }
+                enemyCollider.enabled = false;
             }
         }
+    }
 
-        if (_disablePhysicsOnDeath && _rigidbody != null)
+    private void DisablePhysicsIfNeeded()
+    {
+        if (_disablePhysicsOnDeath == false || _rigidbody == null)
         {
-            _rigidbody.velocity = Vector2.zero;
-            _rigidbody.simulated = false;
+            return;
         }
 
-        if (_disableAIOnDeath)
+        _rigidbody.velocity = Vector2.zero;
+        _rigidbody.angularVelocity = 0f;
+        _rigidbody.simulated = false;
+    }
+
+    private void DisableAIIfNeeded()
+    {
+        if (_disableAIOnDeath == false || _componentsToDisable == null)
         {
-            foreach (MonoBehaviour aiComponent in _aiComponents)
+            return;
+        }
+
+        foreach (MonoBehaviour component in _componentsToDisable)
+        {
+            if (component != null)
             {
-                if (aiComponent != null)
-                {
-                    aiComponent.enabled = false;
-                }
+                component.enabled = false;
             }
         }
     }

@@ -8,165 +8,309 @@ namespace GeneralEnemyPatrolSystem
         private const float ArrivalThreshold = 0.3f;
         private const float ChaseSpeedMultiplier = 1.5f;
         private const float BoxRotationAngle = 0f;
-        private const int LayerNotFound = -1;
 
-        [Header("Patrol Settings")]
         [SerializeField] private Transform _pointA;
         [SerializeField] private Transform _pointB;
         [SerializeField] private float _patrolSpeed = 2f;
 
-        [Header("Chase Settings")]
         [SerializeField] private float _visionRadius = 5f;
         [SerializeField] private float _loseRadius = 5f;
         [SerializeField] private LayerMask _playerLayerMask;
 
-        [Header("Attack Box Settings")]
         [SerializeField] private Vector2 _attackOffset = new Vector2(1.5f, 0.8f);
         [SerializeField] private Vector2 _attackSize = new Vector2(2.5f, 1.6f);
 
-        [Header("Door Interaction")]
         [SerializeField] private float _doorCheckDistance = 1.2f;
         [SerializeField] private LayerMask _doorLayerMask;
 
         private Rigidbody2D _rigidbody;
         private Transform _playerTransform;
         private HealthManager _playerHealthManager;
-
         private Vector3 _nextPatrolPoint;
-        private bool _isPlayerDead = false;
+        private bool _isPlayerDead;
 
         public event System.Action<Vector2> OnMoveDirectionChanged;
         public event System.Action<bool> OnInAttackRange;
 
-        public Vector2 CurrentMoveDirection { get; private set; }
+        public Vector2 CurrentDirection { get; private set; }
+        public bool InAttackRange { get; private set; }
 
         private void Awake()
         {
-            _rigidbody = GetComponent<Rigidbody2D>();
-        }
-
-        private void Start()
-        {
-            _nextPatrolPoint = _pointA.position;
+            InitializeComponents();
+            InitializePatrolPoint();
         }
 
         private void Update()
         {
-            CheckPlayerDeath();
-
             if (_isPlayerDead)
             {
-                Patrol();
+                HandlePlayerDeadState();
+                NotifyStateChanges();
+
                 return;
             }
 
             if (_playerTransform == null)
             {
                 SearchForPlayer();
-                Patrol();
+            }
+
+            if (_playerTransform != null)
+            {
+                HandlePlayerChase();
             }
             else
             {
-                ChaseOrAttackPlayer();
+                HandlePatrolState();
             }
+
+            NotifyStateChanges();
+        }
+
+        private void OnDestroy()
+        {
+            UnsubscribeFromPlayerDeath();
+        }
+
+        public void ResetPlayerState()
+        {
+            _isPlayerDead = false;
+        }
+
+        private void InitializeComponents()
+        {
+            _rigidbody = GetComponent<Rigidbody2D>();
+        }
+
+        private void InitializePatrolPoint()
+        {
+            if (_pointB != null)
+            {
+                _nextPatrolPoint = _pointB.position;
+                CurrentDirection = (_nextPatrolPoint - transform.position).normalized;
+
+                return;
+            }
+
+            _nextPatrolPoint = transform.position;
+            CurrentDirection = Vector2.zero;
+        }
+
+        private void HandlePlayerDeadState()
+        {
+            ClearPlayerReference();
+
+            InAttackRange = false;
+
+            Patrol();
+        }
+
+        private void HandlePlayerChase()
+        {
+            float distanceToPlayer = Vector2.Distance(transform.position, _playerTransform.position);
+
+            InAttackRange = IsPlayerInAttackBox();
+
+            if (distanceToPlayer > _loseRadius)
+            {
+                ClearPlayerReference();
+
+                InAttackRange = false;
+
+                return;
+            }
+
+            if (InAttackRange)
+            {
+                StopMovement();
+                CheckPlayerDeath();
+
+                return;
+            }
+
+            MoveToward(_playerTransform.position, _patrolSpeed * ChaseSpeedMultiplier);
+        }
+
+        private void HandlePatrolState()
+        {
+            InAttackRange = false;
+
+            Patrol();
         }
 
         private void Patrol()
         {
-            OnInAttackRange?.Invoke(false);
-
-            if (Vector2.Distance(transform.position, _nextPatrolPoint) < ArrivalThreshold)
+            if (_pointA == null || _pointB == null)
             {
-                _nextPatrolPoint = _nextPatrolPoint == _pointA.position ? _pointB.position : _pointA.position;
-            }
+                StopMovement();
 
-            MoveTowards(_nextPatrolPoint, _patrolSpeed);
-        }
-
-        private void ChaseOrAttackPlayer()
-        {
-            float distanceToPlayer = Vector2.Distance(transform.position, _playerTransform.position);
-
-            if (distanceToPlayer > _loseRadius)
-            {
-                _playerTransform = null;
                 return;
             }
 
-            if (IsPlayerInAttackBox())
+            float distanceX = Mathf.Abs(transform.position.x - _nextPatrolPoint.x);
+
+            if (distanceX < ArrivalThreshold)
+            {
+                _nextPatrolPoint = _nextPatrolPoint == _pointA.position
+                    ? _pointB.position
+                    : _pointA.position;
+            }
+
+            MoveToward(_nextPatrolPoint, _patrolSpeed);
+        }
+
+        private void MoveToward(Vector3 target, float speed)
+        {
+            if (_rigidbody == null)
+            {
+                return;
+            }
+
+            Vector2 direction = (target - transform.position).normalized;
+
+            if (TryOpenDoorInDirection(direction))
             {
                 StopMovement();
-                OnInAttackRange?.Invoke(true);
+
+                return;
             }
-            else
+
+            _rigidbody.velocity = new Vector2(direction.x * speed, _rigidbody.velocity.y);
+            CurrentDirection = direction;
+        }
+
+        private bool TryOpenDoorInDirection(Vector2 direction)
+        {
+            if (direction == Vector2.zero)
             {
-                OnInAttackRange?.Invoke(false);
-
-                if (!IsFacingDoor())
-                {
-                    MoveTowards(_playerTransform.position, _patrolSpeed * ChaseSpeedMultiplier);
-                }
-                else
-                {
-                    StopMovement();
-                }
+                return false;
             }
-        }
 
-        private void MoveTowards(Vector3 targetPosition, float speed)
-        {
-            Vector2 direction = (targetPosition - transform.position).normalized;
-            Vector2 velocity = new Vector2(direction.x * speed, _rigidbody.velocity.y);
+            RaycastHit2D hit = Physics2D.Raycast(
+                transform.position,
+                direction,
+                _doorCheckDistance,
+                _doorLayerMask);
 
-            _rigidbody.velocity = velocity;
-            CurrentMoveDirection = velocity;
+            IOpenable door = hit.collider != null
+                ? hit.collider.GetComponent<IOpenable>()
+                : null;
 
-            OnMoveDirectionChanged?.Invoke(velocity);
-        }
+            if (door == null || door.IsClosed == false)
+            {
+                return false;
+            }
 
-        private bool IsPlayerInAttackBox()
-        {
-            Vector2 boxCenter = (Vector2)transform.position + new Vector2(_attackOffset.x * Mathf.Sign(transform.localScale.x), _attackOffset.y);
-            Collider2D hit = Physics2D.OverlapBox(boxCenter, _attackSize, BoxRotationAngle, _playerLayerMask);
+            door.Open();
 
-            return hit != null;
-        }
-
-        private bool IsFacingDoor()
-        {
-            Vector2 direction = new Vector2(Mathf.Sign(transform.localScale.x), 0f);
-            RaycastHit2D hit = Physics2D.Raycast(transform.position, direction, _doorCheckDistance, _doorLayerMask);
-
-            return hit.collider != null;
+            return true;
         }
 
         private void StopMovement()
         {
-            _rigidbody.velocity = new Vector2(0f, _rigidbody.velocity.y);
-            CurrentMoveDirection = Vector2.zero;
+            if (_rigidbody != null)
+            {
+                _rigidbody.velocity = Vector2.zero;
+            }
 
-            OnMoveDirectionChanged?.Invoke(Vector2.zero);
+            CurrentDirection = Vector2.zero;
         }
 
         private void SearchForPlayer()
         {
-            Collider2D hit = Physics2D.OverlapCircle(transform.position, _visionRadius, _playerLayerMask);
+            Collider2D hit = Physics2D.OverlapCircle(
+                transform.position,
+                _visionRadius,
+                _playerLayerMask);
 
-            if (hit != null)
+            if (hit == null)
             {
-                _playerTransform = hit.transform;
-                _playerHealthManager = _playerTransform.GetComponent<HealthManager>();
+                ClearPlayerReference();
 
-                if (_playerHealthManager != null)
+                return;
+            }
+
+            SetPlayerReference(hit.transform);
+        }
+
+        private void SetPlayerReference(Transform playerTransform)
+        {
+            UnsubscribeFromPlayerDeath();
+
+            _playerTransform = playerTransform;
+            _playerHealthManager = _playerTransform.GetComponent<HealthManager>();
+
+            if (_playerHealthManager == null)
+            {
+                _playerHealthManager = _playerTransform.GetComponentInParent<HealthManager>();
+            }
+
+            if (_playerHealthManager != null)
+            {
+                _playerHealthManager.OnDeath += HandlePlayerDeath;
+            }
+        }
+
+        private void ClearPlayerReference()
+        {
+            UnsubscribeFromPlayerDeath();
+
+            _playerTransform = null;
+            _playerHealthManager = null;
+        }
+
+        private void UnsubscribeFromPlayerDeath()
+        {
+            if (_playerHealthManager != null)
+            {
+                _playerHealthManager.OnDeath -= HandlePlayerDeath;
+            }
+        }
+
+        private bool IsPlayerInAttackBox()
+        {
+            Vector2 attackCenter = CalculateAttackCenter(_attackOffset);
+
+            Collider2D playerInAttackRange = Physics2D.OverlapBox(
+                attackCenter,
+                _attackSize,
+                BoxRotationAngle,
+                _playerLayerMask);
+
+            if (playerInAttackRange == null)
+            {
+                return false;
+            }
+
+            Vector2 startPoint = transform.position;
+            Vector2 endPoint = playerInAttackRange.transform.position;
+
+            RaycastHit2D hit = Physics2D.Linecast(startPoint, endPoint, _doorLayerMask);
+
+            if (hit.collider != null)
+            {
+                IOpenable door = hit.collider.GetComponent<IOpenable>();
+
+                if (door != null && door.IsClosed)
                 {
-                    _playerHealthManager.OnDeath += HandlePlayerDeath;
+                    return false;
                 }
             }
-            else
+
+            return true;
+        }
+
+        private Vector2 CalculateAttackCenter(Vector2 offset)
+        {
+            float directionSign = Mathf.Sign(transform.localScale.x);
+
+            if (Mathf.Approximately(directionSign, 0f))
             {
-                _playerTransform = null;
-                _playerHealthManager = null;
+                directionSign = 1f;
             }
+
+            return (Vector2)transform.position + new Vector2(directionSign * offset.x, offset.y);
         }
 
         private void CheckPlayerDeath()
@@ -180,26 +324,26 @@ namespace GeneralEnemyPatrolSystem
         private void HandlePlayerDeath()
         {
             _isPlayerDead = true;
-            _playerTransform = null;
 
-            if (_playerHealthManager != null)
-            {
-                _playerHealthManager.OnDeath -= HandlePlayerDeath;
-                _playerHealthManager = null;
-            }
+            ClearPlayerReference();
         }
 
-        public void ResetPlayerState()
+        private void NotifyStateChanges()
         {
-            _isPlayerDead = false;
+            OnMoveDirectionChanged?.Invoke(CurrentDirection);
+            OnInAttackRange?.Invoke(InAttackRange);
         }
 
-        private void OnDestroy()
+        private void OnDrawGizmosSelected()
         {
-            if (_playerHealthManager != null)
-            {
-                _playerHealthManager.OnDeath -= HandlePlayerDeath;
-            }
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireSphere(transform.position, _visionRadius);
+
+            Gizmos.color = Color.red;
+
+            Vector2 attackCenter = CalculateAttackCenter(_attackOffset);
+
+            Gizmos.DrawWireCube(attackCenter, _attackSize);
         }
     }
 }

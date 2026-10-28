@@ -5,7 +5,6 @@ public interface IArmorManager
     bool HasArmor { get; }
 
     bool IsArmorUnlocked();
-
     void SetArmor(int amount);
     void AddArmor(int amount);
     int TakeArmorDamage(int damageAmount);

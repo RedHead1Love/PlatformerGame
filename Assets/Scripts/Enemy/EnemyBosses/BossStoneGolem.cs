@@ -1,253 +1,335 @@
 using GeneralLogicEnemies;
 using Shared.Damage;
+using System;
+using UnityEngine.Video;
 using UnityEngine;
 
 namespace HardBossLogic
 {
-    [RequireComponent(typeof(Animator), typeof(Rigidbody2D))]
+    [RequireComponent(typeof(Animator))]
+    [RequireComponent(typeof(Rigidbody2D))]
     public sealed class BossStoneGolem : Entity, IDamageable
     {
+        private const float TimerEndThreshold = 0f;
+        private const float GroundedVelocityThreshold = 0.05f;
+        private const float BoxRotationAngle = 0f;
+        private const float MaximumBeamLength = 20f;
+        private const float MaximumHealth = 4f;
+        private const int BossHealthAfterImmunity = 10;
+        private const int BossMeleeDamage = 1;
+        private const int BossLaserDamage = 1;
         private const float DestroyDelay = 3f;
+        private const float LaserSoundVolumeMultiplier = 0.8f;
         private const float MoveSoundVolumeMultiplier = 0.4f;
         private const float AttackMissSoundVolumeMultiplier = 0.7f;
-        private const float DefaultAttackCooldown = 2f;
-        private const float MeleeAttackRange = 2f;
-        private const float LaserAttackRange = 8f;
-        private const float AggroRange = 12f;
-        private const float AttackBoxRadius = 1.5f;
-        private const int MeleeDamage = 2;
-        private const float LaserDuration = 0.5f;
 
-        [Header("Combat Settings")]
+        [SerializeField] private VideoPlayer _introVideoPlayer;
+        [SerializeField] private GameObject _videoPanel;
+        [SerializeField] private string _videoFileName = "Glinomes.mp4";
+
+        [SerializeField] private Transform _playerTransform;
         [SerializeField] private LayerMask _playerLayerMask;
+
         [SerializeField] private Transform _laserFirePoint;
         [SerializeField] private float _moveSpeed = 2.5f;
-        [SerializeField] private GameObject _laserPrefab;
+        [SerializeField] private float _aggroDistance = 6f;
+        [SerializeField] private float _attackDistance = 1.8f;
+        [SerializeField] private float _immuneHealthThreshold = 0.4f;
+        [SerializeField] private float _immuneDuration = 3f;
+        [SerializeField] private float _laserCheckInterval = 0.15f;
 
-        [Header("Audio References")]
-        [SerializeField] private AudioClip _footstepSound;
-        [SerializeField] private AudioClip _meleeAttackSound;
-        [SerializeField] private AudioClip _laserFireSound;
-        [SerializeField] private AudioClip _deathSound;
         [SerializeField] private AudioClip _bossMusic;
 
-        private AudioController _audioController;
-        private Animator _animator;
-        private Rigidbody2D _rigidbody;
-        private Transform _playerTransform;
+        [SerializeField] private AudioClip _attackSound;
+        [SerializeField] private AudioClip _attackMissSound;
+        [SerializeField] private AudioClip _takeDamageSound;
+        [SerializeField] private AudioClip _deathSound;
+        [SerializeField] private AudioClip _laserChargeSound;
+        [SerializeField] private AudioClip _laserShootSound;
+        [SerializeField] private AudioClip _immuneActivateSound;
+        [SerializeField] private AudioClip _moveSound;
+        [SerializeField] private float _soundEffectVolume = 1f;
 
+        [SerializeField] private AudioClip[] _attackSoundVariations;
+        [SerializeField] private AudioClip[] _takeDamageSoundVariations;
+        [SerializeField] private AudioClip[] _moveSoundVariations;
+        [SerializeField] private bool _useSoundVariations = false;
+
+        [SerializeField] private float _moveSoundInterval = 0.5f;
+        [SerializeField] private float _laserChargeSoundDelay = 0.2f;
+
+        private Rigidbody2D _rigidbody;
+        private Animator _animator;
+        private AudioController _audioController;
+        private BossHealthBar _healthBar;
+
+        private BossStoneGolemState _currentState = BossStoneGolemState.Idle;
         private bool _isAggro;
-        private bool _isAttacking;
-        private float _soundEffectVolume = 1f;
-        private float _attackCooldownTimer;
+        private bool _isInvulnerable;
+        private bool _canCheckLaser = true;
+        private bool _playerWasGrounded = true;
+        private bool _wasAttackSuccessful;
+        private float _immuneTimer;
+        private float _lastLaserCheckTime;
+        private float _lastMoveSoundTime;
+
+        private BossIntroSequence _intro;
+
+        private static readonly int StateParameterHash = Animator.StringToHash("state");
 
         protected override void Awake()
         {
             base.Awake();
 
-            _audioController = FindFirstObjectByType<AudioController>();
+            _healthBar = GetComponent<BossHealthBar>();
             _animator = GetComponent<Animator>();
             _rigidbody = GetComponent<Rigidbody2D>();
-        }
+            _audioController = FindFirstObjectByType<AudioController>();
+            _intro = new BossIntroSequence(this, _introVideoPlayer, _videoPanel,
+                _videoFileName, _healthBar, _audioController, StopMovement, StartBossMusic,
+                () => _currentState != BossStoneGolemState.Death);
 
-        private void Start()
-        {
-            FindPlayer();
+            if (_videoPanel != null) _videoPanel.SetActive(false);
+
+            FindPlayerIfNeeded();
         }
 
         private void Update()
         {
-            if (IsDead || _playerTransform == null)
+            if (_currentState == BossStoneGolemState.Death) return;
+
+            if (_intro.IsPlaying)
             {
+                if (Input.GetKeyDown(KeyCode.Escape)) _intro.Finish();
                 return;
             }
 
-            float distanceToPlayer = Vector2.Distance(transform.position, _playerTransform.position);
+            FindPlayerIfNeeded();
+            CheckAggro();
 
-            CheckAggroState(distanceToPlayer);
+            if (_isAggro == false) return;
 
-            if (!_isAggro || _isAttacking)
-            {
-                return;
-            }
-
-            HandleCombatLogic(distanceToPlayer);
-        }
-
-        private void FixedUpdate()
-        {
-            if (IsDead || !_isAggro || _isAttacking || _playerTransform == null)
-            {
-                StopMovement();
-                return;
-            }
-
-            MoveTowardsPlayer();
-        }
-
-        private void FindPlayer()
-        {
-            GameObject player = GameObject.FindGameObjectWithTag("Player");
-
-            if (player != null)
-            {
-                _playerTransform = player.transform;
-            }
-        }
-
-        private void CheckAggroState(float distanceToPlayer)
-        {
-            if (!_isAggro && distanceToPlayer <= AggroRange)
-            {
-                _isAggro = true;
-                _audioController?.PlayBossMusic(_bossMusic); 
-            }
-        }
-
-        private void HandleCombatLogic(float distanceToPlayer)
-        {
-            _attackCooldownTimer -= Time.deltaTime;
-
-            if (_attackCooldownTimer <= 0f)
-            {
-                if (distanceToPlayer <= MeleeAttackRange)
-                {
-                    TriggerMeleeAttack();
-                }
-                else if (distanceToPlayer <= LaserAttackRange)
-                {
-                    TriggerLaserAttack();
-                }
-            }
-        }
-
-        private void MoveTowardsPlayer()
-        {
-            Vector2 direction = (_playerTransform.position - transform.position).normalized;
-            _rigidbody.velocity = new Vector2(direction.x * _moveSpeed, _rigidbody.velocity.y);
-
-            FlipTowardsPlayer(direction.x);
-
-            if (_animator != null)
-            {
-                _animator.SetBool("IsMoving", true);
-            }
-        }
-
-        private void StopMovement()
-        {
-            if (_rigidbody != null)
-            {
-                _rigidbody.velocity = new Vector2(0f, _rigidbody.velocity.y);
-            }
-
-            if (_animator != null)
-            {
-                _animator.SetBool("IsMoving", false);
-            }
-        }
-
-        private void FlipTowardsPlayer(float directionX)
-        {
-            if ((directionX > 0 && transform.localScale.x < 0) || (directionX < 0 && transform.localScale.x > 0))
-            {
-                Vector3 scale = transform.localScale;
-                scale.x *= -1;
-                transform.localScale = scale;
-            }
-        }
-
-        private void TriggerMeleeAttack()
-        {
-            _isAttacking = true;
-            _attackCooldownTimer = DefaultAttackCooldown;
-            _animator?.SetTrigger("MeleeAttack");
-            StopMovement();
-        }
-
-        private void TriggerLaserAttack()
-        {
-            _isAttacking = true;
-            _attackCooldownTimer = DefaultAttackCooldown;
-            _animator?.SetTrigger("LaserAttack");
-            StopMovement();
-        }
-
-        public override void Die()
-        {
-            base.Die();
-
-            StopMovement();
-
-            _audioController?.PlayOneShotWithVolume(_deathSound, _soundEffectVolume);
-
-            if (_isAggro)
-            {
-                _audioController?.StopBossMusic();
-            }
-
-            Destroy(gameObject, DestroyDelay);
+            UpdateCurrentState();
         }
 
         private void OnDestroy()
         {
-            if (_isAggro)
+            _intro?.Dispose();
+            if (_isAggro) StopBossMusic();
+        }
+
+        public override void TakeDamage(int amount)
+        {
+            if (_isInvulnerable || _currentState == BossStoneGolemState.Death || amount <= 0) return;
+
+            PlayTakeDamageSound();
+            base.TakeDamage(amount);
+        }
+
+        public override void Die()
+        {
+            if (_currentState == BossStoneGolemState.Death) return;
+
+            StopBossMusic();
+            SwitchState(BossStoneGolemState.Death);
+            base.Die();
+            Destroy(gameObject, DestroyDelay);
+        }
+
+        public void AnimEvent_MeleeHit()
+        {
+            PlayAttackSound();
+            _wasAttackSuccessful = ApplyMeleeDamage();
+        }
+
+        public void AnimEvent_AttackFinished()
+        {
+            if (_wasAttackSuccessful == false) PlayAttackMissSound();
+            SwitchState(BossStoneGolemState.Idle);
+        }
+
+        public void AnimEvent_LaserCharge() { PlayLaserChargeSound(); }
+        public void AnimEvent_LaserShoot() { PlayLaserShootSound(); ApplyLaserDamage(); }
+        public void AnimEvent_LaserFinished() { _canCheckLaser = true; SwitchState(BossStoneGolemState.Idle); }
+        public void AnimEvent_ImmuneFinished() { EndImmunity(); }
+
+        private void UpdateCurrentState()
+        {
+            switch (_currentState)
             {
-                _audioController?.StopBossMusic();
+                case BossStoneGolemState.Idle: UpdateIdleState(); break;
+                case BossStoneGolemState.Attack: StopMovement(); break;
+                case BossStoneGolemState.Immune: UpdateImmuneState(); break;
+                case BossStoneGolemState.LaserAttack: StopMovement(); break;
             }
         }
 
-        public void AnimEvent_PlayFootstep()
+        private void CheckAggro()
         {
-            _audioController?.PlayOneShotWithVolume(_footstepSound, _soundEffectVolume * MoveSoundVolumeMultiplier);
-        }
+            if (Time.timeSinceLevelLoad < 1.5f) return;
+            if (_isAggro || _playerTransform == null) return;
+            if (Vector2.Distance(transform.position, _playerTransform.position) > _aggroDistance) return;
 
-        public void AnimEvent_DealMeleeDamage()
-        {
-            Collider2D hit = Physics2D.OverlapCircle(transform.position, AttackBoxRadius, _playerLayerMask);
+            _isAggro = true;
 
-            if (hit != null)
+            if (!_intro.HasPlayed && _introVideoPlayer != null && _videoPanel != null)
             {
-                _audioController?.PlayOneShotWithVolume(_meleeAttackSound, _soundEffectVolume);
-
-                IDamageable damageable = hit.GetComponent<IDamageable>() ?? hit.GetComponentInParent<IDamageable>();
-                damageable?.TakeDamage(MeleeDamage);
+                StopBossMusic();
+                _intro.Play();
             }
             else
             {
-                _audioController?.PlayOneShotWithVolume(_meleeAttackSound, _soundEffectVolume * AttackMissSoundVolumeMultiplier);
+                _healthBar?.SetVisible(true);
+                StartBossMusic();
             }
+
+            SwitchState(BossStoneGolemState.Idle);
         }
 
-        public void AnimEvent_FireLaser()
+        private void UpdateIdleState()
         {
-            _audioController?.PlayOneShotWithVolume(_laserFireSound, _soundEffectVolume);
+            if (_playerTransform == null) return;
 
-            if (_laserPrefab != null && _laserFirePoint != null)
+            MoveTowardsPlayer();
+            PlayMoveSound();
+
+            if (_isInvulnerable == false && (float)_lives / MaximumHealth <= _immuneHealthThreshold)
             {
-                GameObject laser = Instantiate(_laserPrefab, _laserFirePoint.position, _laserFirePoint.rotation);
+                SwitchState(BossStoneGolemState.Immune);
+                return;
+            }
 
-                laser.transform.localScale = new Vector3(Mathf.Sign(transform.localScale.x), 1f, 1f);
+            if (_canCheckLaser && Time.time - _lastLaserCheckTime > _laserCheckInterval && IsPlayerJumping())
+            {
+                _lastLaserCheckTime = Time.time;
+                _canCheckLaser = false;
+                SwitchState(BossStoneGolemState.LaserAttack);
+                return;
+            }
 
-                Destroy(laser, LaserDuration);
+            if (Vector2.Distance(transform.position, _playerTransform.position) <= _attackDistance)
+            {
+                _wasAttackSuccessful = false;
+                SwitchState(BossStoneGolemState.Attack);
             }
         }
 
-        public void AnimEvent_EndAttack()
+        private void UpdateImmuneState()
         {
-            _isAttacking = false;
+            _immuneTimer -= Time.deltaTime;
+            if (_immuneTimer <= TimerEndThreshold) EndImmunity();
         }
 
-        private void OnDrawGizmosSelected()
+        private void MoveTowardsPlayer()
         {
-            Gizmos.color = Color.yellow;
-            Gizmos.DrawWireSphere(transform.position, AggroRange);
+            if (_playerTransform == null || _rigidbody == null) return;
 
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(transform.position, MeleeAttackRange);
-
-            Gizmos.color = Color.blue;
-            Gizmos.DrawWireSphere(transform.position, LaserAttackRange);
+            float direction = Mathf.Sign(_playerTransform.position.x - transform.position.x);
+            _rigidbody.velocity = new Vector2(direction * _moveSpeed, _rigidbody.velocity.y);
+            transform.localScale = new Vector3(direction, 1f, 1f);
         }
+
+        private bool IsPlayerJumping()
+        {
+            if (_playerTransform == null) return false;
+
+            Rigidbody2D playerRigidbody = _playerTransform.GetComponent<Rigidbody2D>();
+            if (playerRigidbody == null) return false;
+
+            bool isGrounded = Mathf.Abs(playerRigidbody.velocity.y) < GroundedVelocityThreshold;
+            bool justJumped = _playerWasGrounded && isGrounded == false;
+            _playerWasGrounded = isGrounded;
+            return justJumped;
+        }
+
+        private bool ApplyMeleeDamage()
+        {
+            Collider2D hit = Physics2D.OverlapCircle(transform.position, _attackDistance, _playerLayerMask);
+            if (hit == null) return false;
+
+            IDamageable damageable = hit.GetComponent<IDamageable>() ?? hit.GetComponentInParent<IDamageable>();
+            if (damageable == null) return false;
+
+            damageable.TakeDamage(BossMeleeDamage);
+            return true;
+        }
+
+        private void ApplyLaserDamage()
+        {
+            if (_laserFirePoint == null) return;
+
+            float direction = Mathf.Sign(transform.localScale.x);
+            Vector2 rayDirection = direction >= 0f ? Vector2.right : Vector2.left;
+
+            RaycastHit2D hit = Physics2D.Raycast(_laserFirePoint.position, rayDirection, MaximumBeamLength, _playerLayerMask);
+            if (hit.collider == null) return;
+
+            IDamageable damageable = hit.collider.GetComponent<IDamageable>() ?? hit.collider.GetComponentInParent<IDamageable>();
+            damageable?.TakeDamage(BossLaserDamage);
+        }
+
+        private void SwitchState(BossStoneGolemState newState)
+        {
+            _currentState = newState;
+            if (_animator != null) _animator.SetInteger(StateParameterHash, (int)newState);
+
+            switch (newState)
+            {
+                case BossStoneGolemState.Immune: StartImmunity(); break;
+                case BossStoneGolemState.Death: StopMovement(); PlayDeathSound(); break;
+                case BossStoneGolemState.Attack: StopMovement(); _wasAttackSuccessful = false; break;
+                case BossStoneGolemState.LaserAttack: StopMovement(); Invoke(nameof(PlayLaserChargeSound), _laserChargeSoundDelay); break;
+            }
+        }
+
+        private void StartImmunity()
+        {
+            _isInvulnerable = true;
+            _immuneTimer = _immuneDuration;
+            _lives = Mathf.Max(_lives, BossHealthAfterImmunity);
+            PlayImmuneActivateSound();
+            StopMovement();
+        }
+
+        private void EndImmunity() { _isInvulnerable = false; SwitchState(BossStoneGolemState.Idle); }
+
+        private void FindPlayerIfNeeded()
+        {
+            if (_playerTransform != null) return;
+            Hero hero = FindFirstObjectByType<Hero>();
+            if (hero != null) _playerTransform = hero.transform;
+        }
+
+        private void StartBossMusic() { if (_audioController != null && _bossMusic != null) _audioController.PlayBossMusic(_bossMusic); }
+        private void StopBossMusic() { _audioController?.StopBossMusic(); }
+        private void StopMovement() { if (_rigidbody != null) _rigidbody.velocity = Vector2.zero; }
+
+        private AudioClip GetRandomClip(AudioClip fallbackClip, AudioClip[] variations)
+        {
+            if (_useSoundVariations == false || variations == null || variations.Length == 0) return fallbackClip;
+            return variations[UnityEngine.Random.Range(0, variations.Length)];
+        }
+
+        private void PlayAttackSound() => PlaySound(GetRandomClip(_attackSound, _attackSoundVariations), _soundEffectVolume);
+        private void PlayAttackMissSound() => PlaySound(_attackMissSound, _soundEffectVolume * AttackMissSoundVolumeMultiplier);
+        private void PlayTakeDamageSound() => PlaySound(GetRandomClip(_takeDamageSound, _takeDamageSoundVariations), _soundEffectVolume);
+        private void PlayDeathSound() => PlaySound(_deathSound, _soundEffectVolume);
+        private void PlayLaserChargeSound() => PlaySound(_laserChargeSound, _soundEffectVolume * LaserSoundVolumeMultiplier);
+        private void PlayLaserShootSound() => PlaySound(_laserShootSound, _soundEffectVolume * LaserSoundVolumeMultiplier);
+        private void PlayImmuneActivateSound() => PlaySound(_immuneActivateSound, _soundEffectVolume);
+
+        private void PlayMoveSound()
+        {
+            if (Time.time < _lastMoveSoundTime + _moveSoundInterval) return;
+            _lastMoveSoundTime = Time.time;
+            PlaySound(GetRandomClip(_moveSound, _moveSoundVariations), _soundEffectVolume * MoveSoundVolumeMultiplier);
+        }
+
+        private void PlaySound(AudioClip clip, float volumeMultiplier)
+        {
+            if (clip != null && _audioController != null) _audioController.PlayOneShotWithVolume(clip, volumeMultiplier);
+        }
+
+        private enum BossStoneGolemState { Idle = 0, Attack = 1, Immune = 2, LaserAttack = 3, Death = 4 }
     }
 }
