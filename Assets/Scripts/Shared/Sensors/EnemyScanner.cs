@@ -1,3 +1,4 @@
+using AudioSystem;
 using UnityEngine;
 
 namespace Shared.Sensors
@@ -7,17 +8,15 @@ namespace Shared.Sensors
         private const float DefaultSoundCooldown = 3f;
         private const float DefaultDetectionRange = 5f;
 
-        [SerializeField] private float _detectionRange = DefaultDetectionRange;
-        [SerializeField] private LayerMask _enemyLayerMask;
-
+        [SerializeField]
+        private float _detectionRange = DefaultDetectionRange;
+        [SerializeField]
+        private LayerMask _enemyLayerMask;
         private AudioController _audioController;
         private bool _hadEnemyNearby;
         private float _lastSoundTime;
 
-        public bool HasEnemyNearby => Physics2D.OverlapCircle(
-            transform.position,
-            _detectionRange,
-            _enemyLayerMask);
+        public bool HasEnemyNearby => Physics2D.OverlapCircle(transform.position, _detectionRange, _enemyLayerMask);
 
         private void Start()
         {
@@ -53,10 +52,7 @@ namespace Shared.Sensors
 
         private bool ShouldPlayDetectionSound(bool hasEnemyNearby)
         {
-            return hasEnemyNearby &&
-                   _hadEnemyNearby == false &&
-                   Time.time >= _lastSoundTime + DefaultSoundCooldown;
+            return hasEnemyNearby && _hadEnemyNearby == false && Time.time >= _lastSoundTime + DefaultSoundCooldown;
         }
-
     }
 }

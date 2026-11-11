@@ -1,14 +1,22 @@
 using System;
+using GameLogic;
 
-public interface IPersistentWallet
+namespace Foxberry
 {
-    CoinData CurrentCoins { get; }
+    public interface IPersistentWallet
+    {
+        event Action<CoinData> OnCoinsUpdated;
 
-    event Action<CoinData> OnCoinsUpdated;
+        CoinData CurrentCoins { get; }
 
-    void AddCoins(string coinType, int amount);
-    void LoadCoinsFromSave(CoinData savedCoins);
-    void LoadFromSaveData(CoinData saveData);
-    void SaveCoins();
-    void LoadCoins();
+        void AddCoins(string coinType, int amount);
+
+        void LoadCoinsFromSave(CoinData savedCoins);
+
+        void LoadFromSaveData(CoinData saveData);
+
+        void SaveCoins();
+
+        void LoadCoins();
+    }
 }

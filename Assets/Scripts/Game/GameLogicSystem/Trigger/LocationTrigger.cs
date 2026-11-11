@@ -1,0 +1,71 @@
+using UnityEngine;
+
+namespace Foxberry
+{
+    public sealed class LocationTrigger : MonoBehaviour, ILocationTrigger
+    {
+        [SerializeField]
+        private string _locationName = "MiddleLevel";
+
+        public string LocationName => _locationName;
+
+        public void TriggerLocation()
+        {
+            MiniMapController miniMap = FindFirstObjectByType<MiniMapController>();
+
+            miniMap?.SetMiniMap(_locationName);
+        }
+
+        [ContextMenu("Test This 2D Trigger")]
+        public void TestTrigger()
+        {
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+
+            if (player == null)
+            {
+                return;
+            }
+
+            Collider2D playerCollider = player.GetComponent<Collider2D>();
+
+            if (playerCollider != null)
+            {
+                OnTriggerEnter2D(playerCollider);
+            }
+        }
+
+        private void OnTriggerEnter2D(Collider2D other)
+        {
+            if (enabled == false || other.CompareTag("Player") == false)
+            {
+                return;
+            }
+
+            TriggerLocation();
+        }
+
+        private void OnDrawGizmos()
+        {
+            const float gizmosDepth = 0.1f;
+
+            if (enabled == false)
+            {
+                return;
+            }
+
+            BoxCollider2D boxCollider = GetComponent<BoxCollider2D>();
+
+            if (boxCollider == null)
+            {
+                return;
+            }
+
+            Gizmos.color = Color.green;
+
+            Vector3 center = transform.position + new Vector3(boxCollider.offset.x, boxCollider.offset.y, 0f);
+            Vector3 size = new Vector3(boxCollider.size.x, boxCollider.size.y, gizmosDepth);
+
+            Gizmos.DrawWireCube(center, size);
+        }
+    }
+}

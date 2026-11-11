@@ -1,4 +1,3 @@
-using DoorControl;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -13,28 +12,39 @@ namespace DoorControl
         private const float ScaleMultiplier = 0.2f;
 
         [FormerlySerializedAs("keyColor")]
-        [SerializeField] private KeyColor _keyColor = KeyColor.WhiteColor;
-
+        [SerializeField]
+        private KeyColor _keyColor = KeyColor.WhiteColor;
         [FormerlySerializedAs("collectSound")]
-        [SerializeField] private AudioClip _collectSound;
-
+        [SerializeField]
+        private AudioClip _collectSound;
         [FormerlySerializedAs("collectSoundVolume")]
-        [SerializeField] private float _collectSoundVolume = 0.5f;
-
-        [SerializeField] private RectTransform _keyMarker;
-        [SerializeField] private RectTransform _collectedKeyMarker;
-
+        [SerializeField]
+        private float _collectSoundVolume = 0.5f;
+        [SerializeField]
+        private RectTransform _keyMarker;
+        [SerializeField]
+        private RectTransform _collectedKeyMarker;
         private bool _isCollected;
         private SpriteRenderer _spriteRenderer;
         private Collider2D _collider;
 
         public KeyColor Color => _keyColor;
+
         public bool IsCollected => _isCollected;
 
         public void SetKeyColor(KeyColor keyColor)
         {
             _keyColor = keyColor;
             ApplyKeyColor();
+        }
+
+        public void UpdateMarkerPosition(Vector2 uiPosition)
+        {
+            if (_keyMarker != null)
+            {
+                _keyMarker.anchoredPosition = uiPosition;
+                _keyMarker.gameObject.SetActive(true);
+            }
         }
 
         private void Start()
@@ -78,22 +88,12 @@ namespace DoorControl
                 KeyColor.BlackColor => UnityEngine.Color.black,
                 KeyColor.YellowColor => UnityEngine.Color.yellow,
                 KeyColor.BlueColor => UnityEngine.Color.blue,
-                _ => UnityEngine.Color.white
+                _ => UnityEngine.Color.white,
             };
-        }
-
-        public void UpdateMarkerPosition(Vector2 uiPosition)
-        {
-            if (_keyMarker != null)
-            {
-                _keyMarker.anchoredPosition = uiPosition;
-                _keyMarker.gameObject.SetActive(true);
-            }
         }
 
         private void CollectKey(GameObject player)
         {
-
             _isCollected = true;
 
             if (_collider != null)
@@ -135,7 +135,7 @@ namespace DoorControl
                 float progress = elapsedTime / CollectAnimationDuration;
 
                 transform.Rotate(0f, 0f, RotationSpeed * Time.deltaTime);
-                transform.localScale = originalScale * (1f + progress * ScaleMultiplier);
+                transform.localScale = originalScale * (1f + (progress * ScaleMultiplier));
 
                 if (_spriteRenderer != null)
                 {

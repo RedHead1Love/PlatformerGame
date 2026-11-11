@@ -1,3 +1,4 @@
+using Player;
 using Shared.Damage;
 using UnityEngine;
 
@@ -9,80 +10,35 @@ namespace Traps
         private const string PlayerTagDefault = "Player";
         private const float BoxRotationAngle = 0f;
 
-        [SerializeField] private bool _activateOnTriggerEnter = true;
-        [SerializeField] private LayerMask _activationLayer;
-        [SerializeField] private string _playerTag = PlayerTagDefault;
-
-        [SerializeField] private float _damage = 1f;
-        [SerializeField] private Vector2 _damageAreaSize = new Vector2(1.5f, 5f);
-        [SerializeField] private Vector2 _damageAreaOffset = Vector2.zero;
-
-        [SerializeField] private string _startDamageEventName = "StartDamage";
-        [SerializeField] private string _endDamageEventName = "EndDamage";
-
-        [SerializeField] private LightningTrapSoundController _soundController;
-
-        [SerializeField] private bool _usePositionActivation = false;
-        [SerializeField] private Transform _activationPoint;
-        [SerializeField] private float _activationRange = 3f;
-
+        [SerializeField]
+        private bool _activateOnTriggerEnter = true;
+        [SerializeField]
+        private LayerMask _activationLayer;
+        [SerializeField]
+        private string _playerTag = PlayerTagDefault;
+        [SerializeField]
+        private float _damage = 1f;
+        [SerializeField]
+        private Vector2 _damageAreaSize = new Vector2(1.5f, 5f);
+        [SerializeField]
+        private Vector2 _damageAreaOffset = Vector2.zero;
+        [SerializeField]
+        private LightningTrapSoundController _soundController;
+        [SerializeField]
+        private bool _usePositionActivation = false;
+        [SerializeField]
+        private Transform _activationPoint;
+        [SerializeField]
+        private float _activationRange = 3f;
         private Animator _animator;
         private Collider2D _damageCollider;
         private Transform _player;
-
         private bool _isActive;
         private Vector2 _damageAreaCenter;
 
         public bool IsActive => _isActive;
+
         public Vector2 DamageAreaCenter => _damageAreaCenter;
-
-        private void Awake()
-        {
-            InitializeComponents();
-            InitializeSoundController();
-            InitializeDamageCollider();
-            InitializePlayerReference();
-            CalculateDamageAreaCenter();
-        }
-
-        private void Start()
-        {
-            if (_animator != null)
-            {
-                _animator.enabled = false;
-            }
-        }
-
-        private void Update()
-        {
-            if (_player == null && Hero.Instance != null)
-            {
-                _player = Hero.Instance.transform;
-            }
-
-            CalculateDamageAreaCenter();
-
-            if (_usePositionActivation && _player != null && !_isActive)
-            {
-                CheckPositionActivation();
-            }
-        }
-
-        private void OnTriggerEnter2D(Collider2D other)
-        {
-            if (!_activateOnTriggerEnter || _isActive)
-            {
-                return;
-            }
-
-            bool layerOk = IsActivationLayer(other.gameObject.layer);
-            bool tagOk = other.CompareTag(_playerTag);
-
-            if (layerOk && tagOk)
-            {
-                ActivateTrap();
-            }
-        }
 
         public void ActivateTrap()
         {
@@ -102,10 +58,7 @@ namespace Traps
 
         public void ApplyDamage()
         {
-            Collider2D[] hits = Physics2D.OverlapBoxAll(
-                _damageAreaCenter,
-                _damageAreaSize,
-                BoxRotationAngle);
+            Collider2D[] hits = Physics2D.OverlapBoxAll(_damageAreaCenter, _damageAreaSize, BoxRotationAngle);
 
             foreach (Collider2D hit in hits)
             {
@@ -114,7 +67,7 @@ namespace Traps
                     continue;
                 }
 
-                TryDamagePlayer(hit);
+                DamagePlayerIfPossible(hit);
             }
         }
 
@@ -191,6 +144,54 @@ namespace Traps
             }
         }
 
+        private void Awake()
+        {
+            InitializeComponents();
+            InitializeSoundController();
+            InitializeDamageCollider();
+            InitializePlayerReference();
+            CalculateDamageAreaCenter();
+        }
+
+        private void Start()
+        {
+            if (_animator != null)
+            {
+                _animator.enabled = false;
+            }
+        }
+
+        private void Update()
+        {
+            if (_player == null && Hero.Instance != null)
+            {
+                _player = Hero.Instance.transform;
+            }
+
+            CalculateDamageAreaCenter();
+
+            if (_usePositionActivation && _player != null && !_isActive)
+            {
+                CheckPositionActivation();
+            }
+        }
+
+        private void OnTriggerEnter2D(Collider2D other)
+        {
+            if (!_activateOnTriggerEnter || _isActive)
+            {
+                return;
+            }
+
+            bool layerOk = IsActivationLayer(other.gameObject.layer);
+            bool tagOk = other.CompareTag(_playerTag);
+
+            if (layerOk && tagOk)
+            {
+                ActivateTrap();
+            }
+        }
+
         private void InitializeComponents()
         {
             _animator = GetComponent<Animator>();
@@ -262,7 +263,7 @@ namespace Traps
             return (_activationLayer.value & (1 << layer)) != 0;
         }
 
-        private void TryDamagePlayer(Collider2D playerCollider)
+        private void DamagePlayerIfPossible(Collider2D playerCollider)
         {
             IDamageable damageable = playerCollider.GetComponent<IDamageable>();
 

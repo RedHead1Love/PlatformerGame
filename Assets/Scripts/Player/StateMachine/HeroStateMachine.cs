@@ -1,6 +1,5 @@
-using System.Collections.Generic;
 using System;
-using UnityEngine;
+using System.Collections.Generic;
 
 namespace Player.StateMachine
 {
@@ -14,8 +13,6 @@ namespace Player.StateMachine
 
         private IState _currentState;
 
-        public IState Current => _currentState;
-
         public HeroStateMachine(Hero hero)
         {
             _hero = hero;
@@ -23,7 +20,10 @@ namespace Player.StateMachine
             InitializeStates();
         }
 
-        public void Change<TState>() where TState : IState
+        public IState Current => _currentState;
+
+        public void Change<TState>()
+            where TState : IState
         {
             if (_states.TryGetValue(typeof(TState), out IState nextState) == false)
             {

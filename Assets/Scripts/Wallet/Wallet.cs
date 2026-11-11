@@ -5,26 +5,13 @@ namespace GameLogic
 {
     public sealed class Wallet : MonoBehaviour, IWallet
     {
-        public static Wallet Instance { get; private set; }
-
         private int _coins;
 
         public event Action<int> OnCoinsChanged;
 
+        public static Wallet Instance { get; private set; }
+
         public int Coins => _coins;
-
-        private void Awake()
-        {
-            InitializeSingleton();
-        }
-
-        private void OnDestroy()
-        {
-            if (Instance == this)
-            {
-                Instance = null;
-            }
-        }
 
         public void AddCoins(int amount)
         {
@@ -55,6 +42,19 @@ namespace GameLogic
         public int GetCoins()
         {
             return _coins;
+        }
+
+        private void Awake()
+        {
+            InitializeSingleton();
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
+            }
         }
 
         private void InitializeSingleton()

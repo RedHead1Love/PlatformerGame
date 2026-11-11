@@ -1,3 +1,4 @@
+using Foxberry;
 using UnityEngine;
 
 namespace Player.Input
@@ -8,11 +9,10 @@ namespace Player.Input
         private const string JumpButtonName = "Jump";
         private const string PrimaryAttackButtonName = "Fire1";
         private const string SecondaryAttackButtonName = "Fire2";
-
         private const KeyCode SlideKey = KeyCode.LeftShift;
         private const KeyCode LiftKey = KeyCode.E;
         private const KeyCode DropHeroKey = KeyCode.S;
-        private const KeyCode DropHeroAltKey = KeyCode.DownArrow; 
+        private const KeyCode DropHeroAltKey = KeyCode.DownArrow;
         private const KeyCode MapKey = KeyCode.M;
         private const KeyCode MenuKey = KeyCode.Escape;
         private const KeyCode InteractKey = KeyCode.F;
@@ -23,23 +23,43 @@ namespace Player.Input
 
         public float HorizontalAxis => IsGameplayInputBlocked() ? 0f : UnityEngine.Input.GetAxisRaw(HorizontalAxisName);
 
-        public bool IsJumpPressed => IsGameplayInputBlocked() == false && UnityEngine.Input.GetButtonDown(JumpButtonName);
+        public bool IsJumpPressed =>
+            IsGameplayInputBlocked() == false && UnityEngine.Input.GetButtonDown(JumpButtonName);
+
         public bool IsJumpHeld => IsGameplayInputBlocked() == false && UnityEngine.Input.GetButton(JumpButtonName);
-        public bool IsAttackPressed => IsGameplayInputBlocked() == false && UnityEngine.Input.GetButtonDown(PrimaryAttackButtonName);
-        public bool IsSecondaryAttackPressed => IsGameplayInputBlocked() == false && UnityEngine.Input.GetButtonDown(SecondaryAttackButtonName);
+
+        public bool IsAttackPressed =>
+            IsGameplayInputBlocked() == false && UnityEngine.Input.GetButtonDown(PrimaryAttackButtonName);
+
+        public bool IsSecondaryAttackPressed =>
+            IsGameplayInputBlocked() == false && UnityEngine.Input.GetButtonDown(SecondaryAttackButtonName);
+
         public bool IsLiftPressed => IsGameplayInputBlocked() == false && UnityEngine.Input.GetKeyDown(LiftKey);
 
-        public bool IsDropHeroPressed => IsGameplayInputBlocked() == false && (UnityEngine.Input.GetKeyDown(DropHeroKey) || UnityEngine.Input.GetKeyDown(DropHeroAltKey));
+        public bool IsDropHeroPressed =>
+            IsGameplayInputBlocked() == false &&
+            (UnityEngine.Input.GetKeyDown(DropHeroKey) || UnityEngine.Input.GetKeyDown(DropHeroAltKey));
 
         public bool IsOpenMapPressed => IsGameplayInputBlocked() == false && UnityEngine.Input.GetKeyDown(MapKey);
-        public bool IsOpenShopOrChestPressed => IsGameplayInputBlocked() == false && (UnityEngine.Input.GetKeyDown(InteractKey));
 
-        public bool IsMenuPressed => _isInputBlocked == false && _isShopOpen == false && UnityEngine.Input.GetKeyDown(MenuKey);
+        public bool IsOpenShopOrChestPressed =>
+            IsGameplayInputBlocked() == false && (UnityEngine.Input.GetKeyDown(InteractKey));
 
+        public bool IsMenuPressed =>
+            _isInputBlocked == false && _isShopOpen == false && UnityEngine.Input.GetKeyDown(MenuKey);
 
-        public bool IsSlidePressed => IsGameplayInputBlocked() == false &&
-                              UnityEngine.Input.GetKeyDown(SlideKey) &&
-                              (_hero?.AbilityManager?.HasDash ?? true);
+        public bool IsSlidePressed => IsGameplayInputBlocked() == false && UnityEngine.Input.GetKeyDown(SlideKey) &&
+                                      (_hero?.AbilityManager?.HasDash ?? true);
+
+        public void BlockInput(bool isBlocked)
+        {
+            _isInputBlocked = isBlocked;
+        }
+
+        public void SetShopMode(bool isShopOpen)
+        {
+            _isShopOpen = isShopOpen;
+        }
 
         private void Awake()
         {
@@ -59,16 +79,6 @@ namespace Player.Input
         private bool IsGameplayInputBlocked()
         {
             return _isInputBlocked || _isShopOpen || PauseMenuController.IsGamePaused;
-        }
-
-        public void BlockInput(bool isBlocked)
-        {
-            _isInputBlocked = isBlocked;
-        }
-
-        public void SetShopMode(bool isShopOpen)
-        {
-            _isShopOpen = isShopOpen;
         }
     }
 }

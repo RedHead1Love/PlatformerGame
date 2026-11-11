@@ -1,0 +1,31 @@
+using GameLogic;
+using GeneralLogicEnemies;
+using UnityEngine;
+
+namespace Foxberry
+{
+    public sealed class ExecutionOrderEnforcer : MonoBehaviour
+    {
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void OnBeforeSceneLoad()
+        {
+            CreateSystemManager<EnemyRegistry>("EnemyManager");
+            CreateSystemManager<SaveSystem>("SaveSystem");
+        }
+
+        private static void CreateSystemManager<T>(string managerName)
+            where T : Component
+        {
+            if (FindFirstObjectByType<T>() != null)
+            {
+                return;
+            }
+
+            GameObject manager = new GameObject(managerName);
+
+            manager.AddComponent<T>();
+
+            DontDestroyOnLoad(manager);
+        }
+    }
+}

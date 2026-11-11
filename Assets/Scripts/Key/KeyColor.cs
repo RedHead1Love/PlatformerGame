@@ -5,6 +5,6 @@ namespace DoorControl
         WhiteColor,
         BlackColor,
         YellowColor,
-        BlueColor
+        BlueColor,
     }
 }

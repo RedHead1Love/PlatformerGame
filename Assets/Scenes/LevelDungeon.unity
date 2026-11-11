@@ -854,8 +854,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.52, y: 1.62}
   _damageAreaOffset: {x: 0, y: 0.73}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 2122679120}
@@ -8344,7 +8342,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eb7edd2457c63804bbb11f653d5583e7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _heroData: {fileID: 11400000, guid: 46c5d63341865e8428fdd4372bbc26fe, type: 2}
+  _heroData: {fileID: 11400000, guid: 2dba6cf58318e974eaf9a3658cb63b89, type: 2}
   _groundCheckPoint: {fileID: 894253582}
   _groundLayerMask:
     serializedVersion: 2
@@ -8674,7 +8672,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _joystickInput: {fileID: 0}
-  _keyboardInput: {fileID: 0}
+  _keyboardInput: {fileID: 39066208}
   _deadZone: 0.1
 --- !u!114 &39066211
 MonoBehaviour:
@@ -10563,10 +10561,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!50 &47160544
 Rigidbody2D:
@@ -15134,10 +15130,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!114 &81606608
 MonoBehaviour:
@@ -16583,10 +16577,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!114 &84939658
 MonoBehaviour:
@@ -17525,8 +17517,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1668046562}
@@ -18534,10 +18524,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!114 &99245149
 MonoBehaviour:
@@ -19659,7 +19647,6 @@ MonoBehaviour:
   _lives: 6
   _deathAnimationDelay: 1
   _maxHealth: 20
-  _currentHealth: 20
   _attackDamage: 1
   _strongAttackDamage: 2
   _attackCooldown: 2
@@ -20501,8 +20488,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1, y: 4}
   _damageAreaOffset: {x: -1.5, y: -0.8}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1271692845}
@@ -23425,10 +23410,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!61 &123458321
 BoxCollider2D:
@@ -27914,10 +27897,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!114 &152309513
 MonoBehaviour:
@@ -31887,8 +31868,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1.23, y: 1.37}
   _damageAreaOffset: {x: 0, y: -0.86}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 2011129020}
@@ -82491,8 +82470,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1.23, y: 1.37}
   _damageAreaOffset: {x: 0, y: -0.86}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 2011129020}
@@ -86235,8 +86212,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.52, y: 1.62}
   _damageAreaOffset: {x: 0, y: 0.73}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 793803699}
@@ -92423,8 +92398,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1.23, y: 1.37}
   _damageAreaOffset: {x: 0, y: -0.86}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1446010283}
@@ -92618,8 +92591,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1696213267}
@@ -93158,8 +93129,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1499512549}
@@ -93353,8 +93322,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1, y: 4}
   _damageAreaOffset: {x: -1.5, y: -0.8}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 387478869}
@@ -94121,10 +94088,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!114 &250136118
 MonoBehaviour:
@@ -95224,10 +95189,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!114 &253704204
 MonoBehaviour:
@@ -101479,8 +101442,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 503290017}
@@ -101741,8 +101702,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1.23, y: 1.37}
   _damageAreaOffset: {x: 0, y: -0.86}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 2094819051}
@@ -114516,8 +114475,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1.23, y: 1.37}
   _damageAreaOffset: {x: 0, y: -0.86}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1420036797}
@@ -116954,10 +116911,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!61 &397339320
 BoxCollider2D:
@@ -117671,10 +117626,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!50 &402327350
 Rigidbody2D:
@@ -121073,8 +121026,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1.23, y: 1.37}
   _damageAreaOffset: {x: 0, y: -0.86}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1271692845}
@@ -123002,10 +122953,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!114 &431641273
 MonoBehaviour:
@@ -130074,10 +130023,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!50 &474906089
 Rigidbody2D:
@@ -131309,8 +131256,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1.23, y: 1.37}
   _damageAreaOffset: {x: 0, y: -0.86}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1271692845}
@@ -133241,8 +133186,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1.23, y: 1.37}
   _damageAreaOffset: {x: 0, y: -0.86}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1271692845}
@@ -133928,8 +133871,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1.23, y: 1.37}
   _damageAreaOffset: {x: 0, y: -0.86}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 478768232}
@@ -139959,10 +139900,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!61 &532814323
 BoxCollider2D:
@@ -141366,8 +141305,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.52, y: 1.62}
   _damageAreaOffset: {x: 0, y: 0.73}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1359100424}
@@ -141900,8 +141837,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1, y: 4}
   _damageAreaOffset: {x: -1.5, y: -0.8}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 478768232}
@@ -142570,10 +142505,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!114 &542471916
 MonoBehaviour:
@@ -145100,8 +145033,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1101799434}
@@ -146642,8 +146573,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1, y: 4}
   _damageAreaOffset: {x: -1.5, y: -0.8}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 2122679120}
@@ -149179,7 +149108,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &593785799
 RectTransform:
   m_ObjectHideFlags: 0
@@ -149203,9 +149132,9 @@ RectTransform:
   m_RootOrder: -1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: -232.52258, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &593785800
 MonoBehaviour:
@@ -149390,9 +149319,6 @@ MonoBehaviour:
   _bronzeCoinSprite: {fileID: 21300000, guid: 0a08e8eb6cb9b9643893eb25905871b3, type: 3}
   _silverCoinSprite: {fileID: 21300000, guid: 41fc80d953fdf6a41a6fb888e2e0d4e7, type: 3}
   _goldCoinSprite: {fileID: 21300000, guid: 2077e440bdeef73439927ead28f5b42d, type: 3}
-  _bronzeCoinIndicator: {fileID: 0}
-  _silverCoinIndicator: {fileID: 0}
-  _goldCoinIndicator: {fileID: 0}
   _selectedCoinColor: {r: 1, g: 1, b: 1, a: 1}
   _unselectedCoinColor: {r: 0.5, g: 0.5, b: 0.5, a: 0.5}
   _bronzeTextColor: {r: 0.8, g: 0.5, b: 0.2, a: 1}
@@ -154909,10 +154835,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!114 &626915117
 MonoBehaviour:
@@ -159946,8 +159870,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1, y: 4}
   _damageAreaOffset: {x: -1.5, y: -0.8}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1271692845}
@@ -160294,8 +160216,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1757842603}
@@ -161896,8 +161816,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.52, y: 1.62}
   _damageAreaOffset: {x: 0, y: 0.73}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 371363692}
@@ -163103,8 +163021,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1.23, y: 1.37}
   _damageAreaOffset: {x: 0, y: -0.86}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 2094819051}
@@ -164191,10 +164107,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!50 &681853251
 Rigidbody2D:
@@ -167429,8 +167343,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 2094928420}
@@ -168097,10 +168009,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!114 &709808928
 MonoBehaviour:
@@ -170105,8 +170015,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1, y: 4}
   _damageAreaOffset: {x: -1.5, y: -0.8}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 915176663}
@@ -173026,8 +172934,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1650620762}
@@ -176981,8 +176887,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1, y: 4}
   _damageAreaOffset: {x: -1.5, y: -0.8}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 770961283}
@@ -179774,10 +179678,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!4 &782335532 stripped
 Transform:
@@ -182406,8 +182308,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1.23, y: 1.37}
   _damageAreaOffset: {x: 0, y: -0.86}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 478768232}
@@ -183733,7 +183633,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.054, y: 0.345}
   m_AnchorMax: {x: 0.42, y: 0.67}
-  m_AnchoredPosition: {x: 0, y: -0.868714}
+  m_AnchoredPosition: {x: 0, y: -0.8687134}
   m_SizeDelta: {x: -4.1600037, y: -4.6500244}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &808400245
@@ -183826,8 +183726,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1524121985}
@@ -189628,8 +189526,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 746746728}
@@ -193533,10 +193429,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!114 &867428780
 MonoBehaviour:
@@ -194026,8 +193920,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1.23, y: 1.37}
   _damageAreaOffset: {x: 0, y: -0.86}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 770961283}
@@ -196097,10 +195989,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!50 &881400605
 Rigidbody2D:
@@ -198932,10 +198822,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!114 &893047018
 MonoBehaviour:
@@ -199462,7 +199350,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -341, y: -935.00006}
+  m_AnchoredPosition: {x: -341.00003, y: -935.00006}
   m_SizeDelta: {x: -740.26, y: -43.570007}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &894650255
@@ -199986,8 +199874,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1.23, y: 1.37}
   _damageAreaOffset: {x: 0, y: -0.86}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 2000260602}
@@ -203039,8 +202925,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1.23, y: 1.37}
   _damageAreaOffset: {x: 0, y: -0.86}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1359100424}
@@ -203929,8 +203813,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1, y: 4}
   _damageAreaOffset: {x: -1.5, y: -0.8}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 2094819051}
@@ -287342,8 +287224,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1, y: 4}
   _damageAreaOffset: {x: -1.5, y: -0.8}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1271692845}
@@ -291328,10 +291208,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!114 &945104278
 MonoBehaviour:
@@ -293073,8 +292951,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1.23, y: 1.37}
   _damageAreaOffset: {x: 0, y: -0.86}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 676846880}
@@ -297613,10 +297489,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!114 &970942724
 MonoBehaviour:
@@ -298788,8 +298662,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1, y: 4}
   _damageAreaOffset: {x: -1.5, y: -0.8}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 2094928420}
@@ -305597,8 +305469,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1.23, y: 1.37}
   _damageAreaOffset: {x: 0, y: -0.86}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 478768232}
@@ -305792,8 +305662,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 610481343}
@@ -309734,10 +309602,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!114 &1054202854
 MonoBehaviour:
@@ -313172,8 +313038,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1715920897}
@@ -314397,8 +314261,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1.23, y: 1.37}
   _damageAreaOffset: {x: 0, y: -0.86}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 371363692}
@@ -314592,8 +314454,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 162698321}
@@ -316550,10 +316410,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!114 &1085923033
 MonoBehaviour:
@@ -319711,10 +319569,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!114 &1102283994
 MonoBehaviour:
@@ -326099,10 +325955,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!61 &1130471202
 BoxCollider2D:
@@ -326863,8 +326717,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1.23, y: 1.37}
   _damageAreaOffset: {x: 0, y: -0.86}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 1133465579}
   _usePositionActivation: 1
   _activationPoint: {fileID: 772881231}
@@ -327869,8 +327721,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1, y: 4}
   _damageAreaOffset: {x: -1.5, y: -0.8}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 770961283}
@@ -329738,8 +329588,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 2076965694}
@@ -329933,8 +329781,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1, y: 4}
   _damageAreaOffset: {x: -1.5, y: -0.8}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1446010283}
@@ -331247,8 +331093,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.52, y: 1.62}
   _damageAreaOffset: {x: 0, y: 0.73}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 2094928420}
@@ -334393,8 +334237,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1, y: 4}
   _damageAreaOffset: {x: -1.5, y: -0.8}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 2000260602}
@@ -334996,8 +334838,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1.23, y: 1.37}
   _damageAreaOffset: {x: 0, y: -0.86}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 478768232}
@@ -335365,8 +335205,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1, y: 4}
   _damageAreaOffset: {x: -1.5, y: -0.8}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 1178553331}
   _usePositionActivation: 1
   _activationPoint: {fileID: 676846880}
@@ -336379,8 +336217,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1980392435}
@@ -338893,8 +338729,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 589793328}
@@ -339754,10 +339588,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!114 &1194729713
 MonoBehaviour:
@@ -340840,8 +340672,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 2083301234}
@@ -341479,8 +341309,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.52, y: 1.62}
   _damageAreaOffset: {x: 0, y: 0.73}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 770961283}
@@ -344359,7 +344187,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1221945670
 RectTransform:
   m_ObjectHideFlags: 0
@@ -344462,8 +344290,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1212831188}
@@ -346034,8 +345860,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1769208813}
@@ -346354,7 +346178,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -5.0197144, y: -933.85986}
+  m_AnchoredPosition: {x: -5.0196533, y: -933.8598}
   m_SizeDelta: {x: -706.43994, y: -49.20996}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1232952426
@@ -348045,11 +347869,6 @@ MonoBehaviour:
   _tauntDuration: 1.3
   _meleeDamage: 2
   _spinDamage: 1
-  _groundCheckPoint: {fileID: 719494226}
-  _groundCheckRadius: 0.2
-  _groundLayerMask:
-    serializedVersion: 2
-    m_Bits: 128
   _attackCooldown: 0.5
   _bossMusic: {fileID: 8300000, guid: 3a0f1071323838d4a8c964fa3b51b14a, type: 3}
   _attackSound: {fileID: 8300000, guid: ffb04cb2778498a4c8d9eeaa3584bc99, type: 3}
@@ -348057,7 +347876,6 @@ MonoBehaviour:
   _takeDamageSound: {fileID: 8300000, guid: 3f64dacda9b88d8449174ef52dfed923, type: 3}
   _deathSound: {fileID: 8300000, guid: 1d03139ceb6d0794387a1cf696502be4, type: 3}
   _spinStartSound: {fileID: 0}
-  _spinLoopSound: {fileID: 0}
   _spinHitSound: {fileID: 8300000, guid: 97783da283a72b448896b74f00659911, type: 3}
   _tauntSound: {fileID: 0}
   _moveSound: {fileID: 0}
@@ -348480,7 +348298,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5025777075116179999, guid: 30c480d3cda505e4f8b4e52d7cf25f05, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -176
+      value: -175.99997
       objectReference: {fileID: 0}
     - target: {fileID: 5025777075116179999, guid: 30c480d3cda505e4f8b4e52d7cf25f05, type: 3}
       propertyPath: m_AnchoredPosition.y
@@ -348810,10 +348628,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!50 &1244016035
 Rigidbody2D:
@@ -349140,8 +348956,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1905393548}
@@ -354564,10 +354378,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!114 &1284356042
 MonoBehaviour:
@@ -356639,10 +356451,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!114 &1299453036
 MonoBehaviour:
@@ -357278,8 +357088,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 2015121221}
@@ -357971,8 +357779,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1.23, y: 1.37}
   _damageAreaOffset: {x: 0, y: -0.86}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 478768232}
@@ -360702,8 +360508,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1107313012}
@@ -365733,8 +365537,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1.23, y: 1.37}
   _damageAreaOffset: {x: 0, y: -0.86}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 915176663}
@@ -373679,10 +373481,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!50 &1384302332
 Rigidbody2D:
@@ -374356,10 +374156,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!50 &1385788165
 Rigidbody2D:
@@ -375246,8 +375044,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1, y: 4}
   _damageAreaOffset: {x: -1.5, y: -0.8}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 371363692}
@@ -375672,10 +375468,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!61 &1390974447
 BoxCollider2D:
@@ -376132,8 +375926,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.52, y: 1.62}
   _damageAreaOffset: {x: 0, y: 0.73}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1271692845}
@@ -383879,10 +383671,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!114 &1432381579
 MonoBehaviour:
@@ -384415,8 +384205,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 873304914}
@@ -385000,7 +384788,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.592, y: 0.345}
   m_AnchorMax: {x: 0.958, y: 0.67}
-  m_AnchoredPosition: {x: -1.9201356, y: -0.8698731}
+  m_AnchoredPosition: {x: -1.9201355, y: -0.86987305}
   m_SizeDelta: {x: 3.8399963, y: -6.6500244}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1436173041
@@ -385440,10 +385228,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!61 &1438164986
 BoxCollider2D:
@@ -388843,8 +388629,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 981568978}
@@ -389330,10 +389114,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!114 &1458537991
 MonoBehaviour:
@@ -457739,8 +457521,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1, y: 4}
   _damageAreaOffset: {x: -1.5, y: -0.8}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1324809724}
@@ -457934,8 +457714,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1, y: 4}
   _damageAreaOffset: {x: -1.5, y: -0.8}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 2011129020}
@@ -460969,8 +460747,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1.23, y: 1.37}
   _damageAreaOffset: {x: 0, y: -0.86}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1271692845}
@@ -461267,8 +461043,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1.23, y: 1.37}
   _damageAreaOffset: {x: 0, y: -0.86}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1420036797}
@@ -516838,10 +516612,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!61 &1568172955
 BoxCollider2D:
@@ -519202,8 +518974,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.52, y: 1.62}
   _damageAreaOffset: {x: 0, y: 0.73}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1290567663}
@@ -527458,7 +527228,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.7, y: 0.54}
   m_AnchorMax: {x: 0.82, y: 0.76}
-  m_AnchoredPosition: {x: -7.8999996, y: 10.099998}
+  m_AnchoredPosition: {x: -7.8999996, y: 10.0999975}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1619789163
@@ -529364,10 +529134,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!61 &1628474793
 BoxCollider2D:
@@ -530276,8 +530044,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 386892650}
@@ -607464,10 +607230,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!61 &1693766045
 BoxCollider2D:
@@ -619621,8 +619385,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1960420669}
@@ -620377,10 +620139,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!50 &1757283139
 Rigidbody2D:
@@ -627834,10 +627594,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!50 &1810618771
 Rigidbody2D:
@@ -630665,8 +630423,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1.23, y: 1.37}
   _damageAreaOffset: {x: 0, y: -0.86}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 793803699}
@@ -632750,8 +632506,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1550533030}
@@ -634156,8 +633910,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1, y: 4}
   _damageAreaOffset: {x: -1.5, y: -0.8}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 2094819051}
@@ -694970,8 +694722,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 443428380}
@@ -695126,7 +694876,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.412, y: 0.208}
   m_AnchorMax: {x: 0.603, y: 0.339}
-  m_AnchoredPosition: {x: 1, y: -70.00001}
+  m_AnchoredPosition: {x: 1, y: -70}
   m_SizeDelta: {x: -1, y: -1}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1890492578
@@ -697279,8 +697029,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1175933005}
@@ -704486,8 +704234,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1.23, y: 1.37}
   _damageAreaOffset: {x: 0, y: -0.86}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 770961283}
@@ -711241,8 +710987,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 134706349}
@@ -713503,8 +713247,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1.23, y: 1.37}
   _damageAreaOffset: {x: 0, y: -0.86}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 760191359}
@@ -715903,10 +715645,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!50 &2025187708
 Rigidbody2D:
@@ -716941,10 +716681,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!114 &2030199636
 MonoBehaviour:
@@ -722226,7 +721964,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -265.99988, y: -935.88995}
+  m_AnchoredPosition: {x: -265.9999, y: -935.88995}
   m_SizeDelta: {x: -740.85, y: -45.150024}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2060758675
@@ -723111,8 +722849,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1, y: 4}
   _damageAreaOffset: {x: -1.5, y: -0.8}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1271692845}
@@ -724356,8 +724092,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1, y: 4}
   _damageAreaOffset: {x: -1.5, y: -0.8}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1420036797}
@@ -726301,10 +726035,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!114 &2075996822
 MonoBehaviour:
@@ -757427,8 +757159,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 1, y: 4}
   _damageAreaOffset: {x: -1.5, y: -0.8}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 915176663}
@@ -757775,8 +757505,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.59, y: 0.81}
   _damageAreaOffset: {x: 0, y: 0.35}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1760115574}
@@ -758070,8 +757798,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.52, y: 1.62}
   _damageAreaOffset: {x: 0, y: 0.73}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 760191359}
@@ -759380,7 +759106,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -52, y: -136}
+  m_AnchoredPosition: {x: -52, y: -135.99997}
   m_SizeDelta: {x: -1550, y: -1098}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2124769529
@@ -761442,8 +761168,6 @@ MonoBehaviour:
   _damage: 1
   _damageAreaSize: {x: 0.52, y: 1.62}
   _damageAreaOffset: {x: 0, y: 0.73}
-  _startDamageEventName: StartDamage
-  _endDamageEventName: EndDamage
   _soundController: {fileID: 0}
   _usePositionActivation: 1
   _activationPoint: {fileID: 1324809724}
@@ -784882,10 +784606,8 @@ MonoBehaviour:
   _attackSize: {x: 2.5, y: 1.6}
   _attackDuration: 2.1
   _attackPause: 0.4
-  _specialAttackDuration: 2.8
   _specialAttackPause: 0.5
   _hurtInvulnerabilityDuration: 0.2
-  _normalAttackWeight: 70
   _specialAttackWeight: 30
 --- !u!114 &2145825285
 MonoBehaviour:

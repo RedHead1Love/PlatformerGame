@@ -4,9 +4,12 @@ namespace Shared.Sensors
 {
     public sealed class GroundSensor : MonoBehaviour
     {
-        [SerializeField] private Transform _checkPoint;
-        [SerializeField] private Vector2 _checkSize = new Vector2(0.5f, 0.1f);
-        [SerializeField] private LayerMask _groundLayerMask;
+        [SerializeField]
+        private Transform _checkPoint;
+        [SerializeField]
+        private Vector2 _checkSize = new Vector2(0.5f, 0.1f);
+        [SerializeField]
+        private LayerMask _groundLayerMask;
 
         public bool IsGrounded
         {
@@ -18,17 +21,17 @@ namespace Shared.Sensors
             }
         }
 
+        public void SetLayers(LayerMask layerMask)
+        {
+            _groundLayerMask = layerMask;
+        }
+
         private void Awake()
         {
             if (_checkPoint == null)
             {
                 _checkPoint = transform;
             }
-        }
-
-        public void SetLayers(LayerMask layerMask)
-        {
-            _groundLayerMask = layerMask;
         }
 
         private void OnDrawGizmosSelected()

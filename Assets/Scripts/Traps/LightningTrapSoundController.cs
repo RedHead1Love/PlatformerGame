@@ -1,0 +1,119 @@
+using AudioSystem;
+using Player;
+using Shared.Sensors;
+using UnityEngine;
+
+namespace Traps
+{
+    [RequireComponent(typeof(AudioSource))]
+    public sealed class LightningTrapSoundController : MonoBehaviour
+    {
+        private const string PlayerTag = "Player";
+        private const float DefaultVolume = 1f;
+
+        [SerializeField]
+        private AudioClip _lightningStrikeSound;
+        [SerializeField]
+        private AudioController _audioController;
+        [SerializeField]
+        private bool _enableDistanceCheck = true;
+        [SerializeField]
+        private float _maxSoundDistance = 20f;
+        private IAudioPlayer _audioPlayer;
+        private IDistanceChecker _distanceChecker;
+        private Transform _playerTransform;
+
+        public void PlayLightningStrikeSound()
+        {
+            if (_lightningStrikeSound == null || ShouldPlaySound() == false)
+            {
+                return;
+            }
+
+            _audioPlayer.PlayOneShot(_lightningStrikeSound, GetSoundVolume());
+        }
+
+        public void StopSound()
+        {
+            _audioPlayer.Stop();
+        }
+
+        public void SetLightningSound(AudioClip clip)
+        {
+            _lightningStrikeSound = clip;
+        }
+
+        public void SetMaxDistance(float distance)
+        {
+            _maxSoundDistance = Mathf.Max(0f, distance);
+        }
+
+        public void SetAudioController(AudioController controller)
+        {
+            _audioController = controller;
+        }
+
+        private void Awake()
+        {
+            InitializeAudioPlayer();
+            InitializePlayerReference();
+            InitializeAudioControllerReference();
+            InitializeDistanceChecker();
+        }
+
+        private void InitializeAudioPlayer()
+        {
+            AudioSource audioSource = GetComponent<AudioSource>();
+
+            audioSource.playOnAwake = false;
+            audioSource.loop = false;
+
+            _audioPlayer = new AudioPlayer(audioSource);
+        }
+
+        private void InitializePlayerReference()
+        {
+            GameObject player =
+                Hero.Instance != null ? Hero.Instance.gameObject : GameObject.FindGameObjectWithTag(PlayerTag);
+
+            if (player != null)
+            {
+                _playerTransform = player.transform;
+            }
+        }
+
+        private void InitializeAudioControllerReference()
+        {
+            if (_audioController == null)
+            {
+                _audioController = (Hero.Instance != null ? Hero.Instance.AudioController : null) ??
+                                   FindAnyObjectByType<AudioController>();
+            }
+        }
+
+        private void InitializeDistanceChecker()
+        {
+            _distanceChecker = new DistanceChecker();
+        }
+
+        private bool ShouldPlaySound()
+        {
+            if (_enableDistanceCheck == false || _playerTransform == null)
+            {
+                return true;
+            }
+
+            return _distanceChecker.IsWithinDistance(transform.position, _playerTransform.position, _maxSoundDistance);
+        }
+
+        private float GetSoundVolume()
+        {
+            if (_audioController == null)
+            {
+                return DefaultVolume;
+            }
+
+            return _audioController.SoundEffectsVolume;
+        }
+    }
+}
