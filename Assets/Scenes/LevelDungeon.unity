@@ -8342,7 +8342,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eb7edd2457c63804bbb11f653d5583e7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _heroData: {fileID: 11400000, guid: 2dba6cf58318e974eaf9a3658cb63b89, type: 2}
+  _heroData: {fileID: 11400000, guid: affdc6670abdde94aab8bc0d9f73c79e, type: 2}
   _groundCheckPoint: {fileID: 894253582}
   _groundLayerMask:
     serializedVersion: 2
@@ -346178,7 +346178,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -5.0196533, y: -933.8598}
+  m_AnchoredPosition: {x: -5.0197144, y: -933.8598}
   m_SizeDelta: {x: -706.43994, y: -49.20996}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1232952426
