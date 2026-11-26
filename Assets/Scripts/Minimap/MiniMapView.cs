@@ -8,6 +8,7 @@ namespace Foxberry
         private readonly GameObject _panel;
         private readonly GameObject _lockOverlay;
         private readonly Image _image;
+        private bool _isVisible;
 
         public MiniMapView(GameObject panel, GameObject lockOverlay, Image image)
         {
@@ -20,22 +21,26 @@ namespace Foxberry
                 {
                     _image = _panel.GetComponentInChildren<Image>(true);
                 }
+
                 if (_lockOverlay == null)
                 {
                     Transform overlay = _panel.transform.Find("LockOverlay");
-                    _lockOverlay = overlay != null ? overlay.gameObject : null;
+                    _lockOverlay = overlay != null
+                        ? overlay.gameObject
+                        : null;
                 }
             }
+
             SetVisible(false);
         }
 
-        public bool IsVisible { get; private set; }
+        public bool IsVisible => _isVisible && CanShow;
 
         public bool CanShow => _panel != null;
 
         public void SetVisible(bool visible)
         {
-            IsVisible = visible && CanShow;
+            _isVisible = visible && CanShow;
             if (_panel != null)
             {
                 _panel.SetActive(IsVisible);

@@ -8,7 +8,6 @@ namespace DoorControl
     {
         private const float CollectedAlpha = 1f;
         private const float UncollectedAlpha = 0.1f;
-
         private readonly RectTransform _keyDisplayPanel;
         private readonly GameObject _keyDisplayPrefab;
         private readonly List<KeySprite> _keySprites;
@@ -46,7 +45,6 @@ namespace DoorControl
         {
             _keySpriteMap.Clear();
             _collectedSpriteMap.Clear();
-
             foreach (KeySprite keySprite in _keySprites)
             {
                 if (keySprite == null)
@@ -55,8 +53,9 @@ namespace DoorControl
                 }
 
                 _keySpriteMap[keySprite.Color] = keySprite.Sprite;
-                _collectedSpriteMap[keySprite.Color] =
-                    keySprite.CollectedSprite != null ? keySprite.CollectedSprite : keySprite.Sprite;
+                _collectedSpriteMap[keySprite.Color] = keySprite.CollectedSprite != null
+                    ? keySprite.CollectedSprite
+                    : keySprite.Sprite;
             }
         }
 
@@ -68,13 +67,10 @@ namespace DoorControl
             }
 
             ClearExistingDisplay();
-
             int keyIndex = 0;
-
             foreach (KeyColor color in System.Enum.GetValues(typeof(KeyColor)))
             {
                 CreateKeyDisplayItem(color, keyIndex);
-
                 keyIndex++;
             }
         }
@@ -92,11 +88,8 @@ namespace DoorControl
         private void CreateKeyDisplayItem(KeyColor color, int index)
         {
             GameObject displayObject = Object.Instantiate(_keyDisplayPrefab, _keyDisplayPanel);
-
             ConfigureKeyDisplayObject(displayObject, color, index);
-
             Image keyImage = displayObject.GetComponent<Image>();
-
             if (keyImage == null)
             {
                 return;
@@ -110,9 +103,7 @@ namespace DoorControl
         {
             displayObject.name = $"{color}Key";
             displayObject.SetActive(true);
-
             RectTransform rectTransform = displayObject.GetComponent<RectTransform>();
-
             if (rectTransform == null)
             {
                 return;
@@ -125,7 +116,6 @@ namespace DoorControl
         private void InitializeKeyDisplay(KeyColor color, Image image)
         {
             image.enabled = true;
-
             if (_keySpriteMap.ContainsKey(color))
             {
                 image.sprite = _keySpriteMap[color];
@@ -139,7 +129,6 @@ namespace DoorControl
             if (isCollected && _collectedSpriteMap.ContainsKey(color))
             {
                 image.sprite = _collectedSpriteMap[color];
-
                 return;
             }
 
@@ -152,9 +141,9 @@ namespace DoorControl
         private void UpdateDisplayAlpha(Image image, bool isCollected)
         {
             Color imageColor = image.color;
-
-            imageColor.a = isCollected ? CollectedAlpha : UncollectedAlpha;
-
+            imageColor.a = isCollected
+                ? CollectedAlpha
+                : UncollectedAlpha;
             image.color = imageColor;
         }
     }

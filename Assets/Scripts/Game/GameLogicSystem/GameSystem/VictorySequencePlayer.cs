@@ -11,24 +11,21 @@ namespace Foxberry
     public sealed class VictorySequencePlayer : IDisposable
     {
         private const string MainMenuSceneName = "MainMenu";
-
         private readonly MonoBehaviour _host;
         private readonly VideoPlayer _victoryVideoPlayer;
         private readonly GameObject _videoPanel;
         private readonly string _videoFileName;
         private readonly AudioController _audioController;
         private readonly Action _hideDoor;
-
         private Coroutine _videoCoroutine;
         private bool _isVictorySequencePlaying;
 
-        public VictorySequencePlayer(
-            MonoBehaviour host,
-            VideoPlayer player,
-            GameObject panel,
-            string fileName,
-            AudioController audio,
-            Action hideDoor)
+        public VictorySequencePlayer(MonoBehaviour host,
+             VideoPlayer player,
+             GameObject panel,
+             string fileName,
+             AudioController audio,
+             Action hideDoor)
         {
             _host = host;
             _victoryVideoPlayer = player;
@@ -47,11 +44,13 @@ namespace Foxberry
                 _host.StopCoroutine(_videoCoroutine);
                 _videoCoroutine = null;
             }
+
             if (_victoryVideoPlayer != null)
             {
                 _victoryVideoPlayer.loopPointReached -= OnVideoFinished;
                 _victoryVideoPlayer.errorReceived -= OnVideoError;
             }
+
             if (_isVictorySequencePlaying)
             {
                 _isVictorySequencePlaying = false;
@@ -60,6 +59,7 @@ namespace Foxberry
                 {
                     _victoryVideoPlayer.Stop();
                 }
+
                 if (_videoPanel != null)
                 {
                     _videoPanel.SetActive(false);
@@ -71,9 +71,7 @@ namespace Foxberry
         {
             _isVictorySequencePlaying = true;
             MiniMapController.IsCutscenePlaying = true;
-
             _hideDoor();
-
             if (_audioController != null)
             {
                 _audioController.PauseBackgroundMusic();
@@ -83,23 +81,21 @@ namespace Foxberry
             if (_victoryVideoPlayer != null && _videoPanel != null)
             {
                 ClearRenderTexture();
-
                 _videoPanel.SetActive(true);
                 AudioListener.pause = false;
-
                 _victoryVideoPlayer.Stop();
                 _victoryVideoPlayer.source = VideoSource.Url;
                 _victoryVideoPlayer.url = Application.streamingAssetsPath + "/" + _videoFileName.Trim();
-
                 _victoryVideoPlayer.loopPointReached -= OnVideoFinished;
                 _victoryVideoPlayer.loopPointReached += OnVideoFinished;
                 _victoryVideoPlayer.errorReceived -= OnVideoError;
                 _victoryVideoPlayer.errorReceived += OnVideoError;
-
                 _victoryVideoPlayer.Play();
-
                 if (_videoCoroutine != null)
+                {
                     _host.StopCoroutine(_videoCoroutine);
+                }
+
                 _videoCoroutine = _host.StartCoroutine(VideoWatchdogRoutine());
             }
             else
@@ -111,10 +107,12 @@ namespace Foxberry
         public void SkipOrEndVideo()
         {
             if (!_isVictorySequencePlaying)
+            {
                 return;
+            }
+
             _isVictorySequencePlaying = false;
             MiniMapController.IsCutscenePlaying = false;
-
             if (_videoCoroutine != null)
             {
                 _host.StopCoroutine(_videoCoroutine);
@@ -130,7 +128,9 @@ namespace Foxberry
             }
 
             if (_videoPanel != null)
+            {
                 _videoPanel.SetActive(false);
+            }
 
             FinishGameAndReturnToMenu();
         }
@@ -176,11 +176,15 @@ namespace Foxberry
         private void ClearRenderTexture()
         {
             if (_victoryVideoPlayer == null || _victoryVideoPlayer.targetTexture == null)
+            {
                 return;
+            }
 
             RenderTexture target = _victoryVideoPlayer.targetTexture;
             if (!target.IsCreated())
+            {
                 target.Create();
+            }
 
             RenderTexture previousTexture = RenderTexture.active;
             RenderTexture.active = target;
@@ -192,7 +196,6 @@ namespace Foxberry
         {
             Dispose();
             GameProgressResetter.Reset();
-
             if (GameSession.Instance != null)
             {
                 GameSession.Instance.SetNewGameFlag();

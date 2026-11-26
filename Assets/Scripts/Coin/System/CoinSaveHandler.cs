@@ -16,14 +16,12 @@ namespace Foxberry
         private IEnumerator InitializeCoins()
         {
             yield return new WaitForSeconds(InitializationDelay);
-
             if (SaveSystem.Instance == null || SaveSystem.Instance.HasSave() == false)
             {
                 yield break;
             }
 
             GameSaveData saveData = SaveSystem.Instance.CurrentSave;
-
             if (saveData == null || saveData.WalletBalance.IsInitialized == false)
             {
                 yield break;

@@ -7,7 +7,6 @@ namespace Shared.Sensors
     {
         private const float DefaultSoundCooldown = 3f;
         private const float DefaultDetectionRange = 5f;
-
         [SerializeField]
         private float _detectionRange = DefaultDetectionRange;
         [SerializeField]
@@ -31,7 +30,6 @@ namespace Shared.Sensors
         private void InitializeAudioController()
         {
             _audioController = GetComponent<AudioController>();
-
             if (_audioController == null)
             {
                 _audioController = FindFirstObjectByType<AudioController>();
@@ -41,7 +39,6 @@ namespace Shared.Sensors
         private void UpdateEnemyDetection()
         {
             bool hasEnemyNearby = HasEnemyNearby;
-
             if (ShouldPlayDetectionSound(hasEnemyNearby))
             {
                 _lastSoundTime = Time.time;

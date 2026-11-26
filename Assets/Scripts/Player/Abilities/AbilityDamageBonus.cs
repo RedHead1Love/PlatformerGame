@@ -6,7 +6,6 @@ namespace Player.Abilities
     public sealed class AbilityDamageBonus
     {
         private const float BonusMultiplier = 2f;
-
         private readonly AbilityManager _abilities;
 
         public AbilityDamageBonus(AbilityManager abilities)
@@ -22,7 +21,6 @@ namespace Player.Abilities
             }
 
             EnemyTypeComponent enemyTypeComponent = GetEnemyTypeComponent(enemy);
-
             if (enemyTypeComponent == null)
             {
                 return 1f;
@@ -30,12 +28,24 @@ namespace Player.Abilities
 
             return enemyTypeComponent.EnemyType switch
             {
-                EnemyType.Swamp => _abilities.HasSwampDamageBonus ? BonusMultiplier : 1f,
-                EnemyType.Skeleton => _abilities.HasSkeletonDamageBonus ? BonusMultiplier : 1f,
-                EnemyType.Demon => _abilities.HasDemonDamageBonus ? BonusMultiplier : 1f,
-                EnemyType.Spider => _abilities.HasSpiderDamageBonus ? BonusMultiplier : 1f,
-                EnemyType.Zombie => _abilities.HasZombieDamageBonus ? BonusMultiplier : 1f,
-                EnemyType.Boss => _abilities.HasBossDamageBonus ? BonusMultiplier : 1f,
+                EnemyType.Swamp => _abilities.HasSwampDamageBonus
+                    ? BonusMultiplier
+                    : 1f,
+                EnemyType.Skeleton => _abilities.HasSkeletonDamageBonus
+                    ? BonusMultiplier
+                    : 1f,
+                EnemyType.Demon => _abilities.HasDemonDamageBonus
+                    ? BonusMultiplier
+                    : 1f,
+                EnemyType.Spider => _abilities.HasSpiderDamageBonus
+                    ? BonusMultiplier
+                    : 1f,
+                EnemyType.Zombie => _abilities.HasZombieDamageBonus
+                    ? BonusMultiplier
+                    : 1f,
+                EnemyType.Boss => _abilities.HasBossDamageBonus
+                    ? BonusMultiplier
+                    : 1f,
                 _ => 1f,
             };
         }
@@ -48,7 +58,6 @@ namespace Player.Abilities
             }
 
             EnemyTypeComponent enemyTypeComponent = GetEnemyTypeComponent(enemy);
-
             if (enemyTypeComponent == null)
             {
                 return false;
@@ -69,7 +78,6 @@ namespace Player.Abilities
         private EnemyTypeComponent GetEnemyTypeComponent(GameObject enemy)
         {
             EnemyTypeComponent component = enemy.GetComponent<EnemyTypeComponent>();
-
             if (component == null)
             {
                 component = enemy.GetComponentInParent<EnemyTypeComponent>();

@@ -7,16 +7,13 @@ namespace Player.StateMachine
     {
         private const int MinimumAttackNumber = 0;
         private const int MaximumAttackNumber = 2;
-
         private readonly Dictionary<Type, IState> _states = new Dictionary<Type, IState>();
         private readonly Hero _hero;
-
         private IState _currentState;
 
         public HeroStateMachine(Hero hero)
         {
             _hero = hero;
-
             InitializeStates();
         }
 
@@ -38,7 +35,6 @@ namespace Player.StateMachine
         public void PerformRandomAttack()
         {
             int randomAttackIndex = UnityEngine.Random.Range(MinimumAttackNumber, MaximumAttackNumber);
-
             if (randomAttackIndex == MinimumAttackNumber)
             {
                 Change<Attack1State>();

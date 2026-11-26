@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace GameLogic
 {
-    internal sealed class WalletBalanceStore
+    internal sealed class WalletBalanceStore : IWalletBalanceStore
     {
         private readonly IProgressPreferences _preferences;
 

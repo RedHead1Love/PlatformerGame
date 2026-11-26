@@ -14,7 +14,6 @@ namespace GameLogic
         public int Gold;
         [FormerlySerializedAs("isInitialized")]
         public bool IsInitialized;
-
         private const int MinimumCoinCount = 0;
 
         public CoinData(int bronze = MinimumCoinCount, int silver = MinimumCoinCount, int gold = MinimumCoinCount)

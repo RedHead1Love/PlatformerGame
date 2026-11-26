@@ -16,21 +16,19 @@ namespace Foxberry
         private readonly Action _stopMovement;
         private readonly Action _startMusic;
         private readonly Func<bool> _isAlive;
-
         private Coroutine _videoCoroutine;
         private bool _isVideoPlaying;
         private bool _hasPlayedIntro;
 
-        public BossIntroSequence(
-            MonoBehaviour host,
-            VideoPlayer player,
-            GameObject panel,
-            string fileName,
-            BossHealthBar healthBar,
-            AudioController audio,
-            Action stopMovement,
-            Action startMusic,
-            Func<bool> isAlive)
+        public BossIntroSequence(MonoBehaviour host,
+             VideoPlayer player,
+             GameObject panel,
+             string fileName,
+             BossHealthBar healthBar,
+             AudioController audio,
+             Action stopMovement,
+             Action startMusic,
+             Func<bool> isAlive)
         {
             _host = host;
             _introVideoPlayer = player;
@@ -54,11 +52,13 @@ namespace Foxberry
                 _host.StopCoroutine(_videoCoroutine);
                 _videoCoroutine = null;
             }
+
             if (_introVideoPlayer != null)
             {
                 _introVideoPlayer.loopPointReached -= OnVideoFinished;
                 _introVideoPlayer.errorReceived -= OnVideoError;
             }
+
             if (_isVideoPlaying)
             {
                 _isVideoPlaying = false;
@@ -67,6 +67,7 @@ namespace Foxberry
                 {
                     _introVideoPlayer.Stop();
                 }
+
                 if (_videoPanel != null)
                 {
                     _videoPanel.SetActive(false);
@@ -80,30 +81,21 @@ namespace Foxberry
             _isVideoPlaying = true;
             MiniMapController.IsCutscenePlaying = true;
             _healthBar?.SetVisible(false);
-
             _audioController?.PauseBackgroundMusic();
-
             _stopMovement();
-
             if (_introVideoPlayer != null && _videoPanel != null)
             {
                 ClearRenderTexture();
-
                 _videoPanel.SetActive(true);
                 AudioListener.pause = false;
-
                 _introVideoPlayer.Stop();
                 _introVideoPlayer.source = VideoSource.Url;
                 _introVideoPlayer.url = Application.streamingAssetsPath + "/" + _videoFileName.Trim();
-
                 _introVideoPlayer.loopPointReached -= OnVideoFinished;
                 _introVideoPlayer.loopPointReached += OnVideoFinished;
-
                 _introVideoPlayer.errorReceived -= OnVideoError;
                 _introVideoPlayer.errorReceived += OnVideoError;
-
                 _introVideoPlayer.Play();
-
                 if (_videoCoroutine != null)
                 {
                     _host.StopCoroutine(_videoCoroutine);
@@ -120,10 +112,12 @@ namespace Foxberry
         public void Finish()
         {
             if (!_isVideoPlaying)
+            {
                 return;
+            }
+
             _isVideoPlaying = false;
             MiniMapController.IsCutscenePlaying = false;
-
             if (_videoCoroutine != null)
             {
                 _host.StopCoroutine(_videoCoroutine);
@@ -144,7 +138,6 @@ namespace Foxberry
             }
 
             _healthBar?.SetVisible(true);
-
             if (_isAlive())
             {
                 _startMusic();

@@ -1,6 +1,6 @@
 namespace GameLogic
 {
-    internal interface IGameSaveStore
+    public interface IGameSaveStore
     {
         bool Exists();
 

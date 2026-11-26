@@ -40,100 +40,43 @@ namespace GameLogic
             SaveId = string.Empty;
             SaveTime = DateTime.Now;
             PlayerPosition = Vector3.zero;
-
             PlayerHealth = 0;
             PlayerArmor = 0;
-
             CollectedKeys = new List<KeyColor>();
             KilledEnemies = new List<string>();
             CollectedHealthPickups = new List<string>();
-
             CheckpointId = string.Empty;
             SceneName = string.Empty;
-
             Coins = new CoinData(0, 0, 0);
-
             PurchasedItemIds = new List<string>();
             AbilityData = new AbilitySaveData();
         }
 
-        public string Id
-        {
-            get => SaveId;
-            set => SaveId = value;
-        }
+        public string Id { get => SaveId; set => SaveId = value; }
 
-        public DateTime Timestamp
-        {
-            get => SaveTime;
-            set => SaveTime = value;
-        }
+        public DateTime Timestamp { get => SaveTime; set => SaveTime = value; }
 
-        public Vector3 Position
-        {
-            get => PlayerPosition;
-            set => PlayerPosition = value;
-        }
+        public Vector3 Position { get => PlayerPosition; set => PlayerPosition = value; }
 
-        public int Health
-        {
-            get => PlayerHealth;
-            set => PlayerHealth = value;
-        }
+        public int Health { get => PlayerHealth; set => PlayerHealth = value; }
 
-        public int Armor
-        {
-            get => PlayerArmor;
-            set => PlayerArmor = value;
-        }
+        public int Armor { get => PlayerArmor; set => PlayerArmor = value; }
 
-        public List<KeyColor> Keys
-        {
-            get => CollectedKeys;
-            set => CollectedKeys = value;
-        }
+        public List<KeyColor> Keys { get => CollectedKeys; set => CollectedKeys = value; }
 
-        public List<string> DefeatedEnemies
-        {
-            get => KilledEnemies;
-            set => KilledEnemies = value;
-        }
+        public List<string> DefeatedEnemies { get => KilledEnemies; set => KilledEnemies = value; }
 
-        public List<string> HealthPickups
-        {
-            get => CollectedHealthPickups;
-            set => CollectedHealthPickups = value;
-        }
+        public List<string> HealthPickups { get => CollectedHealthPickups; set => CollectedHealthPickups = value; }
 
-        public string Checkpoint
-        {
-            get => CheckpointId;
-            set => CheckpointId = value;
-        }
+        public string Checkpoint { get => CheckpointId; set => CheckpointId = value; }
 
-        public string Scene
-        {
-            get => SceneName;
-            set => SceneName = value;
-        }
+        public string Scene { get => SceneName; set => SceneName = value; }
 
-        public CoinData WalletBalance
-        {
-            get => Coins;
-            set => Coins = value;
-        }
+        public CoinData WalletBalance { get => Coins; set => Coins = value; }
 
-        public List<string> Purchases
-        {
-            get => PurchasedItemIds;
-            set => PurchasedItemIds = value;
-        }
+        public List<string> Purchases { get => PurchasedItemIds; set => PurchasedItemIds = value; }
 
-        public AbilitySaveData Abilities
-        {
-            get => AbilityData;
-            set => AbilityData = value;
-        }
+        public AbilitySaveData Abilities { get => AbilityData; set => AbilityData = value; }
 
         public void EnsureValidCollections()
         {
@@ -142,7 +85,6 @@ namespace GameLogic
             CollectedHealthPickups ??= new List<string>();
             PurchasedItemIds ??= new List<string>();
             AbilityData ??= new AbilitySaveData();
-
             if (Coins.IsInitialized == false)
             {
                 Coins = new CoinData(Coins.Bronze, Coins.Silver, Coins.Gold);

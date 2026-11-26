@@ -6,12 +6,14 @@ namespace Foxberry
 {
     public sealed class Checkpoint : MonoBehaviour
     {
+        private const float DefaultSfxVolume = 0.8f;
+        private const int SaveTextSortingOrder = 10000;
+        private const string SfxVolumeKey = "SFXVolume";
         private const string PlayerTag = "Player";
         private const float TextVerticalOffset = 1.5f;
         private const float TextDestroyDelay = 2f;
         private const int TextFontSize = 10;
         private const float CooldownDuration = 5f;
-
         [SerializeField]
         private string _checkpointId;
         [SerializeField]
@@ -22,6 +24,7 @@ namespace Foxberry
         private bool _isOnCooldown;
         private SpriteRenderer _spriteRenderer;
         private float _nextActivationTime;
+        private IWorldProgress _worldProgress;
 
         public string GetCheckpointId() => _checkpointId;
 
@@ -29,10 +32,19 @@ namespace Foxberry
 
         public Vector3 GetSpawnPosition() => transform.position;
 
+        public void SetWorldProgress(IWorldProgress worldProgress)
+        {
+            _worldProgress = worldProgress ?? throw new System.ArgumentNullException(nameof(worldProgress));
+        }
+
+        private void Awake()
+        {
+            _worldProgress ??= GameServices.Progress;
+        }
+
         private void Start()
         {
             _spriteRenderer = GetComponent<SpriteRenderer>();
-
             InitializeCheckpoint();
         }
 
@@ -75,26 +87,23 @@ namespace Foxberry
         {
             _isActivated = true;
             _isOnCooldown = true;
-
             _nextActivationTime = Time.time + CooldownDuration;
-
             UpdateVisualState();
             PlayActivationEffects();
             ShowSaveText();
-
             if (SaveSystem.Instance != null)
             {
                 SaveSystem.Instance.SaveGame(_checkpointId, playerPosition);
             }
 
-            WorldProgress.MarkGameSaved();
+            _worldProgress.MarkGameSaved();
         }
 
         private void PlayActivationEffects()
         {
             if (_activationSound != null)
             {
-                float sfxVolume = PlayerPrefs.GetFloat("SFXVolume", 0.8f);
+                float sfxVolume = PlayerPrefs.GetFloat(SfxVolumeKey, DefaultSfxVolume);
                 AudioSource.PlayClipAtPoint(_activationSound, transform.position, sfxVolume);
             }
         }
@@ -103,12 +112,11 @@ namespace Foxberry
         {
             GameObject textObject = new GameObject("SaveText");
             textObject.transform.position = transform.position + (Vector3.up * TextVerticalOffset);
-
             TextMeshPro textMesh = textObject.AddComponent<TextMeshPro>();
-
             bool isEnglish = LocalizationManager.CurrentLanguage == GameLanguage.English;
-            textMesh.text = isEnglish ? "Game Saved" : "игра сохранена";
-
+            textMesh.text = isEnglish
+                ? "Game Saved"
+                : "игра сохранена";
             if (_saveTextFont != null)
             {
                 textMesh.font = _saveTextFont;
@@ -118,8 +126,7 @@ namespace Foxberry
             textMesh.fontSize = TextFontSize;
             textMesh.alignment = TextAlignmentOptions.Center;
             textMesh.fontStyle = FontStyles.Bold;
-            textMesh.sortingOrder = 10000;
-
+            textMesh.sortingOrder = SaveTextSortingOrder;
             Destroy(textObject, TextDestroyDelay);
         }
 
@@ -127,7 +134,9 @@ namespace Foxberry
         {
             if (_spriteRenderer != null)
             {
-                _spriteRenderer.color = _isOnCooldown ? Color.green : Color.white;
+                _spriteRenderer.color = _isOnCooldown
+                    ? Color.green
+                    : Color.white;
             }
         }
     }

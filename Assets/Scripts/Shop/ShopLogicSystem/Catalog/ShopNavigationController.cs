@@ -10,10 +10,8 @@ namespace Foxberry.Shop
         private const float InputThreshold = 0.1f;
         private const int NoItemSelectedIndex = -1;
         private const int FirstItemIndex = 0;
-
         private readonly float _moveDelay;
         private readonly Dictionary<CoinType, List<IShopItem>> _itemsByCurrency;
-
         private CoinType _currentCurrency;
         private int _currentItemIndex;
         private float _lastMoveTime;
@@ -22,7 +20,6 @@ namespace Foxberry.Shop
         {
             _moveDelay = moveDelay;
             _itemsByCurrency = new Dictionary<CoinType, List<IShopItem>>();
-
             foreach (CoinType currency in System.Enum.GetValues(typeof(CoinType)))
             {
                 _itemsByCurrency[currency] = new List<IShopItem>();
@@ -40,7 +37,6 @@ namespace Foxberry.Shop
             if (items == null)
             {
                 _itemsByCurrency[currency] = new List<IShopItem>();
-
                 return;
             }
 
@@ -60,7 +56,6 @@ namespace Foxberry.Shop
             }
 
             bool moved = HandleNavigation(inputDirection);
-
             if (moved)
             {
                 _lastMoveTime = Time.time;
@@ -79,14 +74,11 @@ namespace Foxberry.Shop
             if (_itemsByCurrency.TryGetValue(item.CurrencyType, out List<IShopItem> items))
             {
                 int index = items.IndexOf(item);
-
-                if (index != NoItemSelectedIndex &&
-                    (_currentCurrency != item.CurrencyType || _currentItemIndex != index))
+                if (index != NoItemSelectedIndex && (_currentCurrency != item.CurrencyType || _currentItemIndex != index))
                 {
                     _currentCurrency = item.CurrencyType;
                     _currentItemIndex = index;
                     _lastMoveTime = Time.time;
-
                     return true;
                 }
             }
@@ -101,7 +93,6 @@ namespace Foxberry.Shop
                 _currentCurrency = currency;
                 _currentItemIndex = NoItemSelectedIndex;
                 _lastMoveTime = Time.time;
-
                 return true;
             }
 
@@ -150,7 +141,6 @@ namespace Foxberry.Shop
             if (inputDirection.y < -InputThreshold && GetCurrentItemCount() > 0)
             {
                 _currentItemIndex = FirstItemIndex;
-
                 return true;
             }
 
@@ -162,22 +152,18 @@ namespace Foxberry.Shop
             if (inputDirection.y > InputThreshold)
             {
                 _currentItemIndex = NoItemSelectedIndex;
-
                 return true;
             }
 
             if (inputDirection.x < -InputThreshold && _currentItemIndex > FirstItemIndex)
             {
                 _currentItemIndex--;
-
                 return true;
             }
 
-            if ((inputDirection.x > InputThreshold || inputDirection.y < -InputThreshold) &&
-                _currentItemIndex < GetCurrentItemCount() - 1)
+            if ((inputDirection.x > InputThreshold || inputDirection.y < -InputThreshold) && _currentItemIndex < GetCurrentItemCount() - 1)
             {
                 _currentItemIndex++;
-
                 return true;
             }
 
@@ -188,7 +174,6 @@ namespace Foxberry.Shop
         {
             int currencyCount = System.Enum.GetValues(typeof(CoinType)).Length;
             int newCurrencyIndex = (int)_currentCurrency + direction;
-
             if (newCurrencyIndex < 0 || newCurrencyIndex >= currencyCount)
             {
                 return false;
@@ -196,13 +181,14 @@ namespace Foxberry.Shop
 
             _currentCurrency = (CoinType)newCurrencyIndex;
             _currentItemIndex = NoItemSelectedIndex;
-
             return true;
         }
 
         private int GetCurrentItemCount()
         {
-            return _itemsByCurrency.TryGetValue(_currentCurrency, out List<IShopItem> items) ? items.Count : 0;
+            return _itemsByCurrency.TryGetValue(_currentCurrency, out List<IShopItem> items)
+                ? items.Count
+                : 0;
         }
     }
 }

@@ -57,7 +57,6 @@ namespace GameLogic
             if (SaveSystem.Instance != null && SaveSystem.Instance.HasSave())
             {
                 OnSaveLoaded(SaveSystem.Instance.CurrentSave);
-
                 return;
             }
 

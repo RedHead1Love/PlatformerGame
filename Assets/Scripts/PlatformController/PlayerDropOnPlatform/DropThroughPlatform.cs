@@ -6,7 +6,6 @@ namespace PlatformController
     {
         private const KeyCode DropKey = KeyCode.S;
         private const float DefaultDropDuration = 0.3f;
-
         [SerializeField]
         private float _dropDuration = DefaultDropDuration;
         private Collider2D _platformCollider;
@@ -34,7 +33,6 @@ namespace PlatformController
 
             _isDropping = true;
             _platformCollider.enabled = false;
-
             Invoke(nameof(EndDrop), _dropDuration);
         }
 

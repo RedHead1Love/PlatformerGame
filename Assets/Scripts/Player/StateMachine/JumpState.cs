@@ -8,26 +8,23 @@ namespace Player.StateMachine
     {
         private const float VelocityThreshold = 0.1f;
         private const float HorizontalDeadZone = 0.1f;
-
         private readonly Hero _hero;
-        private readonly IInputProvider _inputProvider;
         private readonly GroundSensor _groundCheck;
         private readonly Rigidbody2D _rigidbody;
-
         private bool _isJumpCutApplied;
 
         public JumpState(Hero hero)
         {
             _hero = hero;
-            _inputProvider = hero.GetComponent<IInputProvider>();
             _groundCheck = hero.GetComponentInChildren<GroundSensor>();
             _rigidbody = hero.Rigidbody;
         }
 
+        private IInputProvider InputProvider => _hero.InputProvider;
+
         public void Enter()
         {
             _isJumpCutApplied = false;
-
             if (IsGrounded())
             {
                 ApplyJumpForce();
@@ -38,7 +35,7 @@ namespace Player.StateMachine
 
         public void Tick()
         {
-            if (_inputProvider != null && _inputProvider.IsAttackPressed && IsGrounded() == false)
+            if (InputProvider != null && InputProvider.IsAttackPressed && IsGrounded() == false)
             {
                 _hero.StateMachine.Change<AirAttackState>();
                 return;
@@ -46,17 +43,17 @@ namespace Player.StateMachine
 
             if (_isJumpCutApplied == false && _rigidbody != null && _rigidbody.velocity.y > 0f)
             {
-                if (_inputProvider != null && !_inputProvider.IsJumpHeld)
+                if (InputProvider != null && !InputProvider.IsJumpHeld)
                 {
-                    _rigidbody.velocity =
-                        new Vector2(_rigidbody.velocity.x, _rigidbody.velocity.y * _hero.Data.JumpCutMultiplier);
+                    _rigidbody.velocity = new Vector2(_rigidbody.velocity.x,
+                         _rigidbody.velocity.y * _hero.Data.JumpCutMultiplier);
                     _isJumpCutApplied = true;
                 }
             }
 
             if (_rigidbody != null && _rigidbody.velocity.y <= VelocityThreshold && IsGrounded())
             {
-                if (_inputProvider != null && Mathf.Abs(_inputProvider.HorizontalAxis) >= HorizontalDeadZone)
+                if (InputProvider != null && Mathf.Abs(InputProvider.HorizontalAxis) >= HorizontalDeadZone)
                 {
                     _hero.StateMachine.Change<RunState>();
                 }
@@ -69,12 +66,12 @@ namespace Player.StateMachine
 
         public void FixedTick()
         {
-            if (_inputProvider == null || _rigidbody == null)
+            if (InputProvider == null || _rigidbody == null)
             {
                 return;
             }
 
-            HandleMovement(_inputProvider.HorizontalAxis);
+            HandleMovement(InputProvider.HorizontalAxis);
         }
 
         public void Exit()

@@ -21,13 +21,16 @@ namespace Foxberry.Shop
                 {
                     continue;
                 }
+
                 if (!groups.TryGetValue(item.CurrencyType, out List<ShopItemData> group))
                 {
                     group = new List<ShopItemData>();
                     groups.Add(item.CurrencyType, group);
                 }
+
                 group.Add(item);
             }
+
             return groups;
         }
 
@@ -38,6 +41,7 @@ namespace Foxberry.Shop
             {
                 navigation.AddItems(group.Key, new List<IShopItem>(group.Value));
             }
+
             return navigation;
         }
 
@@ -47,12 +51,14 @@ namespace Foxberry.Shop
             {
                 return;
             }
+
             foreach (string id in purchasedIds)
             {
                 if (id == ShopItemIds.ActivateLastChance || id == ShopItemIds.RestoreArmor)
                 {
                     continue;
                 }
+
                 ShopItemData item = _items.Find(candidate => candidate != null && candidate.ItemId == id);
                 if (item != null)
                 {

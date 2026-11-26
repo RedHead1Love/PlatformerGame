@@ -14,7 +14,6 @@ namespace GameLogic
         private const float StopVelocityThreshold = 0.5f;
         private const float RetryDelay = 0.5f;
         private const float GizmoRadius = 0.3f;
-
         [SerializeField]
         private CoinType _coinType = CoinType.Bronze;
         [SerializeField]
@@ -63,7 +62,6 @@ namespace GameLogic
 
             _isCollectable = true;
             _originalPosition = transform.position;
-
             StartAnimation();
         }
 
@@ -71,7 +69,6 @@ namespace GameLogic
         {
             AddCoinToWallets();
             PlayCollectSound();
-
             Destroy(gameObject);
         }
 
@@ -122,7 +119,6 @@ namespace GameLogic
 
             _rigidbody.bodyType = RigidbodyType2D.Kinematic;
             _rigidbody.velocity = Vector2.zero;
-
             if (TryGetComponent(out Collider2D coinCollider))
             {
                 coinCollider.isTrigger = true;
@@ -145,11 +141,9 @@ namespace GameLogic
         {
             bool isMagnetizing = false;
             float currentSpeed = _magnetInitialSpeed;
-
             while (true)
             {
                 bool canMagnetize = Hero.Instance != null && Hero.Instance.IsAlive();
-
                 if (canMagnetize && isMagnetizing == false)
                 {
                     float distanceToHero = Vector2.Distance(transform.position, Hero.Instance.transform.position);
@@ -166,13 +160,13 @@ namespace GameLogic
 
                 if (isMagnetizing)
                 {
-                    Vector3 targetPosition =
-                        Hero.Instance.transform.position + new Vector3(0f, _magnetTargetOffsetY, 0f);
-
+                    Vector3 targetPosition = Hero.Instance.transform.position + new Vector3(0f,
+                         _magnetTargetOffsetY,
+                         0f);
                     currentSpeed += _magnetAcceleration * Time.deltaTime;
-                    transform.position =
-                        Vector3.MoveTowards(transform.position, targetPosition, currentSpeed * Time.deltaTime);
-
+                    transform.position = Vector3.MoveTowards(transform.position,
+                         targetPosition,
+                         currentSpeed * Time.deltaTime);
                     if (Vector3.Distance(transform.position, targetPosition) <= _collectionDistance)
                     {
                         Collect();
@@ -192,7 +186,6 @@ namespace GameLogic
         private void AddCoinToWallets()
         {
             WalletManager.Instance?.AddCoins(_coinType, _coinValue);
-
             if (PersistentWallet.Instance != null)
             {
                 PersistentWallet.Instance.AddCoins(_coinType.ToString(), _coinValue);

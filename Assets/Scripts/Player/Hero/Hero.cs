@@ -18,7 +18,6 @@ namespace Player
         private const string PlayerChildName = "Player";
         private const float ZeroDirectionThreshold = 0f;
         private const float WallCheckDistance = 0.5f;
-
         [SerializeField]
         private HeroData _heroData;
         [SerializeField]
@@ -60,13 +59,24 @@ namespace Player
 
         public HeroData Data => _heroData;
 
+        public IInputProvider InputProvider => _inputProvider;
+
         public Transform AttackPoint => _attackPoint;
 
-        public int Lives => _healthManager != null ? _healthManager.CurrentHealth : 0;
+        public int Lives => _healthManager != null
+            ? _healthManager.CurrentHealth
+            : 0;
 
-        public float FacingDirection => _spriteRenderer != null && _spriteRenderer.flipX ? -1f : 1f;
+        public float FacingDirection => _spriteRenderer != null && _spriteRenderer.flipX
+            ? -1f
+            : 1f;
 
         public bool HasPerformedAirAttack => _hasPerformedAirAttack;
+
+        public void SetInputProvider(IInputProvider inputProvider)
+        {
+            _inputProvider = inputProvider ?? throw new System.ArgumentNullException(nameof(inputProvider));
+        }
 
         public void SetAirAttackPerformed(bool isPerformed)
         {
@@ -85,7 +95,7 @@ namespace Player
 
         public void OnAttackHit()
         {
-            if (StateMachine.Current is IDamageDealer damageDealer)
+            if (StateMachine?.Current is IDamageDealer damageDealer)
             {
                 damageDealer.DealDamage();
             }
@@ -93,7 +103,7 @@ namespace Player
 
         public void OnAttackEnd()
         {
-            if (StateMachine.Current is IAnimationEndHandler animationEndHandler)
+            if (StateMachine?.Current is IAnimationEndHandler animationEndHandler)
             {
                 animationEndHandler.OnAnimationEnd();
             }
@@ -106,7 +116,7 @@ namespace Player
                 return;
             }
 
-            _damageService.ApplyDamage(amount);
+            _damageService?.ApplyDamage(amount);
         }
 
         public void SetFacing(float direction)
@@ -146,23 +156,30 @@ namespace Player
                 return false;
             }
 
-            bool leftWallDetected =
-                Physics2D.Raycast(_leftWallCheckPoint.position, Vector2.left, WallCheckDistance, _groundLayerMask);
-
-            bool rightWallDetected =
-                Physics2D.Raycast(_rightWallCheckPoint.position, Vector2.right, WallCheckDistance, _groundLayerMask);
-
+            bool leftWallDetected = Physics2D.Raycast(_leftWallCheckPoint.position,
+                 Vector2.left,
+                 WallCheckDistance,
+                 _groundLayerMask);
+            bool rightWallDetected = Physics2D.Raycast(_rightWallCheckPoint.position,
+                 Vector2.right,
+                 WallCheckDistance,
+                 _groundLayerMask);
             return leftWallDetected || rightWallDetected;
         }
 
         private void Awake()
         {
-            Instance = this;
+            if (_heroData == null)
+            {
+                enabled = false;
+                return;
+            }
 
+            Instance = this;
             InitializeAbilityManager();
             InitializeComponents();
-            InitializeStateMachine();
             InitializeSensors();
+            InitializeStateMachine();
             SubscribeToEvents();
         }
 
@@ -177,7 +194,6 @@ namespace Player
         private void Update()
         {
             StateMachine?.Tick();
-
             if (_isDead)
             {
                 return;
@@ -199,6 +215,11 @@ namespace Player
 
         private void OnDestroy()
         {
+            if (Instance == this)
+            {
+                Instance = null;
+            }
+
             UnsubscribeFromEvents();
             StopMovementSounds();
         }
@@ -206,14 +227,12 @@ namespace Player
         private void InitializeComponents()
         {
             _healthManager = GetComponent<HealthManager>();
-
             if (_healthManager == null)
             {
                 _healthManager = FindFirstObjectByType<HealthManager>();
             }
 
             _armorManager = GetComponent<ArmorManager>();
-
             if (_armorManager == null)
             {
                 _armorManager = FindFirstObjectByType<ArmorManager>();
@@ -221,9 +240,7 @@ namespace Player
 
             Rigidbody = GetComponent<Rigidbody2D>();
             AnimationService = new AnimationService(GetComponent<Animator>());
-
             AudioController = GetComponent<AudioController>();
-
             if (AudioController == null)
             {
                 AudioController = GetComponentInChildren<AudioController>(true);
@@ -234,20 +251,25 @@ namespace Player
                 AudioController = FindFirstObjectByType<AudioController>();
             }
 
-            _inputProvider = GetComponent<IInputProvider>();
-            _groundCheck = _groundCheckPoint != null ? _groundCheckPoint.GetComponent<GroundSensor>() : null;
+            _inputProvider = GetComponent<AggregatedInputProvider>();
+            if (_inputProvider == null)
+            {
+                _inputProvider = GetComponent<IInputProvider>();
+            }
 
+            _groundCheck = _groundCheckPoint != null
+                ? _groundCheckPoint.GetComponent<GroundSensor>()
+                : null;
             InitializeSpriteRenderer();
-
             _damageService = new DamageService(this, _healthManager);
         }
 
         private void InitializeSpriteRenderer()
         {
             Transform playerTransform = transform.Find(PlayerChildName);
-
-            _spriteRenderer = playerTransform != null ? playerTransform.GetComponent<SpriteRenderer>() : null;
-
+            _spriteRenderer = playerTransform != null
+                ? playerTransform.GetComponent<SpriteRenderer>()
+                : null;
             if (_spriteRenderer == null)
             {
                 _spriteRenderer = GetComponentInChildren<SpriteRenderer>(true);
@@ -284,7 +306,10 @@ namespace Player
                 _groundCheck = _groundCheckPoint.gameObject.AddComponent<GroundSensor>();
             }
 
-            _groundCheck.SetLayers(_groundLayerMask);
+            if (_groundLayerMask.value != 0)
+            {
+                _groundCheck.SetLayers(_groundLayerMask);
+            }
         }
 
         private void InitializeEnemyScanner()
@@ -332,10 +357,8 @@ namespace Player
 
             _isDead = true;
             OnHeroDiedGlobal?.Invoke();
-
             AudioController?.PlayDeathSound();
             StopMovementSounds();
-
             StateMachine.Change<DeathState>();
         }
 
@@ -351,11 +374,11 @@ namespace Player
                 return;
             }
 
-            float horizontalInput = _inputProvider != null ? _inputProvider.HorizontalAxis : 0f;
-
+            float horizontalInput = _inputProvider != null
+                ? _inputProvider.HorizontalAxis
+                : 0f;
             bool hasMovementInput = Mathf.Abs(horizontalInput) > ZeroDirectionThreshold;
             bool shouldPlayFootsteps = hasMovementInput && _isGrounded;
-
             if (shouldPlayFootsteps && _wasMoving == false)
             {
                 AudioController.StartFootsteps();

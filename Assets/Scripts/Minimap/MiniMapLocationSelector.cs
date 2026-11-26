@@ -19,11 +19,11 @@ namespace Foxberry
 
         public bool TrySelect(int index)
         {
-            if (_maps == null || index < 0 || index >= _maps.Count || _maps[index] == null ||
-                _maps[index].MapTexture == null)
+            if (_maps == null || index < 0 || index >= _maps.Count || _maps[index] == null || _maps[index].MapTexture == null)
             {
                 return false;
             }
+
             CurrentMap = _maps[index];
             return true;
         }
@@ -34,6 +34,7 @@ namespace Foxberry
             {
                 return false;
             }
+
             for (int index = 0; index < _maps.Count; index++)
             {
                 if (_maps[index] != null && _maps[index].LocationName == locationName)
@@ -41,6 +42,7 @@ namespace Foxberry
                     return TrySelect(index);
                 }
             }
+
             return false;
         }
     }

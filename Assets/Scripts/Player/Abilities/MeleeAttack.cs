@@ -8,23 +8,20 @@ namespace Player.Abilities
     {
         private const float AngleMultiplier = 0.5f;
         private const int InstakillDamage = 9999;
-
         private readonly Transform _attackOrigin;
         private readonly LayerMask _enemyLayerMask;
         private readonly float _attackRange;
         private readonly float _attackAngleHalf;
         private readonly Hero _hero;
-
         private OnePunchManSystem _onePunchSystem;
         private DamageBonusService _damageBonusService;
         private bool _onePunchSystemChecked;
 
-        public MeleeAttack(
-            Transform attackOrigin,
-            float attackRange,
-            float attackAngle,
-            LayerMask enemyLayerMask,
-            Hero hero)
+        public MeleeAttack(Transform attackOrigin,
+             float attackRange,
+             float attackAngle,
+             LayerMask enemyLayerMask,
+             Hero hero)
         {
             _attackOrigin = attackOrigin;
             _attackRange = attackRange;
@@ -41,13 +38,11 @@ namespace Player.Abilities
             }
 
             InitializeDamageBonusService();
-
-            Collider2D[] hitColliders =
-                Physics2D.OverlapCircleAll(_attackOrigin.position, _attackRange, _enemyLayerMask);
-
+            Collider2D[] hitColliders = Physics2D.OverlapCircleAll(_attackOrigin.position,
+                 _attackRange,
+                 _enemyLayerMask);
             bool hitConnected = false;
             OnePunchManSystem onePunchSystem = GetOnePunchSystem();
-
             foreach (Collider2D hitCollider in hitColliders)
             {
                 if (hitCollider == null)
@@ -56,14 +51,12 @@ namespace Player.Abilities
                 }
 
                 Vector2 closestPointOnEnemy = hitCollider.ClosestPoint(_attackOrigin.position);
-
                 if (IsWithinAttackAngle(closestPointOnEnemy, attackDirection) == false)
                 {
                     continue;
                 }
 
                 Entity enemyEntity = hitCollider.GetComponent<Entity>();
-
                 if (enemyEntity == null)
                 {
                     enemyEntity = hitCollider.GetComponentInParent<Entity>();
@@ -75,7 +68,6 @@ namespace Player.Abilities
                 }
 
                 ApplyDamageToEnemy(enemyEntity, hitCollider.gameObject, baseDamage, onePunchSystem);
-
                 hitConnected = true;
             }
 
@@ -93,24 +85,19 @@ namespace Player.Abilities
             Gizmos.DrawWireSphere(_attackOrigin.position, _attackRange);
         }
 
-        private void ApplyDamageToEnemy(
-            Entity enemyEntity,
-            GameObject enemyObject,
-            int baseDamage,
-            OnePunchManSystem onePunchSystem)
+        private void ApplyDamageToEnemy(Entity enemyEntity,
+             GameObject enemyObject,
+             int baseDamage,
+             OnePunchManSystem onePunchSystem)
         {
-            bool wasInstakill =
-                onePunchSystem != null && onePunchSystem.IsActive && onePunchSystem.CheckForInstakill(enemyEntity);
-
+            bool wasInstakill = onePunchSystem != null && onePunchSystem.IsActive && onePunchSystem.CheckForInstakill(enemyEntity);
             if (wasInstakill)
             {
                 enemyEntity.TakeDamage(InstakillDamage);
-
                 return;
             }
 
             int finalDamage = _damageBonusService?.CalculateDamageWithBonuses(baseDamage, enemyObject) ?? baseDamage;
-
             enemyEntity.TakeDamage(finalDamage);
         }
 
@@ -137,7 +124,6 @@ namespace Player.Abilities
             }
 
             _onePunchSystemChecked = true;
-
             return _onePunchSystem;
         }
 
@@ -145,7 +131,6 @@ namespace Player.Abilities
         {
             Vector2 directionToEnemy = (enemyPosition - _attackOrigin.position).normalized;
             float angle = Vector2.Angle(attackDirection, directionToEnemy);
-
             return angle <= _attackAngleHalf;
         }
     }

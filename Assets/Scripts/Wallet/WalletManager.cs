@@ -6,11 +6,10 @@ namespace GameLogic
 {
     public sealed class WalletManager : MonoBehaviour, IWalletManager
     {
-        private readonly WalletBalanceStore _storage = new WalletBalanceStore(new UnityProgressPreferences());
         private const int DefaultCoinAmount = 0;
         private const int MinimumCoinAmount = 0;
-
         private readonly Dictionary<CoinType, int> _coins = new Dictionary<CoinType, int>();
+        private IWalletBalanceStore _storage;
 
         public event Action<CoinType, int> OnCoinsChanged;
 
@@ -24,9 +23,7 @@ namespace GameLogic
             }
 
             EnsureCoinTypeExists(type);
-
             _coins[type] += amount;
-
             NotifyCoinChanged(type);
             SaveWallet();
         }
@@ -39,24 +36,20 @@ namespace GameLogic
             }
 
             EnsureCoinTypeExists(type);
-
             if (_coins[type] < amount)
             {
                 return false;
             }
 
             _coins[type] -= amount;
-
             NotifyCoinChanged(type);
             SaveWallet();
-
             return true;
         }
 
         public int GetCoins(CoinType type)
         {
             EnsureCoinTypeExists(type);
-
             return _coins[type];
         }
 
@@ -74,9 +67,7 @@ namespace GameLogic
         {
             foreach (CoinType type in Enum.GetValues(typeof(CoinType)))
             {
-                _coins[type] =
-                    _storage.Load(type);
-
+                _coins[type] = _storage.Load(type);
                 NotifyCoinChanged(type);
             }
         }
@@ -91,12 +82,18 @@ namespace GameLogic
             SetCoins(CoinType.Bronze, saveData.Bronze);
             SetCoins(CoinType.Silver, saveData.Silver);
             SetCoins(CoinType.Gold, saveData.Gold);
-
             SaveWallet();
+        }
+
+        public void SetStorage(IWalletBalanceStore storage)
+        {
+            _storage = storage ?? throw new System.ArgumentNullException(nameof(storage));
         }
 
         private void Awake()
         {
+            GameServices.EnsureInitialized();
+            _storage ??= new WalletBalanceStore(GameServices.Preferences);
             InitializeSingleton();
         }
 
@@ -113,10 +110,13 @@ namespace GameLogic
             if (Instance == null)
             {
                 Instance = this;
+                if (transform.parent != null)
+                {
+                    transform.SetParent(null, true);
+                }
 
                 DontDestroyOnLoad(gameObject);
                 InitializeWallet();
-
                 return;
             }
 
@@ -136,7 +136,6 @@ namespace GameLogic
         private void SetCoins(CoinType type, int amount)
         {
             _coins[type] = Mathf.Max(MinimumCoinAmount, amount);
-
             NotifyCoinChanged(type);
         }
 

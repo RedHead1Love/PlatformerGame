@@ -60,8 +60,7 @@ namespace Player.Input
 
         public bool IsJumpPressed => IsGameplayInputBlocked() == false && _isJumpPressed;
 
-        public bool IsJumpHeld =>
-            IsGameplayInputBlocked() == false && (_jumpButtonTracker != null && _jumpButtonTracker.IsHeld);
+        public bool IsJumpHeld => IsGameplayInputBlocked() == false && (_jumpButtonTracker != null && _jumpButtonTracker.IsHeld);
 
         public bool IsAttackPressed => IsGameplayInputBlocked() == false && _isAttackPressed;
 
@@ -92,6 +91,7 @@ namespace Player.Input
             {
                 gameObject.SetActive(true);
             }
+
 #endif
         }
 
@@ -115,7 +115,6 @@ namespace Player.Input
             if (_jumpButton != null)
             {
                 _jumpButton.onClick.AddListener(OnJumpButtonClicked);
-
                 _jumpButtonTracker = _jumpButton.gameObject.GetComponent<ButtonHoldTracker>();
                 if (_jumpButtonTracker == null)
                 {
@@ -124,43 +123,92 @@ namespace Player.Input
             }
 
             if (_attackButton != null)
+            {
                 _attackButton.onClick.AddListener(OnAttackButtonClicked);
+            }
+
             if (_secondaryAttackButton != null)
+            {
                 _secondaryAttackButton.onClick.AddListener(OnSecondaryAttackButtonClicked);
+            }
+
             if (_slideButton != null)
+            {
                 _slideButton.onClick.AddListener(OnSlideButtonClicked);
+            }
+
             if (_liftButton != null)
+            {
                 _liftButton.onClick.AddListener(OnLiftButtonClicked);
+            }
+
             if (_dropButton != null)
+            {
                 _dropButton.onClick.AddListener(OnDropButtonClicked);
+            }
+
             if (_mapButton != null)
+            {
                 _mapButton.onClick.AddListener(OnMapButtonClicked);
+            }
+
             if (_menuButton != null)
+            {
                 _menuButton.onClick.AddListener(OnMenuButtonClicked);
+            }
+
             if (_shopOrChestButton != null)
+            {
                 _shopOrChestButton.onClick.AddListener(OnShopOrChestButtonClicked);
+            }
         }
 
         private void UnsubscribeButtons()
         {
             if (_jumpButton != null)
+            {
                 _jumpButton.onClick.RemoveListener(OnJumpButtonClicked);
+            }
+
             if (_attackButton != null)
+            {
                 _attackButton.onClick.RemoveListener(OnAttackButtonClicked);
+            }
+
             if (_secondaryAttackButton != null)
+            {
                 _secondaryAttackButton.onClick.RemoveListener(OnSecondaryAttackButtonClicked);
+            }
+
             if (_slideButton != null)
+            {
                 _slideButton.onClick.RemoveListener(OnSlideButtonClicked);
+            }
+
             if (_liftButton != null)
+            {
                 _liftButton.onClick.RemoveListener(OnLiftButtonClicked);
+            }
+
             if (_dropButton != null)
+            {
                 _dropButton.onClick.RemoveListener(OnDropButtonClicked);
+            }
+
             if (_mapButton != null)
+            {
                 _mapButton.onClick.RemoveListener(OnMapButtonClicked);
+            }
+
             if (_menuButton != null)
+            {
                 _menuButton.onClick.RemoveListener(OnMenuButtonClicked);
+            }
+
             if (_shopOrChestButton != null)
+            {
                 _shopOrChestButton.onClick.RemoveListener(OnShopOrChestButtonClicked);
+            }
         }
 
         private void ResetFrameInput()

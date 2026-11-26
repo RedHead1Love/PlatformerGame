@@ -9,6 +9,7 @@ namespace Foxberry
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void OnBeforeSceneLoad()
         {
+            GameServices.EnsureInitialized();
             CreateSystemManager<EnemyRegistry>("EnemyManager");
             CreateSystemManager<SaveSystem>("SaveSystem");
         }
@@ -22,9 +23,7 @@ namespace Foxberry
             }
 
             GameObject manager = new GameObject(managerName);
-
             manager.AddComponent<T>();
-
             DontDestroyOnLoad(manager);
         }
     }

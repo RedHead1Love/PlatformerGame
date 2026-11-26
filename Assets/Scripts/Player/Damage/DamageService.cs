@@ -6,7 +6,6 @@ namespace Player
     {
         private const int LastChanceHealth = 1;
         private const int FatalHealthThreshold = 0;
-
         private readonly Hero _hero;
         private readonly HealthManager _healthManager;
 
@@ -27,16 +26,13 @@ namespace Player
             {
                 _hero.AbilityManager.UseLastChance();
                 _hero.SetHealth(LastChanceHealth);
-
                 return;
             }
 
             _healthManager.TakeDamage(damageAmount);
-
             if (_healthManager.CurrentHealth <= FatalHealthThreshold)
             {
                 _hero.StateMachine?.Change<DeathState>();
-
                 return;
             }
 
@@ -45,8 +41,7 @@ namespace Player
 
         private bool CanUseLastChance(int damageAmount)
         {
-            return _hero.AbilityManager != null && _hero.AbilityManager.IsLastChanceActive &&
-                   damageAmount >= _healthManager.CurrentHealth;
+            return _hero.AbilityManager != null && _hero.AbilityManager.IsLastChanceActive && damageAmount >= _healthManager.CurrentHealth;
         }
     }
 }

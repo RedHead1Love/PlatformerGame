@@ -16,7 +16,6 @@ namespace Foxberry
         {
             _currentBoardId = boardId;
             ClearBoard();
-
             YG2.GetLeaderboard(boardId, 10, 0, string.Empty);
         }
 
@@ -27,19 +26,21 @@ namespace Foxberry
         private void OnDataReceived(LBData lbData)
         {
             if (lbData.technoName != _currentBoardId)
+            {
                 return;
+            }
 
             ClearBoard();
-
             int count = 0;
             foreach (var player in lbData.players)
             {
                 if (count >= 10)
+                {
                     break;
+                }
 
                 var entry = Instantiate(_entryPrefab, _contentContainer);
                 entry.SetData(player.rank, player.name, player.score);
-
                 count++;
             }
         }

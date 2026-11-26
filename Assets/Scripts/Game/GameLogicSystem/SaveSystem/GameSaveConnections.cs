@@ -6,6 +6,7 @@ namespace GameLogic
     internal static class GameSaveConnections
     {
         private static IGameProgressSave _active;
+
         private static event Action<IGameProgressSave> Changed;
 
         public static void Connect(Action<IGameProgressSave> bind)

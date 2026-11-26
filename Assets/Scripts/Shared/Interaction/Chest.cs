@@ -14,7 +14,6 @@ namespace ChestControl
         private const float DefaultCheckRadius = 0.5f;
         private const float DefaultKeySpawnForce = 2f;
         private const float GizmoSphereRadius = 0.2f;
-
         [FoldoutGroup("Input")]
         [SerializeField]
         private IInputProvider _inputProvider;
@@ -61,66 +60,62 @@ namespace ChestControl
         [SerializeField]
         private float _soundVolume = 1f;
         [FoldoutGroup("Save Settings")]
-        [SerializeField, HideInInspector]
+        [SerializeField]
+        [HideInInspector]
         private bool _isOpened;
-        [SerializeField, HideInInspector]
+        [SerializeField]
+        [HideInInspector]
         private bool _isKeySpawned = false;
         [SerializeField]
         private string _chestId;
         private bool _isPlayerInRange;
         private bool _wasPlayerInside;
-        private Animator _animator;
-        private AudioSource _audioSource;
         private AudioController _audioController;
+        private IWorldProgress _worldProgress;
 
-        [FoldoutGroup("Runtime"), ShowInInspector]
+        [FoldoutGroup("Runtime")]
+        [ShowInInspector]
         public bool IsOpened => _isOpened;
 
-        private Animator CachedAnimator
-        {
-            get
-            {
-                if (_animator == null)
-                {
-                    _animator = GetComponent<Animator>();
-                }
+        private Animator CachedAnimator { get; set; }
 
-                return _animator;
-            }
-        }
+        private AudioSource CachedAudioSource { get; set; }
 
-        private AudioSource CachedAudioSource
-        {
-            get
-            {
-                if (_audioSource == null)
-                {
-                    _audioSource = GetComponent<AudioSource>();
-                }
-
-                return _audioSource;
-            }
-        }
-
-        [FoldoutGroup("Runtime"), HorizontalGroup("Runtime/Button"), Button("Open")]
+        [FoldoutGroup("Runtime")]
+        [HorizontalGroup("Runtime/Button")]
+        [Button("Open")]
         public void Open()
         {
             SetOpened(true);
         }
 
-        [FoldoutGroup("Runtime"), HorizontalGroup("Runtime/Button"), Button("Close")]
+        [FoldoutGroup("Runtime")]
+        [HorizontalGroup("Runtime/Button")]
+        [Button("Close")]
         public void Close()
         {
             SetOpened(false);
         }
 
-        [FoldoutGroup("Runtime"), Button("Reset Chest")]
+        [FoldoutGroup("Runtime")]
+        [Button("Reset Chest")]
         public void ResetChest()
         {
             _isOpened = false;
             _isKeySpawned = false;
-
             ApplyVisualState(_isOpened);
+        }
+
+        public void SetWorldProgress(IWorldProgress worldProgress)
+        {
+            _worldProgress = worldProgress ?? throw new System.ArgumentNullException(nameof(worldProgress));
+        }
+
+        private void Awake()
+        {
+            _worldProgress ??= GameServices.Progress;
+            CachedAnimator = GetComponent<Animator>();
+            CachedAudioSource = GetComponent<AudioSource>();
         }
 
         private void Start()
@@ -142,7 +137,6 @@ namespace ChestControl
         private void InitializeChest()
         {
             _audioController = FindFirstObjectByType<AudioController>();
-
             if (_interactionHint != null)
             {
                 _interactionHint.SetActive(false);
@@ -154,10 +148,11 @@ namespace ChestControl
             }
 
             LoadChestState();
-
             if (CachedAnimator != null)
             {
-                CachedAnimator.Play(_isOpened ? "Opened" : "Closed");
+                CachedAnimator.Play(_isOpened
+                    ? "Opened"
+                    : "Closed");
             }
 
             ApplyVisualState(_isOpened);
@@ -166,15 +161,20 @@ namespace ChestControl
         private void FindInputProvider()
         {
             if (_inputProvider != null)
+            {
                 return;
+            }
 
             _inputProvider = FindFirstObjectByType<AggregatedInputProvider>();
-
             if (_inputProvider == null && YG2.envir.isDesktop)
+            {
                 _inputProvider = FindFirstObjectByType<LegacyInputProvider>();
+            }
 
             if (_inputProvider == null && YG2.envir.isMobile)
+            {
                 _inputProvider = FindFirstObjectByType<JoystickInput>();
+            }
         }
 
         private string GenerateChestId()
@@ -184,22 +184,20 @@ namespace ChestControl
 
         private void LoadChestState()
         {
-            _isOpened = WorldProgress.IsChestOpened(_chestId);
-            _isKeySpawned = WorldProgress.IsKeySpawned(_chestId);
+            _isOpened = _worldProgress.IsChestOpened(_chestId);
+            _isKeySpawned = _worldProgress.IsKeySpawned(_chestId);
         }
 
         private void HandlePlayerInteraction()
         {
             _isPlayerInRange = Physics2D.OverlapCircle(transform.position, _checkRadius, _playerLayer) != null;
-
             if (_isPlayerInRange != _wasPlayerInside)
             {
                 _wasPlayerInside = _isPlayerInRange;
                 UpdateInteractionHint(_isPlayerInRange);
             }
 
-            if (_isPlayerInRange && _inputProvider != null && _inputProvider.IsOpenShopOrChestPressed &&
-                _isOpened == false)
+            if (_isPlayerInRange && _inputProvider != null && _inputProvider.IsOpenShopOrChestPressed && _isOpened == false)
             {
                 Open();
             }
@@ -208,7 +206,9 @@ namespace ChestControl
         private void UpdateInteractionHint(bool isInside)
         {
             if (_isOpened)
+            {
                 return;
+            }
 
             if (_interactionHint != null)
             {
@@ -224,7 +224,6 @@ namespace ChestControl
             }
 
             _isOpened = opened;
-
             if (_interactionHint != null && opened)
             {
                 _interactionHint.SetActive(false);
@@ -248,22 +247,21 @@ namespace ChestControl
             }
 
             PlayChestSound(opened);
-
             if (_isOpened && _isKeySpawned == false)
             {
                 SpawnKey();
-
                 _isKeySpawned = true;
             }
 
-            WorldProgress.SetChestOpened(_chestId, _isOpened);
-            WorldProgress.SetKeySpawned(_chestId, _isKeySpawned);
+            _worldProgress.SetChestOpened(_chestId, _isOpened);
+            _worldProgress.SetKeySpawned(_chestId, _isKeySpawned);
         }
 
         private void PlayChestSound(bool opened)
         {
-            AudioClip soundToPlay = opened ? _openSound : _closeSound;
-
+            AudioClip soundToPlay = opened
+                ? _openSound
+                : _closeSound;
             PlaySound(soundToPlay);
         }
 
@@ -271,7 +269,9 @@ namespace ChestControl
         {
             if (_spriteRenderer != null)
             {
-                _spriteRenderer.sprite = opened ? _spriteOpened : _spriteClosed;
+                _spriteRenderer.sprite = opened
+                    ? _spriteOpened
+                    : _spriteClosed;
             }
         }
 
@@ -284,9 +284,7 @@ namespace ChestControl
 
             Vector3 spawnPosition = transform.position + (Vector3)_keySpawnOffset;
             GameObject keyInstance = Instantiate(_keyPrefab, spawnPosition, Quaternion.identity);
-
             keyInstance.SetActive(true);
-
             ConfigureKeyComponent(keyInstance);
             ApplyKeyPhysics(keyInstance);
             PlaySound(_keySpawnSound);
@@ -295,16 +293,13 @@ namespace ChestControl
         private void ConfigureKeyComponent(GameObject keyInstance)
         {
             Key keyComponent = keyInstance.GetComponent<Key>();
-
             if (keyComponent != null)
             {
                 keyComponent.SetKeyColor(_keyColor);
-
                 return;
             }
 
             SimpleKey simpleKeyComponent = keyInstance.GetComponent<SimpleKey>();
-
             if (simpleKeyComponent != null)
             {
                 simpleKeyComponent.SetKeyColor(_keyColor);
@@ -316,17 +311,13 @@ namespace ChestControl
             float minHorizontalForce = -0.3f;
             float maxHorizontalForce = 0.3f;
             float verticalForce = 1f;
-
             Rigidbody2D keyRigidbody = keyInstance.GetComponent<Rigidbody2D>();
-
             if (keyRigidbody == null)
             {
                 return;
             }
 
-            Vector2 forceDirection =
-                new Vector2(Random.Range(minHorizontalForce, maxHorizontalForce), verticalForce).normalized;
-
+            Vector2 forceDirection = new Vector2(Random.Range(minHorizontalForce, maxHorizontalForce), verticalForce).normalized;
             keyRigidbody.AddForce(forceDirection * _keySpawnForce, ForceMode2D.Impulse);
         }
 
@@ -355,16 +346,13 @@ namespace ChestControl
         {
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(transform.position, _checkRadius);
-
             if (_keyPrefab == null)
             {
                 return;
             }
 
             Gizmos.color = Color.green;
-
             Vector3 spawnPosition = transform.position + (Vector3)_keySpawnOffset;
-
             Gizmos.DrawWireSphere(spawnPosition, GizmoSphereRadius);
             Gizmos.DrawLine(transform.position, spawnPosition);
         }

@@ -9,7 +9,6 @@ namespace Foxberry
     {
         private const string MapUnlockedKey = "MapUnlocked";
         private const string MainMenuSceneName = "MainMenu";
-
         private ShopManager _shop;
         private Hero _hero;
 
@@ -46,6 +45,7 @@ namespace Foxberry
             {
                 return;
             }
+
             IsLocked = false;
             PlayerPrefs.SetInt(MapUnlockedKey, 1);
             PlayerPrefs.Save();
@@ -53,15 +53,17 @@ namespace Foxberry
 
         public bool MustClose(bool cutscenePlaying, bool hasPlayer)
         {
-            if (cutscenePlaying || !hasPlayer || SceneManager.GetActiveScene().name == MainMenuSceneName ||
-                PauseMenuController.IsGamePaused || Mathf.Approximately(Time.timeScale, 0f))
+            if (cutscenePlaying || !hasPlayer || SceneManager.GetActiveScene().name == MainMenuSceneName || PauseMenuController.IsGamePaused || Mathf.Approximately(Time.timeScale,
+                 0f))
             {
                 return true;
             }
+
             if (_shop == null)
             {
                 _shop = Object.FindFirstObjectByType<ShopManager>(FindObjectsInactive.Include);
             }
+
             return _shop != null && _shop.IsShopOpen;
         }
 
@@ -77,6 +79,7 @@ namespace Foxberry
             {
                 _hero = Object.FindFirstObjectByType<Hero>();
             }
+
             return _hero != null && _hero.AbilityManager != null && _hero.AbilityManager.HasMap;
         }
     }

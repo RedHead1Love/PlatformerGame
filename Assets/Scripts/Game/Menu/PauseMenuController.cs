@@ -7,6 +7,7 @@ namespace Foxberry
 {
     public sealed class PauseMenuController : MonoBehaviour
     {
+        private readonly GamePauseScope _pause = new GamePauseScope();
         [SerializeField]
         private GameObject _pausePanel;
         [SerializeField]
@@ -59,7 +60,6 @@ namespace Foxberry
             FindInputProvider();
             SetupButtons();
             HidePauseMenu();
-
             ResumeGame();
         }
 
@@ -112,7 +112,6 @@ namespace Foxberry
         private void FindInputProvider()
         {
             _inputProvider = FindFirstObjectByType<AggregatedInputProvider>();
-
             if (_inputProvider == null && YG2.envir.isDesktop)
             {
                 _inputProvider = FindFirstObjectByType<LegacyInputProvider>();
@@ -128,10 +127,8 @@ namespace Foxberry
         {
             _isPaused = true;
             IsGamePaused = true;
-
-            Time.timeScale = 0f;
+            _pause.Pause();
             AudioListener.pause = true;
-
             ShowPauseMenu();
         }
 
@@ -139,10 +136,8 @@ namespace Foxberry
         {
             _isPaused = false;
             IsGamePaused = false;
-
-            Time.timeScale = 1f;
+            _pause.Dispose();
             AudioListener.pause = false;
-
             HidePauseMenu();
             CloseControls();
             CloseSettings();
@@ -183,7 +178,6 @@ namespace Foxberry
         private void ExitToMainMenu()
         {
             ResumeGame();
-
             SceneManager.LoadScene("MainMenu");
         }
 

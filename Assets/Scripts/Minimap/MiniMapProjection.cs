@@ -20,10 +20,12 @@ namespace Foxberry
             {
                 return Vector2.zero;
             }
+
             Vector2 offset = position - map.MapWorldCenter;
-            return new Vector2(
-                ProjectAxis(offset.x, map.MapWorldSize.x, _uiSize.x),
-                ProjectAxis(offset.y, map.MapWorldSize.y, _uiSize.y));
+            return new Vector2(ProjectAxis(offset.x, map.MapWorldSize.x, _uiSize.x),
+                 ProjectAxis(offset.y,
+                 map.MapWorldSize.y,
+                 _uiSize.y));
         }
 
         public bool Contains(Vector2 position)
@@ -39,6 +41,7 @@ namespace Foxberry
             {
                 return 0f;
             }
+
             return Mathf.Clamp(offset / (worldSize * Half), -1f, 1f) * uiSize * Half;
         }
     }

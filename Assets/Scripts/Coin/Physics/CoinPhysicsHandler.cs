@@ -10,7 +10,6 @@ namespace Foxberry
         private const float MaxAirTime = 5f;
         private const float StopDelaySeconds = 0.5f;
         private const float CollectableStopVelocityMultiplier = 2f;
-
         [SerializeField]
         private LayerMask _groundLayer;
         [SerializeField]
@@ -27,7 +26,6 @@ namespace Foxberry
         public void Initialize(LayerMask groundLayer)
         {
             _groundLayer = groundLayer;
-
             InitializeComponents();
         }
 
@@ -39,11 +37,9 @@ namespace Foxberry
             }
 
             _isStopped = true;
-
             _rigidbody.bodyType = RigidbodyType2D.Kinematic;
             _rigidbody.velocity = Vector2.zero;
             _rigidbody.angularVelocity = 0f;
-
             if (_collider != null)
             {
                 _collider.isTrigger = true;
@@ -77,9 +73,7 @@ namespace Foxberry
 
             _isOnGround = true;
             _timeInAir = 0f;
-
             ApplyBounceDamping();
-
             if (ShouldStopAfterGroundHit())
             {
                 Invoke(nameof(StopPhysics), StopDelaySeconds);
@@ -109,7 +103,6 @@ namespace Foxberry
             }
 
             _timeInAir += Time.deltaTime;
-
             if (_timeInAir > MaxAirTime)
             {
                 StopPhysics();
@@ -147,8 +140,7 @@ namespace Foxberry
 
         private bool ShouldStopAfterGroundHit()
         {
-            return _coin != null && _coin.IsCollectable && _rigidbody != null &&
-                   _rigidbody.velocity.magnitude < _stopVelocityThreshold * CollectableStopVelocityMultiplier;
+            return _coin != null && _coin.IsCollectable && _rigidbody != null && _rigidbody.velocity.magnitude < _stopVelocityThreshold * CollectableStopVelocityMultiplier;
         }
     }
 }

@@ -17,7 +17,6 @@ namespace EnemyLogicWithEnhancedStrike
         private const int MaxRandomValue = 100;
         private const float BoxRotationAngle = 0f;
         private const int HealthThreshold = 0;
-
         [SerializeField]
         private float _attackCooldown = 1f;
         [SerializeField]
@@ -95,13 +94,14 @@ namespace EnemyLogicWithEnhancedStrike
         public void OnAttackAnimationEnd()
         {
             _isAttackInProgress = false;
-
             if (_isHurt || _isDead)
             {
                 return;
             }
 
-            UpdateAnimation(_patrolAI != null ? _patrolAI.CurrentDirection : Vector2.zero);
+            UpdateAnimation(_patrolAI != null
+                ? _patrolAI.CurrentDirection
+                : Vector2.zero);
         }
 
         public override void TakeDamage(int amount)
@@ -112,11 +112,9 @@ namespace EnemyLogicWithEnhancedStrike
             }
 
             base.TakeDamage(amount);
-
             if (CurrentLives <= HealthThreshold)
             {
                 Die();
-
                 return;
             }
 
@@ -133,9 +131,7 @@ namespace EnemyLogicWithEnhancedStrike
             _isDead = true;
             _isHurt = false;
             _isAttackInProgress = false;
-
             _audioController?.PlayDeathSound();
-
             if (_patrolAI != null)
             {
                 _patrolAI.enabled = false;
@@ -143,16 +139,13 @@ namespace EnemyLogicWithEnhancedStrike
 
             SetAnimationState(HeavyEnemyAnimationState.Death);
             PlayAnimation("Death");
-
             base.Die();
-
             Destroy(gameObject, DestroyDelay);
         }
 
         protected override void Awake()
         {
             base.Awake();
-
             InitializeComponents();
             SubscribeToPatrolEvents();
         }
@@ -162,7 +155,6 @@ namespace EnemyLogicWithEnhancedStrike
             if (_isHurt)
             {
                 UpdateHurtState();
-
                 return;
             }
 
@@ -215,7 +207,6 @@ namespace EnemyLogicWithEnhancedStrike
         private void UpdateHurtState()
         {
             _hurtTimer -= Time.deltaTime;
-
             if (_hurtTimer <= 0f)
             {
                 EndHurtState();
@@ -231,7 +222,6 @@ namespace EnemyLogicWithEnhancedStrike
 
             bool canUseSpecialAttack = Time.time >= _nextSpecialAttackTime;
             bool shouldUseSpecialAttack = canUseSpecialAttack && Random.Range(0, MaxRandomValue) < _specialAttackWeight;
-
             if (shouldUseSpecialAttack)
             {
                 StartSpecialAttack();
@@ -246,7 +236,6 @@ namespace EnemyLogicWithEnhancedStrike
         {
             _isAttackInProgress = true;
             _nextAttackTime = Time.time + _attackCooldown + _attackPause;
-
             PlayAnimation("StrongAttack");
             SetAnimationState(HeavyEnemyAnimationState.Attack);
         }
@@ -256,7 +245,6 @@ namespace EnemyLogicWithEnhancedStrike
             _isAttackInProgress = true;
             _nextSpecialAttackTime = Time.time + _specialAttackCooldown + _specialAttackPause;
             _nextAttackTime = Time.time + _attackCooldown;
-
             PlayAnimation("StrongAttack");
             SetAnimationState(HeavyEnemyAnimationState.StrongAttack);
         }
@@ -265,14 +253,12 @@ namespace EnemyLogicWithEnhancedStrike
         {
             Vector2 attackCenter = CalculateAttackCenter(offset);
             bool hitConnected = CheckForHit(attackCenter, size, damage);
-
             PlayAttackSound(hitConnected, isSpecialAttack);
         }
 
         private Vector2 CalculateAttackCenter(Vector2 offset)
         {
             float directionSign = Mathf.Sign(transform.localScale.x);
-
             if (Mathf.Approximately(directionSign, 0f))
             {
                 directionSign = 1f;
@@ -283,11 +269,11 @@ namespace EnemyLogicWithEnhancedStrike
 
         private bool CheckForHit(Vector2 center, Vector2 size, int damage)
         {
-            Collider2D[] hits =
-                Physics2D.OverlapBoxAll(center, size, BoxRotationAngle, LayerMask.GetMask(PlayerLayerName));
-
+            Collider2D[] hits = Physics2D.OverlapBoxAll(center,
+                 size,
+                 BoxRotationAngle,
+                 LayerMask.GetMask(PlayerLayerName));
             bool hitConnected = false;
-
             foreach (Collider2D hit in hits)
             {
                 if (hit == null)
@@ -296,7 +282,6 @@ namespace EnemyLogicWithEnhancedStrike
                 }
 
                 IDamageable damageable = hit.GetComponent<IDamageable>();
-
                 if (damageable == null)
                 {
                     damageable = hit.GetComponentInParent<IDamageable>();
@@ -350,9 +335,7 @@ namespace EnemyLogicWithEnhancedStrike
             _isHurt = true;
             _hurtTimer = _hurtInvulnerabilityDuration;
             _isAttackInProgress = false;
-
             _audioController?.PlayHurtSound();
-
             if (_patrolAI != null)
             {
                 _patrolAI.enabled = false;
@@ -365,7 +348,6 @@ namespace EnemyLogicWithEnhancedStrike
         private void EndHurtState()
         {
             _isHurt = false;
-
             if (_patrolAI != null && _isDead == false)
             {
                 _patrolAI.enabled = true;
@@ -377,13 +359,14 @@ namespace EnemyLogicWithEnhancedStrike
             }
 
             PlayAnimation("Idle");
-            UpdateAnimation(_patrolAI != null ? _patrolAI.CurrentDirection : Vector2.zero);
+            UpdateAnimation(_patrolAI != null
+                ? _patrolAI.CurrentDirection
+                : Vector2.zero);
         }
 
         private void OnAttackRangeChanged(bool isInRange)
         {
             _isPlayerInRange = isInRange;
-
             if (_isHurt || _isDead)
             {
                 return;
@@ -412,9 +395,9 @@ namespace EnemyLogicWithEnhancedStrike
                 return;
             }
 
-            HeavyEnemyAnimationState animationState =
-                direction.magnitude > MovementThreshold ? HeavyEnemyAnimationState.Walk : HeavyEnemyAnimationState.Idle;
-
+            HeavyEnemyAnimationState animationState = direction.magnitude > MovementThreshold
+                ? HeavyEnemyAnimationState.Walk
+                : HeavyEnemyAnimationState.Idle;
             SetAnimationState(animationState);
             UpdateFacingDirection(direction);
         }
@@ -427,11 +410,9 @@ namespace EnemyLogicWithEnhancedStrike
             }
 
             float scaleSign = Mathf.Sign(direction.x);
-
-            transform.localScale = new Vector3(
-                scaleSign * Mathf.Abs(transform.localScale.x),
-                transform.localScale.y,
-                transform.localScale.z);
+            transform.localScale = new Vector3(scaleSign * Mathf.Abs(transform.localScale.x),
+                 transform.localScale.y,
+                 transform.localScale.z);
         }
 
         private void PlayAnimation(string animationName)
@@ -456,7 +437,6 @@ namespace EnemyLogicWithEnhancedStrike
         {
             Gizmos.color = Color.red;
             Gizmos.DrawWireCube(CalculateAttackCenter(_attackOffset), _attackSize);
-
             Gizmos.color = Color.magenta;
             Gizmos.DrawWireCube(CalculateAttackCenter(_specialAttackOffset), _specialAttackSize);
         }

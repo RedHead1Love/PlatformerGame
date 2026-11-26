@@ -39,7 +39,6 @@ namespace GameLogic
         private IEnumerator LoadSavedGameData()
         {
             yield return new WaitForSeconds(LoadDelay);
-
             if (CanLoadGame() == false)
             {
                 yield break;
@@ -47,7 +46,6 @@ namespace GameLogic
 
             GameSaveData saveData = SaveSystem.Instance.CurrentSave;
             string currentSceneName = SceneManager.GetActiveScene().name;
-
             if (currentSceneName != saveData.Scene)
             {
                 yield break;
@@ -58,33 +56,25 @@ namespace GameLogic
 
         private bool CanLoadGame()
         {
-            return SaveSystem.Instance != null && SaveSystem.Instance.HasSave() &&
-                   SaveSystem.Instance.CurrentSave != null;
+            return SaveSystem.Instance != null && SaveSystem.Instance.HasSave() && SaveSystem.Instance.CurrentSave != null;
         }
 
         private IEnumerator ApplySavedGameData(GameSaveData saveData)
         {
             Hero player = FindFirstObjectByType<Hero>();
-
             if (player == null)
             {
                 yield break;
             }
 
             Vector3 spawnPosition = CalculateSpawnPosition(saveData);
-
             ApplyPlayerData(player, spawnPosition, saveData);
             ApplyAbilityData(player, saveData);
-
             yield return new WaitForSeconds(RestoreShopDelay);
-
             RestoreShopPurchases(saveData);
-
             yield return new WaitForSeconds(WorldDataApplyDelay);
-
             ApplyGameWorldData(saveData);
             ApplyCoinData(saveData);
-
             SaveSystem.Instance?.UpdateAbilityData(player.AbilityManager);
         }
 
@@ -111,7 +101,6 @@ namespace GameLogic
         private void ApplyArmorData(Hero player, GameSaveData saveData)
         {
             ArmorManager armorManager = player.GetComponent<ArmorManager>();
-
             if (armorManager == null)
             {
                 return;
@@ -134,7 +123,6 @@ namespace GameLogic
 
             AbilityManager abilityManager = player.AbilityManager;
             AbilitySaveData abilityData = saveData.Abilities;
-
             if (abilityData.Dash)
             {
                 abilityManager.UnlockDash();
@@ -219,14 +207,12 @@ namespace GameLogic
             }
 
             ShopManager shopManager = FindFirstObjectByType<ShopManager>();
-
             if (shopManager != null)
             {
                 MarkPurchasedItemsAsSold(shopManager.ShopItems, saveData.Purchases);
             }
 
             Hero hero = FindFirstObjectByType<Hero>();
-
             if (hero == null || hero.AbilityManager == null)
             {
                 return;
@@ -248,7 +234,6 @@ namespace GameLogic
             foreach (string itemId in purchasedItemIds)
             {
                 ShopItemData item = shopItems.Find(shopItem => shopItem.ItemId == itemId);
-
                 if (item != null && itemId != "6" && itemId != "7")
                 {
                     item.IsSold = true;
@@ -265,62 +250,49 @@ namespace GameLogic
 
             switch (itemId)
             {
-            case CommandUnlockMap:
-                abilityManager.UnlockMap();
-                break;
-
-            case CommandUnlockDash:
-                abilityManager.UnlockDash();
-                break;
-
-            case CommandUnlockAnatomy:
-                abilityManager.UnlockAnatomy();
-                break;
-
-            case CommandUnlockArmor:
-                abilityManager.UnlockArmor();
-                hero.GetComponent<ArmorManager>()?.UnlockArmorAbility();
-                break;
-
-            case CommandUnlockSwampDamageBonus:
-                abilityManager.UnlockSwampDamageBonus();
-                break;
-
-            case CommandUnlockSkeletonDamageBonus:
-                abilityManager.UnlockSkeletonDamageBonus();
-                break;
-
-            case CommandUnlockDemonDamageBonus:
-                abilityManager.UnlockDemonDamageBonus();
-                break;
-
-            case CommandUnlockSpiderDamageBonus:
-                abilityManager.UnlockSpiderDamageBonus();
-                break;
-
-            case CommandUnlockZombieDamageBonus:
-                abilityManager.UnlockZombieDamageBonus();
-                break;
-
-            case CommandUnlockPassiveHealthRegeneration:
-                abilityManager.UnlockPassiveHealthRegeneration();
-                break;
-
-            case CommandUnlockRobocopRegeneration:
-                abilityManager.UnlockRobocopRegeneration();
-                break;
-
-            case CommandUnlockVampireAbility:
-                abilityManager.UnlockVampireAbility();
-                break;
-
-            case CommandUnlockOnePunchManAbility:
-                abilityManager.UnlockOnePunchManAbility();
-                break;
-
-            case CommandUnlockBossDamageBonus:
-                abilityManager.UnlockBossDamageBonus();
-                break;
+                case CommandUnlockMap:
+                    abilityManager.UnlockMap();
+                    break;
+                case CommandUnlockDash:
+                    abilityManager.UnlockDash();
+                    break;
+                case CommandUnlockAnatomy:
+                    abilityManager.UnlockAnatomy();
+                    break;
+                case CommandUnlockArmor:
+                    abilityManager.UnlockArmor();
+                    hero.GetComponent<ArmorManager>()?.UnlockArmorAbility();
+                    break;
+                case CommandUnlockSwampDamageBonus:
+                    abilityManager.UnlockSwampDamageBonus();
+                    break;
+                case CommandUnlockSkeletonDamageBonus:
+                    abilityManager.UnlockSkeletonDamageBonus();
+                    break;
+                case CommandUnlockDemonDamageBonus:
+                    abilityManager.UnlockDemonDamageBonus();
+                    break;
+                case CommandUnlockSpiderDamageBonus:
+                    abilityManager.UnlockSpiderDamageBonus();
+                    break;
+                case CommandUnlockZombieDamageBonus:
+                    abilityManager.UnlockZombieDamageBonus();
+                    break;
+                case CommandUnlockPassiveHealthRegeneration:
+                    abilityManager.UnlockPassiveHealthRegeneration();
+                    break;
+                case CommandUnlockRobocopRegeneration:
+                    abilityManager.UnlockRobocopRegeneration();
+                    break;
+                case CommandUnlockVampireAbility:
+                    abilityManager.UnlockVampireAbility();
+                    break;
+                case CommandUnlockOnePunchManAbility:
+                    abilityManager.UnlockOnePunchManAbility();
+                    break;
+                case CommandUnlockBossDamageBonus:
+                    abilityManager.UnlockBossDamageBonus();
+                    break;
             }
         }
 
@@ -332,7 +304,6 @@ namespace GameLogic
             }
 
             KeyCollection keyCollection = FindFirstObjectByType<KeyCollection>();
-
             if (keyCollection != null && saveData.Keys != null)
             {
                 keyCollection.LoadCollectedKeys(saveData.Keys);
@@ -349,7 +320,6 @@ namespace GameLogic
             }
 
             PersistentWallet.Instance?.LoadCoinsFromSave(saveData.WalletBalance);
-
             if (GameLogic.WalletManager.Instance != null)
             {
                 GameLogic.WalletManager.Instance.LoadFromSaveData(saveData.WalletBalance);
@@ -366,7 +336,6 @@ namespace GameLogic
             if (string.IsNullOrEmpty(saveData.Checkpoint) == false)
             {
                 Vector3 checkpointPosition = FindCheckpointPosition(saveData.Checkpoint);
-
                 if (checkpointPosition != Vector3.zero)
                 {
                     return checkpointPosition;
@@ -384,7 +353,6 @@ namespace GameLogic
             }
 
             Checkpoint[] checkpoints = FindObjectsByType<Checkpoint>(FindObjectsSortMode.None);
-
             foreach (Checkpoint checkpoint in checkpoints)
             {
                 if (checkpoint.GetCheckpointId() == checkpointId)

@@ -9,7 +9,6 @@ namespace Foxberry
     public sealed class MiniMapController : MonoBehaviour
     {
         private const KeyCode DefaultToggleKey = KeyCode.M;
-
         [SerializeField]
         private GameObject _miniMapPanel;
         [SerializeField]
@@ -57,11 +56,13 @@ namespace Foxberry
             {
                 return;
             }
+
             if (_view.IsVisible)
             {
                 CloseMiniMap();
                 return;
             }
+
             _view.SetVisible(true);
             _markers.Refresh();
         }
@@ -134,6 +135,7 @@ namespace Foxberry
                 _view.SetLocked(false);
                 return;
             }
+
             _access.RefreshUnlock();
             _view.SetLocked(_access.IsLocked);
             if (_access.IsLocked)
@@ -141,10 +143,12 @@ namespace Foxberry
                 CloseMiniMap();
                 return;
             }
+
             if (_input.IsTogglePressed())
             {
                 ToggleMiniMap();
             }
+
             if (_view.IsVisible)
             {
                 _markers.Refresh();
@@ -175,23 +179,23 @@ namespace Foxberry
             {
                 return;
             }
+
             _locations = new MiniMapLocationSelector(_miniMapDataList);
             _input = new MiniMapInputHandler(_toggleKey);
             _access = new MiniMapAccessPolicy(_isMapLocked);
             _access.Load();
-            _markers =
-                new MiniMapMarkerController(
-                    _miniMapPanel,
-                    _playerMarker,
-                    _playerTransform,
-                    _shops,
-                    _keyMarkers,
-                    _keyCollectedMarkers,
-                    _keyAnchors,
-                    _checkpoints,
-                    _checkpointMarkers,
-                    _checkpointMarkerPrefab,
-                    new MiniMapProjection(_locations, _mapUISize));
+            _markers = new MiniMapMarkerController(_miniMapPanel,
+                 _playerMarker,
+                 _playerTransform,
+                 _shops,
+                 _keyMarkers,
+                 _keyCollectedMarkers,
+                 _keyAnchors,
+                 _checkpoints,
+                 _checkpointMarkers,
+                 _checkpointMarkerPrefab,
+                 new MiniMapProjection(_locations,
+                 _mapUISize));
             _view = new MiniMapView(_miniMapPanel, _lockOverlay, _miniMapImage);
             _markers.Hide();
         }
@@ -204,7 +208,6 @@ namespace Foxberry
             }
 
             Gizmos.color = Color.cyan;
-
             foreach (var map in _miniMapDataList)
             {
                 if (map != null)

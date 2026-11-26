@@ -10,7 +10,6 @@ namespace Foxberry
         private const string MainMenuSceneName = "MainMenu";
         private const float NormalTimeScale = 1f;
         private const float PausedTimeScale = 0f;
-
         [SerializeField]
         private IInputProvider _inputProvider;
         private bool _isPaused;
@@ -53,7 +52,6 @@ namespace Foxberry
             }
 
             _inputProvider = FindFirstObjectByType<AggregatedInputProvider>();
-
             if (_inputProvider == null && YG2.envir.isDesktop)
             {
                 _inputProvider = FindFirstObjectByType<LegacyInputProvider>();
@@ -74,10 +72,8 @@ namespace Foxberry
         {
             float windowWidth = 200f;
             float windowHeight = 150f;
-
             float centerX = (Screen.width / 2f) - (windowWidth / 2f);
             float centerY = (Screen.height / 2f) - (windowHeight / 2f);
-
             _pauseWindowRect = new Rect(centerX, centerY, windowWidth, windowHeight);
         }
 
@@ -108,7 +104,6 @@ namespace Foxberry
         private void ExitToMainMenu()
         {
             ResumeGame();
-
             SceneManager.LoadScene(MainMenuSceneName);
         }
 
@@ -119,16 +114,13 @@ namespace Foxberry
             float dragAreaWidth = 10000f;
             float buttonHeight = 30f;
             float verticalSpacing = 10f;
-
             GUILayout.Space(topPadding);
-
             if (GUILayout.Button("Продолжить", GUILayout.Height(buttonHeight)))
             {
                 ResumeGame();
             }
 
             GUILayout.Space(verticalSpacing);
-
             if (GUILayout.Button("Выход в меню", GUILayout.Height(buttonHeight)))
             {
                 ExitToMainMenu();

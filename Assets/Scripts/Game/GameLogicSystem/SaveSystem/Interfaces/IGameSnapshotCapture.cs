@@ -1,6 +1,6 @@
 namespace GameLogic
 {
-    internal interface IGameSnapshotCapture
+    public interface IGameSnapshotCapture
     {
         void Capture(GameSaveData save);
     }

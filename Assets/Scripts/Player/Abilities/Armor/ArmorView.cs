@@ -18,18 +18,18 @@ namespace Player
             }
 
             int iconCount = Mathf.Min(_armorIcons.Length, maximum);
-
             for (int i = 0; i < iconCount; i++)
             {
                 Image armorIcon = _armorIcons[i];
-
                 if (armorIcon == null)
                 {
                     continue;
                 }
 
                 armorIcon.enabled = true;
-                armorIcon.color = i < current ? Color.white : new Color(1f, 1f, 1f, DisabledArmorAlpha);
+                armorIcon.color = i < current
+                    ? Color.white
+                    : new Color(1f, 1f, 1f, DisabledArmorAlpha);
             }
         }
 
@@ -62,14 +62,12 @@ namespace Player
             }
 
             GameObject armorContainer = GameObject.FindGameObjectWithTag("ArmorContainer");
-
             if (armorContainer == null)
             {
                 return;
             }
 
             _armorPanelInstance = Object.Instantiate(prefab, armorContainer.transform);
-
             RectTransform rectTransform = _armorPanelInstance.GetComponent<RectTransform>();
             if (rectTransform != null)
             {
@@ -80,7 +78,6 @@ namespace Player
 
             _armorPanelInstance.name = ArmorPanelName;
             _armorPanelInstance.SetActive(true);
-
             _armorIcons = _armorPanelInstance.GetComponentsInChildren<Image>(true);
         }
     }

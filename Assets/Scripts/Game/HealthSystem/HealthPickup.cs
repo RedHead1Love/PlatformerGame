@@ -14,7 +14,6 @@ namespace Foxberry
         private const float FlashDuration = 0.2f;
         private const int SmallHealAmount = 2;
         private const int FrameCheckInterval = 60;
-
         [SerializeField]
         private bool _isFullHeal = true;
         [SerializeField]
@@ -80,11 +79,9 @@ namespace Foxberry
             }
 
             bool canPickup = CheckPickupAbility();
-
             if (canPickup != _canPickup)
             {
                 _canPickup = canPickup;
-
                 UpdateVisualState();
             }
         }
@@ -120,7 +117,11 @@ namespace Foxberry
 
         private void OnDrawGizmos()
         {
-            Gizmos.color = _isCollected ? Color.red : _canPickup ? Color.green : Color.yellow;
+            Gizmos.color = _isCollected
+                ? Color.red
+                : _canPickup
+                ? Color.green
+                : Color.yellow;
             Gizmos.DrawWireSphere(transform.position, GizmoRadius);
         }
 
@@ -128,7 +129,6 @@ namespace Foxberry
         {
             _spriteRenderer = GetComponent<SpriteRenderer>();
             _collider = GetComponent<Collider2D>();
-
             if (_collider != null)
             {
                 _collider.isTrigger = true;
@@ -160,12 +160,10 @@ namespace Foxberry
             if (Hero.Instance != null)
             {
                 _playerHero = Hero.Instance;
-
                 return;
             }
 
             GameObject player = GameObject.FindGameObjectWithTag(PlayerTag);
-
             if (player != null)
             {
                 _playerHero = player.GetComponent<Hero>();
@@ -173,7 +171,7 @@ namespace Foxberry
 
             if (_playerHero == null)
             {
-                _playerHero = FindFirstObjectByType<Hero>();
+                _playerHero = Hero.Instance;
             }
         }
 
@@ -190,7 +188,6 @@ namespace Foxberry
             }
 
             GameSaveData saveData = SaveSystem.Instance.CurrentSave;
-
             if (saveData?.HealthPickups == null)
             {
                 return;
@@ -202,33 +199,27 @@ namespace Foxberry
             }
 
             _isCollected = true;
-
             HidePickup();
         }
 
         private string GenerateUniqueId()
         {
             string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
-
             float positionX = Mathf.Round(transform.position.x * 100f) / 100f;
             float positionY = Mathf.Round(transform.position.y * 100f) / 100f;
-
             return $"health_{sceneName}_{gameObject.GetInstanceID()}_{positionX}_{positionY}";
         }
 
         private void CollectHealth(GameObject player)
         {
             UpdatePickupState();
-
             if (_requiresAnatomyAbility && _canPickup == false)
             {
                 ShowLockedMessage();
-
                 return;
             }
 
             _isCollected = true;
-
             if (_hasValidId)
             {
                 SaveSystem.Instance?.MarkHealthPickupCollected(_pickupId);
@@ -237,7 +228,6 @@ namespace Foxberry
             HidePickup();
             ApplyHealing(player);
             PlayCollectEffects();
-
             Destroy(gameObject, DestroyDelay);
         }
 
@@ -262,12 +252,10 @@ namespace Foxberry
             {
                 _canPickup = false;
                 UpdateVisualState();
-
                 return;
             }
 
             _canPickup = CheckPickupAbility();
-
             UpdateVisualState();
         }
 
@@ -281,15 +269,15 @@ namespace Foxberry
                 }
                 else
                 {
-                    _spriteRenderer.color =
-                        _canPickup || _requiresAnatomyAbility == false ? _originalColor : _lockedColor;
+                    _spriteRenderer.color = _canPickup || _requiresAnatomyAbility == false
+                        ? _originalColor
+                        : _lockedColor;
                 }
             }
 
             if (_lockedHint != null)
             {
                 bool shouldShowHint = _isCollected == false && _requiresAnatomyAbility && _canPickup == false;
-
                 _lockedHint.SetActive(shouldShowHint);
             }
         }
@@ -307,11 +295,8 @@ namespace Foxberry
             }
 
             Color previousColor = _spriteRenderer.color;
-
             _spriteRenderer.color = Color.red;
-
             yield return new WaitForSeconds(FlashDuration);
-
             if (_spriteRenderer != null)
             {
                 _spriteRenderer.color = previousColor;
@@ -339,7 +324,6 @@ namespace Foxberry
         private void ApplyHealing(GameObject player)
         {
             HealthManager healthManager = player.GetComponent<HealthManager>();
-
             if (healthManager == null)
             {
                 healthManager = FindFirstObjectByType<HealthManager>();
@@ -365,7 +349,6 @@ namespace Foxberry
         private void PlayHealSound(GameObject player)
         {
             AudioController audioController = player.GetComponent<AudioController>();
-
             if (audioController == null)
             {
                 audioController = FindFirstObjectByType<AudioController>();
@@ -382,9 +365,7 @@ namespace Foxberry
             }
 
             ParticleSystem effectInstance = Instantiate(_collectEffect, transform.position, Quaternion.identity);
-
             effectInstance.Play();
-
             Destroy(effectInstance.gameObject, DestroyDelay);
         }
     }

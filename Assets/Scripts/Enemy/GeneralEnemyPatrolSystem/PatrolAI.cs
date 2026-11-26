@@ -8,7 +8,6 @@ namespace GeneralEnemyPatrolSystem
     {
         private const float ArrivalThreshold = 0.3f;
         private const float ChaseSpeedMultiplier = 1.5f;
-
         [SerializeField]
         private Transform _pointA;
         [SerializeField]
@@ -59,7 +58,6 @@ namespace GeneralEnemyPatrolSystem
             {
                 HandlePlayerDeadState();
                 NotifyStateChanges();
-
                 return;
             }
 
@@ -96,7 +94,6 @@ namespace GeneralEnemyPatrolSystem
             {
                 _nextPatrolPoint = _pointB.position;
                 CurrentDirection = (_nextPatrolPoint - transform.position).normalized;
-
                 return;
             }
 
@@ -107,24 +104,18 @@ namespace GeneralEnemyPatrolSystem
         private void HandlePlayerDeadState()
         {
             _sensor.ClearPlayerReference();
-
             InAttackRange = false;
-
             Patrol();
         }
 
         private void HandlePlayerChase()
         {
             float distanceToPlayer = Vector2.Distance(transform.position, _sensor.Target.position);
-
             InAttackRange = _sensor.IsPlayerInAttackBox(_attackOffset, _attackSize, _playerLayerMask, _doorLayerMask);
-
             if (distanceToPlayer > _loseRadius)
             {
                 _sensor.ClearPlayerReference();
-
                 InAttackRange = false;
-
                 return;
             }
 
@@ -132,7 +123,6 @@ namespace GeneralEnemyPatrolSystem
             {
                 StopMovement();
                 _sensor.CheckPlayerDeath();
-
                 return;
             }
 
@@ -142,7 +132,6 @@ namespace GeneralEnemyPatrolSystem
         private void HandlePatrolState()
         {
             InAttackRange = false;
-
             Patrol();
         }
 
@@ -151,15 +140,15 @@ namespace GeneralEnemyPatrolSystem
             if (_pointA == null || _pointB == null)
             {
                 StopMovement();
-
                 return;
             }
 
             float distanceX = Mathf.Abs(transform.position.x - _nextPatrolPoint.x);
-
             if (distanceX < ArrivalThreshold)
             {
-                _nextPatrolPoint = _nextPatrolPoint == _pointA.position ? _pointB.position : _pointA.position;
+                _nextPatrolPoint = _nextPatrolPoint == _pointA.position
+                    ? _pointB.position
+                    : _pointA.position;
             }
 
             MoveToward(_nextPatrolPoint, _patrolSpeed);
@@ -173,11 +162,9 @@ namespace GeneralEnemyPatrolSystem
             }
 
             Vector2 direction = (target - transform.position).normalized;
-
             if (TryOpenDoorInDirection(direction))
             {
                 StopMovement();
-
                 return;
             }
 
@@ -193,16 +180,15 @@ namespace GeneralEnemyPatrolSystem
             }
 
             RaycastHit2D hit = Physics2D.Raycast(transform.position, direction, _doorCheckDistance, _doorLayerMask);
-
-            IOpenable door = hit.collider != null ? hit.collider.GetComponent<IOpenable>() : null;
-
+            IOpenable door = hit.collider != null
+                ? hit.collider.GetComponent<IOpenable>()
+                : null;
             if (door == null || door.IsClosed == false)
             {
                 return false;
             }
 
             door.Open();
-
             return true;
         }
 
@@ -226,11 +212,8 @@ namespace GeneralEnemyPatrolSystem
         {
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(transform.position, _visionRadius);
-
             Gizmos.color = Color.red;
-
             Vector2 attackCenter = PatrolTargetSensor.CalculateAttackCenter(transform, _attackOffset);
-
             Gizmos.DrawWireCube(attackCenter, _attackSize);
         }
     }

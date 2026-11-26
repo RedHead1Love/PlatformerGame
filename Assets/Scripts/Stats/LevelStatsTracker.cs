@@ -12,7 +12,6 @@ namespace Foxberry
         private static int _persistentDamage = 0;
         private static int _persistentDeaths = 0;
         private static int _persistentScore = 0;
-
         private bool _isTracking = true;
 
         public static LevelStatsTracker Instance { get; private set; }
@@ -36,25 +35,27 @@ namespace Foxberry
         private void Awake()
         {
             if (Instance == null)
+            {
                 Instance = this;
+            }
             else
                 Destroy(gameObject);
         }
 
         private void OnEnable()
         {
-            HealthManager.OnDamageTakenGlobal += AddDamage;
-            Hero.OnHeroDiedGlobal += AddDeath;
-            EnemyRegistry.OnEnemyKilledGlobal += AddScore;
-            BossDoor.OnBossDoorOpenedGlobal += CompleteLevel;
+            HealthManager.OnDamageTakenGlobal += OnDamageTaken;
+            Hero.OnHeroDiedGlobal += OnHeroDied;
+            EnemyRegistry.OnEnemyKilledGlobal += OnEnemyKilled;
+            BossDoor.OnBossDoorOpenedGlobal += OnBossDoorOpened;
         }
 
         private void OnDisable()
         {
-            HealthManager.OnDamageTakenGlobal -= AddDamage;
-            Hero.OnHeroDiedGlobal -= AddDeath;
-            EnemyRegistry.OnEnemyKilledGlobal -= AddScore;
-            BossDoor.OnBossDoorOpenedGlobal -= CompleteLevel;
+            HealthManager.OnDamageTakenGlobal -= OnDamageTaken;
+            Hero.OnHeroDiedGlobal -= OnHeroDied;
+            EnemyRegistry.OnEnemyKilledGlobal -= OnEnemyKilled;
+            BossDoor.OnBossDoorOpenedGlobal -= OnBossDoorOpened;
         }
 
         private void Update()
@@ -65,32 +66,38 @@ namespace Foxberry
             }
         }
 
-        private void AddDamage(int amount)
+        private void OnDamageTaken(int amount)
         {
             if (_isTracking)
+            {
                 _persistentDamage += amount;
+            }
         }
 
-        private void AddDeath()
+        private void OnHeroDied()
         {
             if (_isTracking)
+            {
                 _persistentDeaths++;
+            }
         }
 
-        private void AddScore()
+        private void OnEnemyKilled()
         {
             if (_isTracking)
+            {
                 _persistentScore += 100;
+            }
         }
 
-        private void CompleteLevel()
+        private void OnBossDoorOpened()
         {
             if (_isTracking == false)
+            {
                 return;
+            }
 
             _isTracking = false;
-            Debug.Log("Уровень завершен. Запускаем поочередную отправку рекордов...");
-
             StartCoroutine(SendLeaderboardsRoutine());
         }
 
@@ -100,7 +107,6 @@ namespace Foxberry
             YG2.SetLeaderboard("ScoreBoard", _persistentScore);
 #endif
             yield return null;
-
             ResetAllStats();
         }
     }

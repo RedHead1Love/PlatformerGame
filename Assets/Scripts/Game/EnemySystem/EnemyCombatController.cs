@@ -23,7 +23,6 @@ namespace Foxberry
         private const float MovementThreshold = 0.01f;
         private const float DirectionThreshold = 0f;
         private const float MaxDetectionRadiusMultiplier = 1.5f;
-
         [SerializeField]
         private int _maxHealth = 2;
         [SerializeField]
@@ -71,11 +70,9 @@ namespace Foxberry
             }
 
             CurrentLives = Mathf.Max(0, CurrentLives - amount);
-
             if (CurrentLives <= 0)
             {
                 Die();
-
                 return;
             }
 
@@ -90,17 +87,14 @@ namespace Foxberry
             }
 
             _audioController?.PlayDeathSound();
-
             base.Die();
         }
 
         protected override void Awake()
         {
             base.Awake();
-
             InitializeHealth();
             InitializeComponents();
-
             _lastPosition = transform.position;
         }
 
@@ -152,12 +146,10 @@ namespace Foxberry
             if (_rigidbody != null)
             {
                 _isMoving = Mathf.Abs(_rigidbody.velocity.x) > MovementThreshold;
-
                 return;
             }
 
             Vector2 currentPosition = transform.position;
-
             _isMoving = Vector2.Distance(currentPosition, _lastPosition) > MovementThreshold;
             _lastPosition = currentPosition;
         }
@@ -167,25 +159,19 @@ namespace Foxberry
             if (_playerTransform != null && _playerHealthManager != null)
             {
                 float distanceToPlayer = Vector2.Distance(transform.position, _playerTransform.position);
-
-                _isPlayerInRange = distanceToPlayer <= _detectionRadius * MaxDetectionRadiusMultiplier &&
-                                   _playerHealthManager.CurrentHealth > 0;
-
+                _isPlayerInRange = distanceToPlayer <= _detectionRadius * MaxDetectionRadiusMultiplier && _playerHealthManager.CurrentHealth > 0;
                 return;
             }
 
             Collider2D playerCollider = Physics2D.OverlapCircle(transform.position, _detectionRadius, _playerLayerMask);
-
             if (playerCollider == null)
             {
                 _isPlayerInRange = false;
-
                 return;
             }
 
             _playerTransform = playerCollider.transform;
             _playerHealthManager = playerCollider.GetComponent<HealthManager>();
-
             if (_playerHealthManager == null)
             {
                 _playerHealthManager = playerCollider.GetComponentInParent<HealthManager>();
@@ -202,7 +188,6 @@ namespace Foxberry
             }
 
             float distanceToPlayer = Vector2.Distance(transform.position, _playerTransform.position);
-
             if (distanceToPlayer > AttackCheckRadius || Time.time < _lastAttackTime + _attackCooldown)
             {
                 return;
@@ -215,57 +200,33 @@ namespace Foxberry
         {
             _isAttacking = true;
             _lastAttackTime = Time.time;
-
             bool useStrongAttack = Random.value <= StrongAttackProbability;
-            int animationIndex =
-                useStrongAttack ? RegularAttackAnimationCount : Random.Range(0, RegularAttackAnimationCount);
-
+            int animationIndex = useStrongAttack
+                ? RegularAttackAnimationCount
+                : Random.Range(0,
+                 RegularAttackAnimationCount);
             SetAnimationState((EnemyAnimationState)animationIndex);
-
             _attackCoroutine = StartCoroutine(AttackRoutine(useStrongAttack));
         }
 
         private IEnumerator AttackRoutine(bool useStrongAttack)
         {
             yield return new WaitForSeconds(DamageAnimationDelay);
-
-            int damage = useStrongAttack ? _strongAttackDamage : _attackDamage;
+            int damage = useStrongAttack
+                ? _strongAttackDamage
+                : _attackDamage;
             bool hitConnected = ApplyAttackDamage(damage);
-
             PlayAttackSound(hitConnected, useStrongAttack);
-
             yield return new WaitForSeconds(HitAnimationDuration);
-
             _isAttacking = false;
         }
 
         private bool ApplyAttackDamage(int damage)
         {
-            Vector2 attackCenter = CalculateAttackCenter();
-
-            Collider2D playerCollider =
-                Physics2D.OverlapBox(attackCenter, _attackSize, BoxRotationAngle, LayerMask.GetMask(PlayerLayerName));
-
-            if (playerCollider == null)
-            {
-                return false;
-            }
-
-            IDamageable damageable = playerCollider.GetComponent<IDamageable>();
-
-            if (damageable == null)
-            {
-                damageable = playerCollider.GetComponentInParent<IDamageable>();
-            }
-
-            if (damageable == null)
-            {
-                return false;
-            }
-
-            damageable.TakeDamage(damage);
-
-            return true;
+            return AttackHitResolver.TryApplyBox(CalculateAttackCenter(),
+                 _attackSize,
+                 LayerMask.GetMask(PlayerLayerName),
+                 damage);
         }
 
         private Vector2 CalculateAttackCenter()
@@ -277,17 +238,14 @@ namespace Foxberry
         {
             _isTakingDamage = true;
             _isHurt = true;
-
             _audioController?.PlayHurtSound();
             SetAnimationState(EnemyAnimationState.Hurt);
-
             if (_patrolAI != null)
             {
                 _patrolAI.enabled = false;
             }
 
             yield return new WaitForSeconds(_hurtInvulnerabilityDuration);
-
             if (_patrolAI != null && IsDead == false)
             {
                 _patrolAI.enabled = true;
@@ -304,8 +262,9 @@ namespace Foxberry
                 return;
             }
 
-            EnemyAnimationState targetState = _isMoving ? EnemyAnimationState.Walk : EnemyAnimationState.Idle;
-
+            EnemyAnimationState targetState = _isMoving
+                ? EnemyAnimationState.Walk
+                : EnemyAnimationState.Idle;
             SetAnimationState(targetState);
         }
 
@@ -314,7 +273,6 @@ namespace Foxberry
             if (_playerTransform != null && _isPlayerInRange)
             {
                 float directionToPlayer = Mathf.Sign(_playerTransform.position.x - transform.position.x);
-
                 if (Mathf.Abs(directionToPlayer) > DirectionThreshold)
                 {
                     _facingDirection = new Vector2(directionToPlayer, 0f);
@@ -330,7 +288,6 @@ namespace Foxberry
             }
 
             float movementDirection = Mathf.Sign(_rigidbody.velocity.x);
-
             _facingDirection = new Vector2(movementDirection, 0f);
             transform.localScale = new Vector3(movementDirection, 1f, 1f);
         }
@@ -343,7 +300,6 @@ namespace Foxberry
             }
 
             _currentAnimationState = state;
-
             if (_animator != null)
             {
                 _animator.SetInteger(AnimationStateParameterName, (int)state);
@@ -385,7 +341,6 @@ namespace Foxberry
         {
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(transform.position, _detectionRadius);
-
             Gizmos.color = Color.red;
             Gizmos.DrawWireCube(CalculateAttackCenter(), _attackSize);
         }

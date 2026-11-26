@@ -8,7 +8,6 @@ namespace Player
         private const int BaseLayerIndex = 0;
         private const float AnimationEndThreshold = 1f;
         private const string StateParameterName = "state";
-
         private readonly Animator _animator;
         private readonly int _stateParameterHash;
 
@@ -46,7 +45,6 @@ namespace Player
             }
 
             AnimatorStateInfo stateInfo = _animator.GetCurrentAnimatorStateInfo(BaseLayerIndex);
-
             return stateInfo.IsName(stateName) && stateInfo.normalizedTime >= AnimationEndThreshold;
         }
 
@@ -57,10 +55,10 @@ namespace Player
                 return 0f;
             }
 
-            AnimationClip clip = _animator.runtimeAnimatorController.animationClips.FirstOrDefault(
-                animationClip => animationClip.name == stateName);
-
-            return clip != null ? clip.length : 0f;
+            AnimationClip clip = _animator.runtimeAnimatorController.animationClips.FirstOrDefault(animationClip => animationClip.name == stateName);
+            return clip != null
+                ? clip.length
+                : 0f;
         }
     }
 }

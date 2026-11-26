@@ -5,7 +5,7 @@ namespace GameLogic
 {
     public sealed class WorldProgress : MonoBehaviour
     {
-        private static readonly WorldProgressStore Store = new WorldProgressStore(new UnityProgressPreferences());
+        private static IWorldProgress Store => GameServices.Progress;
 
         public static WorldProgress Instance { get; private set; }
 
@@ -37,9 +37,7 @@ namespace GameLogic
             if (Instance == null)
             {
                 Instance = this;
-
                 DontDestroyOnLoad(gameObject);
-
                 return;
             }
 

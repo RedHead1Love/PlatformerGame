@@ -6,7 +6,6 @@ namespace AudioSystem
     {
         private readonly IAudioPlayer _audioPlayer;
         private readonly IMusicPlaylist _playlist;
-
         private bool _isBossFightActive;
         private bool _isBackgroundMusicPlaying;
 
@@ -41,7 +40,6 @@ namespace AudioSystem
             }
 
             _isBackgroundMusicPlaying = true;
-
             PlayNextTrack();
         }
 
@@ -53,7 +51,6 @@ namespace AudioSystem
             }
 
             AudioClip nextTrack = _playlist.GetNextTrack();
-
             if (nextTrack == null)
             {
                 return;
@@ -71,7 +68,6 @@ namespace AudioSystem
 
             _isBossFightActive = true;
             _isBackgroundMusicPlaying = false;
-
             _audioPlayer.Stop();
             _audioPlayer.Play(bossMusic);
         }
@@ -80,7 +76,6 @@ namespace AudioSystem
         {
             _isBossFightActive = false;
             _isBackgroundMusicPlaying = true;
-
             _audioPlayer.Stop();
             PlayNextTrack();
         }
@@ -93,7 +88,6 @@ namespace AudioSystem
             }
 
             _isBackgroundMusicPlaying = false;
-
             _audioPlayer.Stop();
         }
 
@@ -105,7 +99,6 @@ namespace AudioSystem
             }
 
             _isBackgroundMusicPlaying = true;
-
             PlayNextTrack();
         }
 

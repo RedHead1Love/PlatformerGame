@@ -11,7 +11,6 @@ namespace DoorControl
     public sealed class Door : MonoBehaviour, IOpenable
     {
         private const float BoxRotationAngle = 0f;
-
         [SerializeField]
         private IInputProvider _inputProvider;
         [FormerlySerializedAs("spriteRenderer")]
@@ -71,7 +70,6 @@ namespace DoorControl
             }
 
             _isOpened = true;
-
             HideAllHints();
             SetAnimatorState(true);
             SetColliderEnabled(false);
@@ -87,7 +85,6 @@ namespace DoorControl
             }
 
             _isOpened = false;
-
             if (_wasPlayerInside && _interactionHint != null)
             {
                 _interactionHint.SetActive(true);
@@ -120,7 +117,6 @@ namespace DoorControl
         private void Update()
         {
             bool isInside = IsPlayerInsideInteractionArea();
-
             if (isInside != _wasPlayerInside)
             {
                 _wasPlayerInside = isInside;
@@ -141,7 +137,9 @@ namespace DoorControl
         private void UpdateInteractionHint(bool isInside)
         {
             if (_isOpened)
+            {
                 return;
+            }
 
             if (_interactionHint != null)
             {
@@ -157,17 +155,23 @@ namespace DoorControl
         private void HideAllHints()
         {
             if (_interactionHint != null)
+            {
                 _interactionHint.SetActive(false);
+            }
+
             if (_missingKeyHint != null)
+            {
                 _missingKeyHint.SetActive(false);
+            }
         }
 
         private void InitializeComponents()
         {
             _animator = GetComponent<Animator>();
             _doorCollider = GetComponent<Collider2D>();
-            _audioController = (Hero.Instance != null ? Hero.Instance.AudioController : null) ??
-                               FindAnyObjectByType<AudioController>();
+            _audioController = (Hero.Instance != null
+                ? Hero.Instance.AudioController
+                : null) ?? FindAnyObjectByType<AudioController>();
         }
 
         private void InitializePlayerReferences()
@@ -176,21 +180,19 @@ namespace DoorControl
             {
                 _player = Hero.Instance.transform;
                 _playerKeyCollection = Hero.Instance.GetComponent<KeyCollection>();
-
                 if (_playerKeyCollection == null)
                 {
                     _playerKeyCollection = Hero.Instance.GetComponentInParent<KeyCollection>();
                 }
+
                 return;
             }
 
             GameObject playerObject = GameObject.FindGameObjectWithTag("Player");
-
             if (playerObject != null)
             {
                 _player = playerObject.transform;
                 _playerKeyCollection = playerObject.GetComponent<KeyCollection>();
-
                 if (_playerKeyCollection == null)
                 {
                     _playerKeyCollection = playerObject.GetComponentInParent<KeyCollection>();
@@ -202,7 +204,9 @@ namespace DoorControl
         {
             if (_animator != null)
             {
-                _animator.Play(_isOpened ? "Opened" : "Closed");
+                _animator.Play(_isOpened
+                    ? "Opened"
+                    : "Closed");
             }
 
             SetColliderEnabled(_isOpened == false);
@@ -212,19 +216,28 @@ namespace DoorControl
         private void FindInputProvider()
         {
             if (_inputProvider != null)
+            {
                 return;
+            }
 
-            _inputProvider = _player != null ? _player.GetComponent<AggregatedInputProvider>() : null;
+            _inputProvider = _player != null
+                ? _player.GetComponent<AggregatedInputProvider>()
+                : null;
             _inputProvider ??= FindAnyObjectByType<AggregatedInputProvider>();
-
             if (_inputProvider == null && YG2.envir.isDesktop)
+            {
                 _inputProvider = FindAnyObjectByType<LegacyInputProvider>();
+            }
 
             if (_inputProvider == null && YG2.envir.isMobile)
+            {
                 _inputProvider = FindAnyObjectByType<JoystickInput>();
+            }
 
             if (_inputProvider == null)
+            {
                 Debug.LogWarning("IInputProvider не найден");
+            }
         }
 
         private bool IsPlayerInsideInteractionArea()
@@ -258,28 +271,41 @@ namespace DoorControl
             else
             {
                 if (_interactionHint != null)
+                {
                     _interactionHint.SetActive(false);
+                }
+
                 if (_missingKeyHint != null)
+                {
                     _missingKeyHint.SetActive(true);
+                }
             }
         }
 
         private void SetAnimatorState(bool opened)
         {
             if (_animator != null)
+            {
                 _animator.SetBool("IsOpened", opened);
+            }
         }
 
         private void SetColliderEnabled(bool enabled)
         {
             if (_doorCollider != null)
+            {
                 _doorCollider.enabled = enabled;
+            }
         }
 
         private void ApplyVisualState(bool opened)
         {
             if (_spriteRenderer != null)
-                _spriteRenderer.sprite = opened ? _spriteOpened : _spriteClosed;
+            {
+                _spriteRenderer.sprite = opened
+                    ? _spriteOpened
+                    : _spriteClosed;
+            }
         }
 
         private void PlayOpenSound() => PlaySound(_openSound);
@@ -289,10 +315,14 @@ namespace DoorControl
         private void PlaySound(AudioClip sound)
         {
             if (sound == null || ShouldPlaySound() == false)
+            {
                 return;
+            }
 
             if (_audioController != null)
+            {
                 _audioController.PlayOneShot(sound);
+            }
             else
                 AudioSource.PlayClipAtPoint(sound, transform.position);
         }
@@ -302,7 +332,10 @@ namespace DoorControl
         private bool IsPlayerInRange()
         {
             if (_player == null)
+            {
                 return true;
+            }
+
             return Vector2.Distance(transform.position, _player.position) <= _soundRange;
         }
 

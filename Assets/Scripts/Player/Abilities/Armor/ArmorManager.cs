@@ -6,7 +6,7 @@ namespace Player
     public sealed class ArmorManager : MonoBehaviour, IArmorManager
     {
         private const int MinimumArmorValue = 0;
-
+        private readonly ArmorView _view = new ArmorView();
         [SerializeField]
         private int _maxArmor = 6;
         [SerializeField]
@@ -18,7 +18,6 @@ namespace Player
         [SerializeField]
         private bool _useAudioController = true;
         private AudioController _audioController;
-        private readonly ArmorView _view = new ArmorView();
         private Hero _hero;
         private bool _isArmorUnlocked;
 
@@ -43,16 +42,13 @@ namespace Player
             }
 
             int validArmor = Mathf.Clamp(amount, MinimumArmorValue, _maxArmor);
-
             if (_currentArmor == validArmor)
             {
                 UpdateArmorUI();
-
                 return;
             }
 
             _currentArmor = validArmor;
-
             UpdateArmorUI();
             OnArmorChanged?.Invoke(_currentArmor, _maxArmor);
         }
@@ -82,10 +78,8 @@ namespace Player
             int oldArmor = _currentArmor;
             int absorbedDamage = Mathf.Min(damageAmount, _currentArmor);
             int remainingDamage = damageAmount - absorbedDamage;
-
             SetArmor(_currentArmor - absorbedDamage);
             PlayArmorDamageSound(oldArmor, _currentArmor);
-
             return remainingDamage;
         }
 
@@ -117,7 +111,6 @@ namespace Player
             }
 
             _isArmorUnlocked = true;
-
             _view.Show(_armorPanelPrefab);
             SetArmor(_maxArmor);
         }
@@ -135,7 +128,6 @@ namespace Player
             }
 
             int validArmor = Mathf.Clamp(armorFromSave, MinimumArmorValue, _maxArmor);
-
             SetArmor(validArmor);
         }
 
@@ -160,7 +152,6 @@ namespace Player
         private void InitializeReferences()
         {
             _hero = GetComponent<Hero>();
-
             if (_hero == null)
             {
                 _hero = FindFirstObjectByType<Hero>();
@@ -169,7 +160,6 @@ namespace Player
             if (_useAudioController)
             {
                 _audioController = GetComponentInParent<AudioController>();
-
                 if (_audioController == null)
                 {
                     _audioController = FindFirstObjectByType<AudioController>();
@@ -179,9 +169,7 @@ namespace Player
 
         private void InitializeArmorState()
         {
-            _isArmorUnlocked =
-                _startEnabled || (_hero != null && _hero.AbilityManager != null && _hero.AbilityManager.HasArmor);
-
+            _isArmorUnlocked = _startEnabled || (_hero != null && _hero.AbilityManager != null && _hero.AbilityManager.HasArmor);
             if (IsArmorUnlocked())
             {
                 _view.Show(_armorPanelPrefab);
@@ -203,7 +191,6 @@ namespace Player
             if (newArmor <= MinimumArmorValue && oldArmor > MinimumArmorValue)
             {
                 _audioController.PlayArmorBreakSound();
-
                 return;
             }
 

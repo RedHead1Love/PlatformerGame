@@ -79,17 +79,23 @@ namespace AudioSystem
             _deathSound = audioClip;
         }
 
+        public void SetAudioPlayer(IAudioPlayer audioPlayer)
+        {
+            _audioPlayer = audioPlayer ?? throw new System.ArgumentNullException(nameof(audioPlayer));
+        }
+
         private void Awake()
         {
-            InitializeAudioPlayer();
+            if (_audioPlayer == null)
+            {
+                InitializeAudioPlayer();
+            }
         }
 
         private void InitializeAudioPlayer()
         {
             AudioSource audioSource = GetComponent<AudioSource>();
-
             audioSource.playOnAwake = false;
-
             _audioPlayer = new AudioPlayer(audioSource);
         }
 

@@ -11,9 +11,7 @@ namespace Foxberry.Shop
     {
         private const string HorizontalAxisName = "Horizontal";
         private const string VerticalAxisName = "Vertical";
-
         private readonly List<ShopItemView> _boundViews = new List<ShopItemView>();
-
         [SerializeField]
         private ShopUIManager _uiManager;
         private ShopItemPurchaseHandler _purchaseHandler;
@@ -37,15 +35,10 @@ namespace Foxberry.Shop
         public void OpenShop()
         {
             _isShopOpen = true;
-
             gameObject.SetActive(true);
-
             EnsureInitialized();
-
             _miniMapController?.CloseMiniMap();
-
             _navigationController.Reset();
-
             SetShopInputMode(true);
             _presenter.UpdateUI();
             _presenter.UpdateDetailsPanel();
@@ -54,9 +47,7 @@ namespace Foxberry.Shop
         public void CloseShop()
         {
             _isShopOpen = false;
-
             SetShopInputMode(false);
-
             gameObject.SetActive(false);
         }
 
@@ -98,7 +89,6 @@ namespace Foxberry.Shop
             if (_uiManager != null)
             {
                 _uiManager.OnCurrencyTabClicked -= HandleCurrencyTabClick;
-
                 if (_uiManager.BuyButton != null)
                 {
                     _uiManager.BuyButton.onClick.RemoveListener(ConfirmPurchase);
@@ -132,9 +122,7 @@ namespace Foxberry.Shop
 
             Hero hero = FindFirstObjectByType<Hero>();
             ArmorManager armorManager = FindFirstObjectByType<ArmorManager>();
-
             _purchaseHandler = new ShopItemPurchaseHandler(hero, armorManager, this, () => WalletManager.Instance);
-
             if (_uiManager == null)
             {
                 _uiManager = GetComponentInChildren<ShopUIManager>(true);
@@ -144,7 +132,6 @@ namespace Foxberry.Shop
             {
                 _uiManager.OnCurrencyTabClicked -= HandleCurrencyTabClick;
                 _uiManager.OnCurrencyTabClicked += HandleCurrencyTabClick;
-
                 if (_uiManager.BuyButton != null)
                 {
                     _uiManager.BuyButton.onClick.RemoveListener(ConfirmPurchase);
@@ -178,7 +165,6 @@ namespace Foxberry.Shop
             {
                 Hero hero = FindFirstObjectByType<Hero>();
                 ArmorManager armorManager = FindFirstObjectByType<ArmorManager>();
-
                 _purchaseHandler = new ShopItemPurchaseHandler(hero, armorManager, this, () => WalletManager.Instance);
             }
 
@@ -201,7 +187,6 @@ namespace Foxberry.Shop
             if (ShopPurchaseHistory.Instance == null)
             {
                 GameObject managerObject = new GameObject("ShopSaveManager");
-
                 managerObject.AddComponent<ShopPurchaseHistory>();
                 DontDestroyOnLoad(managerObject);
             }
@@ -230,17 +215,14 @@ namespace Foxberry.Shop
             }
 
             var itemsByCurrency = new ShopCatalog(_shopItems).GroupByCurrency();
-
             foreach (KeyValuePair<CoinType, List<ShopItemData>> kvp in itemsByCurrency)
             {
                 for (int i = 0; i < kvp.Value.Count; i++)
                 {
                     ShopItemView itemView = _uiManager.GetItemView(kvp.Key, i);
-
                     if (itemView != null)
                     {
                         itemView.Initialize(kvp.Value[i]);
-
                         itemView.OnPointerSelected -= HandlePointerSelection;
                         itemView.OnPointerSelected += HandlePointerSelection;
                         _boundViews.Add(itemView);
@@ -258,6 +240,7 @@ namespace Foxberry.Shop
                     view.OnPointerSelected -= HandlePointerSelection;
                 }
             }
+
             _boundViews.Clear();
         }
 
@@ -286,7 +269,6 @@ namespace Foxberry.Shop
         {
             Vector2 input = new Vector2(Input.GetAxisRaw(HorizontalAxisName), Input.GetAxisRaw(VerticalAxisName));
             HandleShopInput(input);
-
             if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return))
             {
                 PurchaseSelectedItemIfPossible();
@@ -321,7 +303,9 @@ namespace Foxberry.Shop
         {
             IShopItem item = _navigationController?.GetCurrentItem();
             if (item == null)
+            {
                 return;
+            }
 
             if (item.CanBePurchased() == false)
             {
@@ -331,20 +315,19 @@ namespace Foxberry.Shop
 
             bool success = _purchaseHandler.TryPurchaseItem(item.ItemId);
             bool isEnglish = LocalizationManager.CurrentLanguage == GameLanguage.English;
-
             if (success == false)
             {
-                _uiManager?.ShowPurchaseMessage(
-                    isEnglish ? "<color=red>Failed to purchase</color>"
-                                                          : "<color=red>Не удалось купить предмет</color>");
+                _uiManager?.ShowPurchaseMessage(isEnglish
+                    ? "<color=red>Failed to purchase</color>"
+                    : "<color=red>Не удалось купить предмет</color>");
                 return;
             }
 
             item.Purchase();
-
-            _uiManager?.ShowPurchaseMessage(isEnglish ? "Purchase successful" : "Покупка успешна");
+            _uiManager?.ShowPurchaseMessage(isEnglish
+                ? "Purchase successful"
+                : "Покупка успешна");
             _uiManager?.RefreshLastChanceItems();
-
             _presenter.UpdateUI();
             _presenter.UpdateDetailsPanel();
             SaveGameImmediately();
@@ -353,7 +336,6 @@ namespace Foxberry.Shop
         private void SaveGameImmediately()
         {
             Hero hero = FindFirstObjectByType<Hero>();
-
             if (hero == null || SaveSystem.Instance == null)
             {
                 return;

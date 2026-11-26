@@ -8,7 +8,6 @@ namespace GameLogic
     {
         private const string LanguageKey = "Language";
         private const string ManualOverrideKey = "LangManualOverride";
-
         private static bool _isApplyingLanguage = false;
 
         public static event Action<GameLanguage> OnLanguageChanged;
@@ -18,14 +17,14 @@ namespace GameLogic
         public static void SetLanguage(GameLanguage newLanguage)
         {
             if (_isApplyingLanguage)
+            {
                 return;
+            }
 
             CurrentLanguage = newLanguage;
-
             PlayerPrefs.SetInt(LanguageKey, (int)newLanguage);
             PlayerPrefs.SetInt(ManualOverrideKey, 1);
             PlayerPrefs.Save();
-
             ApplyToYG(newLanguage);
             OnLanguageChanged?.Invoke(CurrentLanguage);
         }
@@ -35,10 +34,13 @@ namespace GameLogic
             string selectedFile = CurrentLanguage switch
             {
                 GameLanguage.Russian => fileNameRu,
-                GameLanguage.Turkish => string.IsNullOrEmpty(fileNameTr) ? fileNameEn : fileNameTr,
-                _ => string.IsNullOrEmpty(fileNameEn) ? fileNameRu : fileNameEn,
+                GameLanguage.Turkish => string.IsNullOrEmpty(fileNameTr)
+                    ? fileNameEn
+                    : fileNameTr,
+                _ => string.IsNullOrEmpty(fileNameEn)
+                    ? fileNameRu
+                    : fileNameEn,
             };
-
             if (string.IsNullOrEmpty(selectedFile))
             {
                 selectedFile = fileNameRu;
@@ -69,17 +71,14 @@ namespace GameLogic
             {
                 int savedLang = PlayerPrefs.GetInt(LanguageKey, (int)GameLanguage.Russian);
                 CurrentLanguage = (GameLanguage)savedLang;
-
                 ApplyToYG(CurrentLanguage);
                 OnLanguageChanged?.Invoke(CurrentLanguage);
             }
             else
             {
                 CurrentLanguage = CodeToLanguage(YG2.lang);
-
                 PlayerPrefs.SetInt(LanguageKey, (int)CurrentLanguage);
                 PlayerPrefs.Save();
-
                 ApplyToYG(CurrentLanguage);
                 OnLanguageChanged?.Invoke(CurrentLanguage);
             }
@@ -89,7 +88,6 @@ namespace GameLogic
         {
             _isApplyingLanguage = true;
             string code = LanguageToCode(lang);
-
             try
             {
                 YG2.SwitchLanguage(code);

@@ -64,7 +64,6 @@ namespace Player.Abilities
             WriteBool(LastChanceKey, abilities.IsLastChanceActive);
             WriteBool(VampireKey, abilities.HasVampireAbility);
             WriteBool(OnePunchManKey, abilities.HasOnePunchManAbility);
-
             PlayerPrefs.Save();
         }
 
@@ -75,7 +74,9 @@ namespace Player.Abilities
 
         private static void WriteBool(string key, bool value)
         {
-            PlayerPrefs.SetInt(key, value ? ActiveValue : InactiveValue);
+            PlayerPrefs.SetInt(key, value
+                ? ActiveValue
+                : InactiveValue);
         }
     }
 }

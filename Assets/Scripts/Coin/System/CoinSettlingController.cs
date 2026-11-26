@@ -14,7 +14,6 @@ namespace Foxberry
         private const float StopMaxLifetime = 3f;
         private const float VelocityDampingFactor = 0.7f;
         private const float GroundCheckDelay = 0.2f;
-
         [SerializeField]
         private float _stopDelay = DefaultStopDelay;
         [SerializeField]
@@ -30,10 +29,8 @@ namespace Foxberry
         private void Start()
         {
             InitializeComponents();
-
             _spawnTime = Time.time;
-
-            Invoke(nameof(StartStopCheck), _stopDelay);
+            Invoke(nameof(BeginRestChecks), _stopDelay);
             Destroy(gameObject, _maxLifetime);
         }
 
@@ -45,14 +42,13 @@ namespace Foxberry
             }
 
             _rigidbody.velocity *= VelocityDampingFactor;
-
-            Invoke(nameof(CheckForStop), GroundCheckDelay);
+            Invoke(nameof(CheckRestCondition), GroundCheckDelay);
         }
 
         private void OnDestroy()
         {
-            CancelInvoke(nameof(CheckForStop));
-            CancelInvoke(nameof(StartStopCheck));
+            CancelInvoke(nameof(CheckRestCondition));
+            CancelInvoke(nameof(BeginRestChecks));
         }
 
         private void InitializeComponents()
@@ -62,12 +58,12 @@ namespace Foxberry
             _coin = GetComponent<ICoin>();
         }
 
-        private void StartStopCheck()
+        private void BeginRestChecks()
         {
-            InvokeRepeating(nameof(CheckForStop), CheckInitialDelay, CheckRepeatInterval);
+            InvokeRepeating(nameof(CheckRestCondition), CheckInitialDelay, CheckRepeatInterval);
         }
 
-        private void CheckForStop()
+        private void CheckRestCondition()
         {
             if (_isStopped || _rigidbody == null)
             {
@@ -76,14 +72,13 @@ namespace Foxberry
 
             bool isMovingSlowly = _rigidbody.velocity.magnitude < _minVelocity;
             bool exceededLifetime = Time.time - _spawnTime > StopMaxLifetime;
-
             if (isMovingSlowly || exceededLifetime)
             {
-                StopCoin();
+                SettleCoin();
             }
         }
 
-        private void StopCoin()
+        private void SettleCoin()
         {
             if (_isStopped || _rigidbody == null)
             {
@@ -91,21 +86,9 @@ namespace Foxberry
             }
 
             _isStopped = true;
-
-            _rigidbody.velocity = Vector2.zero;
-            _rigidbody.angularVelocity = 0f;
-            _rigidbody.bodyType = RigidbodyType2D.Kinematic;
-
-            if (_collider != null)
-            {
-                _collider.isTrigger = true;
-            }
-
-            _coin?.EnableCollection();
-
-            CancelInvoke(nameof(CheckForStop));
-
-            Destroy(this, 0.1f);
+            CoinRestPhysics.Settle(_rigidbody, _collider, _coin);
+            CancelInvoke(nameof(CheckRestCondition));
+            Destroy(this, CheckInitialDelay);
         }
     }
 }

@@ -9,19 +9,19 @@ namespace Foxberry.Shop
     {
         private readonly Hero _hero;
         private readonly AbilityManager _abilityManager;
-
         private readonly ShopItemEffects _effects;
         private readonly System.Func<IWalletManager> _getWallet;
         private ShopManager _shopManager;
 
-        public ShopItemPurchaseHandler(
-            Hero hero = null,
-            ArmorManager armorManager = null,
-            ShopManager shopManager = null,
-            System.Func<IWalletManager> getWallet = null)
+        public ShopItemPurchaseHandler(Hero hero = null,
+             ArmorManager armorManager = null,
+             ShopManager shopManager = null,
+             System.Func<IWalletManager> getWallet = null)
         {
             _hero = hero;
-            _abilityManager = _hero != null ? _hero.AbilityManager : null;
+            _abilityManager = _hero != null
+                ? _hero.AbilityManager
+                : null;
             _effects = new ShopItemEffects(hero, _abilityManager, armorManager ?? hero?.GetComponent<ArmorManager>());
             _getWallet = getWallet ?? (() => WalletManager.Instance);
             _shopManager = shopManager;
@@ -35,7 +35,6 @@ namespace Foxberry.Shop
             }
 
             ShopItemData item = FindShopItem(itemId);
-
             if (item == null || item.CanBePurchased() == false)
             {
                 return false;
@@ -48,7 +47,6 @@ namespace Foxberry.Shop
 
             _effects.Apply(itemId);
             SavePurchase(itemId);
-
             return true;
         }
 
@@ -82,10 +80,8 @@ namespace Foxberry.Shop
             if (itemId == ShopItemIds.RestoreArmor)
             {
                 int uses = PlayerPrefs.GetInt("ArmorPlates_Used", 0);
-
                 PlayerPrefs.SetInt("ArmorPlates_Used", uses + 1);
                 PlayerPrefs.Save();
-
                 return;
             }
 

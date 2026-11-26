@@ -7,7 +7,6 @@ namespace Foxberry
     {
         private const float DefaultSpacing = 35f;
         private const int MinimumHeartIndex = 0;
-
         [SerializeField]
         private Image _heartPrefab;
         [SerializeField]
@@ -22,26 +21,24 @@ namespace Foxberry
         public void SetHealth(int currentHealth)
         {
             InitializeHearts();
-
             if (_hearts == null)
             {
                 return;
             }
 
             int validHealth = Mathf.Clamp(currentHealth, MinimumHeartIndex, _maxHeartCount);
-
             for (int heartIndex = MinimumHeartIndex; heartIndex < _maxHeartCount; heartIndex++)
             {
                 Image heart = _hearts[heartIndex];
-
                 if (heart == null)
                 {
                     continue;
                 }
 
                 bool isHeartFull = heartIndex < validHealth;
-
-                heart.sprite = isHeartFull ? _heartPrefab.sprite : _emptyHeartImage.sprite;
+                heart.sprite = isHeartFull
+                    ? _heartPrefab.sprite
+                    : _emptyHeartImage.sprite;
                 heart.color = Color.white;
             }
         }
@@ -49,9 +46,7 @@ namespace Foxberry
         public void ForceRefresh()
         {
             ClearHearts();
-
             _isInitialized = false;
-
             InitializeHearts();
         }
 
@@ -73,16 +68,12 @@ namespace Foxberry
             }
 
             ClearHearts();
-
             _hearts = new Image[_maxHeartCount];
-
             for (int heartIndex = MinimumHeartIndex; heartIndex < _maxHeartCount; heartIndex++)
             {
                 Image heart = Instantiate(_heartPrefab, transform);
-
                 heart.rectTransform.anchoredPosition = new Vector2(heartIndex * _heartSpacing, 0f);
                 heart.color = Color.white;
-
                 _hearts[heartIndex] = heart;
             }
 

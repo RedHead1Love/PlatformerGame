@@ -6,7 +6,6 @@ namespace Foxberry
     {
         private const float DefaultStopVelocity = 0.1f;
         private const float GroundCheckDelay = 0.15f;
-
         [SerializeField]
         private LayerMask _groundLayer;
         [SerializeField]
@@ -43,7 +42,6 @@ namespace Foxberry
             }
 
             _isGrounded = true;
-
             Invoke(nameof(CheckStopAfterGroundHit), GroundCheckDelay);
         }
 
@@ -71,11 +69,9 @@ namespace Foxberry
             }
 
             _isStopped = true;
-
             _rigidbody.velocity = Vector2.zero;
             _rigidbody.angularVelocity = 0f;
             _rigidbody.bodyType = RigidbodyType2D.Kinematic;
-
             if (_collider != null)
             {
                 _collider.isTrigger = true;

@@ -7,7 +7,6 @@ namespace Foxberry
     {
         private const float DefaultMapWidth = 50f;
         private const float DefaultMapHeight = 50f;
-
         [UnityEngine.Serialization.FormerlySerializedAs("locationName")]
         [SerializeField]
         private string _locationName;

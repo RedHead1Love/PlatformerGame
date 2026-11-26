@@ -18,8 +18,7 @@ namespace Player.Abilities
 
         public void UnlockArmor() => _armorManager?.UnlockArmorAbility();
 
-        public void EnableHealthRegeneration() =>
-            _hero?.GetComponent<PassiveHealthRegeneration>()?.EnableRegeneration();
+        public void EnableHealthRegeneration() => _hero?.GetComponent<PassiveHealthRegeneration>()?.EnableRegeneration();
 
         public void EnableArmorRegeneration() => _hero?.GetComponent<PassiveArmorRegeneration>()?.Activate();
 
@@ -30,7 +29,6 @@ namespace Player.Abilities
         public void NotifyHealthPickups()
         {
             var pickups = Object.FindObjectsByType<HealthPickup>(FindObjectsSortMode.None);
-
             foreach (var pickup in pickups)
             {
                 pickup?.RefreshPickupState();
@@ -72,8 +70,9 @@ namespace Player.Abilities
 
         private ArmorManager FindArmorManager()
         {
-            ArmorManager armorManager = _hero != null ? _hero.GetComponent<ArmorManager>() : null;
-
+            ArmorManager armorManager = _hero != null
+                ? _hero.GetComponent<ArmorManager>()
+                : null;
             if (armorManager == null)
             {
                 armorManager = Object.FindFirstObjectByType<ArmorManager>();
@@ -91,7 +90,6 @@ namespace Player.Abilities
             }
 
             T component = _hero.GetComponent<T>();
-
             if (component == null)
             {
                 component = _hero.gameObject.AddComponent<T>();

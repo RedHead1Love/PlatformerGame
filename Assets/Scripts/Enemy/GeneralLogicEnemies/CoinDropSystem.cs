@@ -13,7 +13,6 @@ namespace GeneralLogicEnemies
         private const float DefaultBounciness = 0.3f;
         private const float SpawnVerticalOffset = 0.5f;
         private const int RandomRangeMaxOffset = 1;
-
         [SerializeField]
         private GameObject _coinPrefab;
         [SerializeField]
@@ -50,7 +49,6 @@ namespace GeneralLogicEnemies
             }
 
             int coinCount = Random.Range(_minCoins, _maxCoins + RandomRangeMaxOffset);
-
             for (int i = 0; i < coinCount; i++)
             {
                 SpawnCoin();
@@ -75,7 +73,6 @@ namespace GeneralLogicEnemies
         private void Initialize()
         {
             _entity = GetComponent<Entity>();
-
             if (_entity == null)
             {
                 return;
@@ -92,11 +89,10 @@ namespace GeneralLogicEnemies
 
         private void SpawnCoin()
         {
-            Vector3 spawnPosition =
-                transform.position + new Vector3(Random.Range(-_dropRadius, _dropRadius), SpawnVerticalOffset, 0f);
-
+            Vector3 spawnPosition = transform.position + new Vector3(Random.Range(-_dropRadius, _dropRadius),
+                 SpawnVerticalOffset,
+                 0f);
             GameObject coin = Instantiate(_coinPrefab, spawnPosition, Quaternion.identity);
-
             if (coin == null)
             {
                 return;
@@ -108,7 +104,6 @@ namespace GeneralLogicEnemies
         private void SetupCoinPhysics(GameObject coin)
         {
             Rigidbody2D coinRigidbody = coin.GetComponent<Rigidbody2D>();
-
             if (coinRigidbody == null)
             {
                 coinRigidbody = coin.AddComponent<Rigidbody2D>();
@@ -116,7 +111,6 @@ namespace GeneralLogicEnemies
             }
 
             coinRigidbody.sharedMaterial = CreatePhysicsMaterial();
-
             ApplyRandomForces(coinRigidbody);
             AddPhysicsHandler(coin);
         }
@@ -145,18 +139,14 @@ namespace GeneralLogicEnemies
         {
             float horizontalDirection = Random.Range(-1f, 1f);
             Vector2 force = new Vector2(horizontalDirection * _horizontalForce, _verticalForce);
-
             coinRigidbody.AddForce(force, ForceMode2D.Impulse);
-
             float torque = Random.Range(-_torqueForce, _torqueForce);
-
             coinRigidbody.AddTorque(torque, ForceMode2D.Impulse);
         }
 
         private void AddPhysicsHandler(GameObject coin)
         {
             CoinPhysicsHandler physicsHandler = coin.GetComponent<CoinPhysicsHandler>();
-
             if (physicsHandler == null)
             {
                 physicsHandler = coin.AddComponent<CoinPhysicsHandler>();

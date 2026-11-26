@@ -10,7 +10,6 @@ namespace Foxberry
         private const string MusicPrefsKey = "MusicVolume";
         private const string SFXPrefsKey = "SFXVolume";
         private const float DefaultVolume = 0.8f;
-
         [SerializeField]
         private AudioController _audioController;
         [SerializeField]
@@ -37,12 +36,12 @@ namespace Foxberry
         {
             if (_musicSlider != null)
             {
-                _musicSlider.onValueChanged.RemoveListener(SetMusicVolume);
+                _musicSlider.onValueChanged.RemoveListener(OnMusicVolumeSliderChanged);
             }
 
             if (_sfxSlider != null)
             {
-                _sfxSlider.onValueChanged.RemoveListener(SetSFXVolume);
+                _sfxSlider.onValueChanged.RemoveListener(OnSfxVolumeSliderChanged);
             }
         }
 
@@ -52,14 +51,14 @@ namespace Foxberry
             {
                 _musicSlider.minValue = 0f;
                 _musicSlider.maxValue = 1f;
-                _musicSlider.onValueChanged.AddListener(SetMusicVolume);
+                _musicSlider.onValueChanged.AddListener(OnMusicVolumeSliderChanged);
             }
 
             if (_sfxSlider != null)
             {
                 _sfxSlider.minValue = 0f;
                 _sfxSlider.maxValue = 1f;
-                _sfxSlider.onValueChanged.AddListener(SetSFXVolume);
+                _sfxSlider.onValueChanged.AddListener(OnSfxVolumeSliderChanged);
             }
         }
 
@@ -67,21 +66,24 @@ namespace Foxberry
         {
             float musicVol = PlayerPrefs.GetFloat(MusicPrefsKey, DefaultVolume);
             float sfxVol = PlayerPrefs.GetFloat(SFXPrefsKey, DefaultVolume);
-
             if (_musicSlider != null)
+            {
                 _musicSlider.value = musicVol;
-            if (_sfxSlider != null)
-                _sfxSlider.value = sfxVol;
+            }
 
-            SetMusicVolume(musicVol);
-            SetSFXVolume(sfxVol);
+            if (_sfxSlider != null)
+            {
+                _sfxSlider.value = sfxVol;
+            }
+
+            OnMusicVolumeSliderChanged(musicVol);
+            OnSfxVolumeSliderChanged(sfxVol);
         }
 
-        private void SetMusicVolume(float volume)
+        private void OnMusicVolumeSliderChanged(float volume)
         {
             PlayerPrefs.SetFloat(MusicPrefsKey, volume);
             PlayerPrefs.Save();
-
             if (_audioController != null)
             {
                 _audioController.SetMusicVolume(volume);
@@ -90,10 +92,10 @@ namespace Foxberry
             OnMusicVolumeChanged?.Invoke(volume);
         }
 
-        private void SetSFXVolume(float volume)
+        private void OnSfxVolumeSliderChanged(float volume)
         {
             PlayerPrefs.SetFloat(SFXPrefsKey, volume);
-
+            PlayerPrefs.Save();
             if (_audioController != null)
             {
                 _audioController.SetSoundEffectsVolume(volume);

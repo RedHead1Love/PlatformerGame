@@ -9,7 +9,6 @@ namespace Foxberry
         private const float TextVerticalOffset = 2f;
         private const float TextDestroyDelay = 2f;
         private const int TextFontSize = 36;
-
         private readonly AbilityManager _abilityManager;
 
         public DamageCalculator(AbilityManager abilityManager)
@@ -25,16 +24,13 @@ namespace Foxberry
             }
 
             float multiplier = _abilityManager.GetDamageMultiplierForEnemy(target);
-
             if (multiplier <= NeutralMultiplier)
             {
                 return baseDamage;
             }
 
             int finalDamage = Mathf.CeilToInt(baseDamage * multiplier);
-
             ShowBonusDamageEffect(target, multiplier);
-
             return finalDamage;
         }
 
@@ -46,17 +42,13 @@ namespace Foxberry
         private void CreateBonusDamageText(GameObject target, string text)
         {
             GameObject textObject = new GameObject("BonusDamageText");
-
             textObject.transform.position = target.transform.position + (Vector3.up * TextVerticalOffset);
-
             TextMesh textMesh = textObject.AddComponent<TextMesh>();
-
             textMesh.text = text;
             textMesh.color = Color.red;
             textMesh.fontSize = TextFontSize;
             textMesh.anchor = TextAnchor.MiddleCenter;
             textMesh.fontStyle = FontStyle.Bold;
-
             Object.Destroy(textObject, TextDestroyDelay);
         }
     }

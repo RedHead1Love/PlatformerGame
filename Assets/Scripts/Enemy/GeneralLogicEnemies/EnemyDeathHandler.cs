@@ -59,7 +59,6 @@ namespace GeneralLogicEnemies
             _registration = GetComponent<EnemyRegistration>();
             _colliders = GetComponents<Collider2D>();
             _rigidbody = GetComponent<Rigidbody2D>();
-
             _componentsToDisable = CollectComponentsToDisable();
         }
 
@@ -67,7 +66,6 @@ namespace GeneralLogicEnemies
         {
             MonoBehaviour[] allComponents = GetComponents<MonoBehaviour>();
             List<MonoBehaviour> result = new List<MonoBehaviour>();
-
             foreach (MonoBehaviour component in allComponents)
             {
                 if (component == null)
@@ -75,8 +73,7 @@ namespace GeneralLogicEnemies
                     continue;
                 }
 
-                if (component == this || component == _entity || component == _registration ||
-                    component is EnemyDeathHandler || component is EnemyRegistration || component is CoinDropSystem)
+                if (component == this || component == _entity || component == _registration || component is EnemyDeathHandler || component is EnemyRegistration || component is CoinDropSystem)
                 {
                     continue;
                 }

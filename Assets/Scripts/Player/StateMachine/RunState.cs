@@ -8,21 +8,19 @@ namespace Player.StateMachine
     {
         private const float HorizontalDeadZone = 0.1f;
         private const float SprintMultiplier = 3.6f;
-
         private readonly Hero _hero;
-        private readonly IInputProvider _inputProvider;
         private readonly GroundSensor _groundCheck;
         private readonly Rigidbody2D _rigidbody;
-
         private bool _isSprinting;
 
         public RunState(Hero hero)
         {
             _hero = hero;
-            _inputProvider = hero.GetComponent<IInputProvider>();
             _groundCheck = hero.GetComponentInChildren<GroundSensor>();
             _rigidbody = hero.Rigidbody;
         }
+
+        private IInputProvider InputProvider => _hero.InputProvider;
 
         public void Enter()
         {
@@ -31,24 +29,24 @@ namespace Player.StateMachine
 
         public void Tick()
         {
-            if (_inputProvider == null)
+            if (InputProvider == null)
             {
                 return;
             }
 
-            if (_inputProvider.IsJumpPressed && IsGrounded())
+            if (InputProvider.IsJumpPressed && IsGrounded())
             {
                 _hero.StateMachine.Change<JumpState>();
                 return;
             }
 
-            if (_inputProvider.IsSlidePressed && IsGrounded())
+            if (InputProvider.IsSlidePressed && IsGrounded())
             {
                 _hero.StateMachine.Change<SlideState>();
                 return;
             }
 
-            if (Mathf.Abs(_inputProvider.HorizontalAxis) < HorizontalDeadZone)
+            if (Mathf.Abs(InputProvider.HorizontalAxis) < HorizontalDeadZone)
             {
                 _hero.StateMachine.Change<IdleState>();
                 return;
@@ -62,13 +60,12 @@ namespace Player.StateMachine
 
         public void FixedTick()
         {
-            if (_inputProvider == null || _rigidbody == null)
+            if (InputProvider == null || _rigidbody == null)
             {
                 return;
             }
 
-            float horizontalInput = _inputProvider.HorizontalAxis;
-
+            float horizontalInput = InputProvider.HorizontalAxis;
             if (Mathf.Abs(horizontalInput) < HorizontalDeadZone)
             {
                 StopHorizontalMovement();
@@ -96,8 +93,9 @@ namespace Player.StateMachine
 
         private void MoveHorizontally(float direction)
         {
-            float currentSpeed = _isSprinting ? _hero.Data.MovementSpeed * SprintMultiplier : _hero.Data.MovementSpeed;
-
+            float currentSpeed = _isSprinting
+                ? _hero.Data.MovementSpeed * SprintMultiplier
+                : _hero.Data.MovementSpeed;
             _rigidbody.velocity = new Vector2(direction * currentSpeed, _rigidbody.velocity.y);
         }
     }

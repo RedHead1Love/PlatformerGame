@@ -6,7 +6,6 @@ namespace Foxberry
     public sealed class CameraFollow : MonoBehaviour
     {
         private const string PlayerTag = "Player";
-
         [SerializeField]
         private Transform _target;
         [SerializeField]
@@ -38,7 +37,9 @@ namespace Foxberry
         private void FindTargetIfNeeded()
         {
             if (_target != null)
+            {
                 return;
+            }
 
             if (Hero.Instance != null)
             {
@@ -57,7 +58,6 @@ namespace Foxberry
         {
             Vector3 targetPosition = _target.position + _offset;
             targetPosition = ClampPositionToBounds(targetPosition);
-
             transform.position = Vector3.Lerp(transform.position, targetPosition, _smoothSpeed * Time.deltaTime);
         }
 
@@ -70,7 +70,6 @@ namespace Foxberry
 
             position.x = Mathf.Clamp(position.x, _minBounds.x, _maxBounds.x);
             position.y = Mathf.Clamp(position.y, _minBounds.y, _maxBounds.y);
-
             return position;
         }
     }

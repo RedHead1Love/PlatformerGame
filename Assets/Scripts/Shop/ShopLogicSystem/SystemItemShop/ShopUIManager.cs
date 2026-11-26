@@ -10,9 +10,7 @@ namespace Foxberry.Shop
 {
     public sealed class ShopUIManager : MonoBehaviour
     {
-        private readonly Dictionary<CoinType, List<ShopItemView>> _itemViewsByCurrency =
-            new Dictionary<CoinType, List<ShopItemView>>();
-
+        private readonly Dictionary<CoinType, List<ShopItemView>> _itemViewsByCurrency = new Dictionary<CoinType, List<ShopItemView>>();
         [SerializeField]
         private GameObject _bronzeMenuPanel;
         [SerializeField]
@@ -69,17 +67,37 @@ namespace Foxberry.Shop
         private Button _buyButton;
         private CoinType _currentCurrency = CoinType.Bronze;
         private bool _isInitialized;
+        private ShopItemDetailsView _details;
 
         public event Action<CoinType> OnCurrencyTabClicked;
 
+        private ShopItemDetailsView Details => _details ??= new ShopItemDetailsView(_detailsNameText,
+             _detailsTitleDivider,
+             _detailsDescriptionText,
+             _detailsItemIcon,
+             _purchaseFrameObject,
+             _priceTextObject,
+             _priceIconObject,
+             _buyButtonObject,
+             _detailsPriceText,
+             _detailsPriceCurrencyIcon,
+             _buyButton,
+             GetCurrencyColor,
+             GetCurrencySprite);
+
         public Button BuyButton => _buyButton;
+
+        public void UpdateRightPanel(IShopItem item, Sprite icon, string customName = null, string customMessage = null)
+        {
+            Details.UpdateRightPanel(item, icon, customName, customMessage);
+        }
+
+        public void ShowPurchaseMessage(string message) => Details.ShowPurchaseMessage(message);
 
         public void SwitchCurrency(CoinType currencyType)
         {
             Initialize();
-
             _currentCurrency = currencyType;
-
             UpdateCurrencyDisplay();
             ShowCurrencyMenu(currencyType);
         }
@@ -87,9 +105,7 @@ namespace Foxberry.Shop
         public void ShowCurrencyMenu(CoinType currencyType)
         {
             HideAllMenus();
-
             GameObject menu = GetPanel(currencyType);
-
             if (menu != null)
             {
                 menu.SetActive(true);
@@ -99,9 +115,7 @@ namespace Foxberry.Shop
         public void UpdateItemSelection(CoinType currency, int selectedIndex)
         {
             Initialize();
-
             ResetAllItemSelection();
-
             if (_itemViewsByCurrency.TryGetValue(currency, out List<ShopItemView> itemViews) == false)
             {
                 return;
@@ -113,33 +127,31 @@ namespace Foxberry.Shop
             }
 
             ShopItemView selectedView = itemViews[selectedIndex];
-
             if (selectedView == null)
             {
                 return;
             }
 
             bool canPurchase = selectedView.ItemData != null && selectedView.ItemData.CanBePurchased();
-
             selectedView.SetSelected(true, canPurchase);
         }
 
         public ShopItemView GetItemView(CoinType currency, int index)
         {
             Initialize();
-
             if (_itemViewsByCurrency.TryGetValue(currency, out List<ShopItemView> itemViews) == false)
             {
                 return null;
             }
 
-            return index >= 0 && index < itemViews.Count ? itemViews[index] : null;
+            return index >= 0 && index < itemViews.Count
+                ? itemViews[index]
+                : null;
         }
 
         public ShopItemView GetItemViewById(CoinType currency, string itemId)
         {
             Initialize();
-
             if (_itemViewsByCurrency.TryGetValue(currency, out List<ShopItemView> itemViews) == false)
             {
                 return null;
@@ -156,91 +168,15 @@ namespace Foxberry.Shop
             return null;
         }
 
-        public void UpdateRightPanel(IShopItem item, Sprite icon, string customName = null, string customMessage = null)
-        {
-            if (item == null)
-            {
-                ClearRightPanel(customMessage);
-                return;
-            }
-
-            if (_purchaseFrameObject != null)
-                _purchaseFrameObject.SetActive(true);
-            if (_priceTextObject != null)
-                _priceTextObject.SetActive(true);
-            if (_priceIconObject != null)
-                _priceIconObject.SetActive(true);
-            if (_buyButtonObject != null)
-                _buyButtonObject.SetActive(true);
-
-            if (_detailsNameText != null)
-                _detailsNameText.text = !string.IsNullOrEmpty(customName) ? customName : item.DisplayName;
-            if (_detailsTitleDivider != null)
-                _detailsTitleDivider.SetActive(true);
-            if (_detailsDescriptionText != null)
-                _detailsDescriptionText.text = customMessage ?? item.Description;
-
-            if (_detailsItemIcon != null)
-            {
-                _detailsItemIcon.sprite = icon;
-                _detailsItemIcon.gameObject.SetActive(icon != null);
-            }
-
-            if (_detailsPriceText != null)
-            {
-                bool isEnglish = LocalizationManager.CurrentLanguage == GameLanguage.English;
-
-                if (item.ItemId == ShopItemIds.ActivateLastChance && item.IsSold)
-                {
-                    _detailsPriceText.text = isEnglish ? "Active" : "Aктивно";
-                    _detailsPriceText.color = Color.yellow;
-                    if (_priceIconObject != null)
-                        _priceIconObject.SetActive(false);
-                }
-                else if (item.IsSold && item.ItemId != ShopItemIds.RestoreArmor)
-                {
-                    _detailsPriceText.text = isEnglish ? "Bought" : "Куплено";
-                    _detailsPriceText.color = Color.green;
-                    if (_priceIconObject != null)
-                        _priceIconObject.SetActive(false);
-                }
-                else
-                {
-                    _detailsPriceText.text = $"{item.Price}";
-                    _detailsPriceText.color = GetCurrencyColor(item.CurrencyType);
-
-                    if (_detailsPriceCurrencyIcon != null)
-                    {
-                        _detailsPriceCurrencyIcon.sprite = GetCurrencySprite(item.CurrencyType);
-                        if (_priceIconObject != null)
-                            _priceIconObject.SetActive(true);
-                    }
-                }
-            }
-
-            if (_buyButton != null)
-                _buyButton.interactable = item.CanBePurchased();
-        }
-
-        public void ShowPurchaseMessage(string message)
-        {
-            if (_detailsDescriptionText != null)
-            {
-                _detailsDescriptionText.text = $"<color=green>✓ {message}</color>";
-            }
-        }
-
         public void RefreshItemViews()
         {
             _isInitialized = false;
-
             Initialize();
         }
 
         public void RefreshLastChanceItems()
         {
             Initialize();
-
             foreach (List<ShopItemView> viewList in _itemViewsByCurrency.Values)
             {
                 foreach (ShopItemView view in viewList)
@@ -274,49 +210,24 @@ namespace Foxberry.Shop
             }
 
             EventTrigger trigger = tabObject.GetComponent<EventTrigger>();
-
             if (trigger == null)
             {
                 trigger = tabObject.AddComponent<EventTrigger>();
             }
 
-            EventTrigger.Entry clickEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerDown };
-
-            clickEntry.callback.AddListener(
-                (data) =>
-                                            {
-                                                PointerEventData pointerData = data as PointerEventData;
-
-                                                if (pointerData != null &&
-                                                    pointerData.button == PointerEventData.InputButton.Left)
-                                                {
-                                                    OnCurrencyTabClicked?.Invoke(currency);
-                                                }
-                                            });
-
+            EventTrigger.Entry clickEntry = new EventTrigger.Entry
+            {
+                eventID = EventTriggerType.PointerDown
+            };
+            clickEntry.callback.AddListener((data) =>
+            {
+                PointerEventData pointerData = data as PointerEventData;
+                if (pointerData != null && pointerData.button == PointerEventData.InputButton.Left)
+                {
+                    OnCurrencyTabClicked?.Invoke(currency);
+                }
+            });
             trigger.triggers.Add(clickEntry);
-        }
-
-        private void ClearRightPanel(string message)
-        {
-            if (_purchaseFrameObject != null)
-                _purchaseFrameObject.SetActive(false);
-            if (_priceTextObject != null)
-                _priceTextObject.SetActive(false);
-            if (_priceIconObject != null)
-                _priceIconObject.SetActive(false);
-            if (_buyButtonObject != null)
-                _buyButtonObject.SetActive(false);
-
-            if (_detailsNameText != null)
-                _detailsNameText.text = string.Empty;
-            if (_detailsTitleDivider != null)
-                _detailsTitleDivider.SetActive(false);
-            if (_detailsDescriptionText != null)
-                _detailsDescriptionText.text = message ?? string.Empty;
-
-            if (_detailsItemIcon != null)
-                _detailsItemIcon.gameObject.SetActive(false);
         }
 
         private void SetDetailsCurrencyIconActive(bool isActive)
@@ -335,14 +246,12 @@ namespace Foxberry.Shop
             }
 
             _itemViewsByCurrency.Clear();
-
             foreach (CoinType currency in System.Enum.GetValues(typeof(CoinType)))
             {
                 _itemViewsByCurrency[currency] = new List<ShopItemView>();
             }
 
             FindAllItemViews();
-
             _isInitialized = true;
         }
 
@@ -361,7 +270,6 @@ namespace Foxberry.Shop
             }
 
             ShopItemView[] itemViews = panel.GetComponentsInChildren<ShopItemView>(true);
-
             foreach (ShopItemView itemView in itemViews)
             {
                 if (itemView != null)
@@ -390,7 +298,6 @@ namespace Foxberry.Shop
             }
 
             _currentCurrencyText.text = WalletManager.Instance.GetCoins(_currentCurrency).ToString();
-
             if (_currentCurrencyIcon != null)
             {
                 _currentCurrencyIcon.sprite = GetCurrencySprite(_currentCurrency);
@@ -401,7 +308,9 @@ namespace Foxberry.Shop
         {
             if (indicator != null)
             {
-                indicator.color = _currentCurrency == currency ? _selectedCoinColor : _unselectedCoinColor;
+                indicator.color = _currentCurrency == currency
+                    ? _selectedCoinColor
+                    : _unselectedCoinColor;
             }
         }
 

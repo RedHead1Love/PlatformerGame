@@ -7,7 +7,6 @@ namespace Foxberry
     public sealed class MiniMapInputHandler
     {
         private readonly KeyCode _toggleKey;
-
         private IInputProvider _provider;
 
         public MiniMapInputHandler(KeyCode toggleKey)
@@ -21,6 +20,7 @@ namespace Foxberry
             {
                 FindProvider();
             }
+
             return (_provider != null && _provider.IsOpenMapPressed) || Input.GetKeyDown(_toggleKey);
         }
 
@@ -36,6 +36,7 @@ namespace Foxberry
             {
                 _provider = Object.FindFirstObjectByType<LegacyInputProvider>();
             }
+
             if (_provider == null && YG2.envir.isMobile)
             {
                 _provider = Object.FindFirstObjectByType<JoystickInput>();

@@ -2,17 +2,18 @@ using DoorControl;
 
 namespace GameLogic
 {
-    internal sealed class WorldProgressStore
+    internal sealed class WorldProgressStore : IWorldProgress
     {
         private const string ChestOpenedPrefix = "Chest_";
         private const string ChestOpenedSuffix = "_Opened";
         private const string KeySpawnedSuffix = "_KeySpawned";
         private const string KeyPrefix = "Key_";
         private const string GameSavedKey = "GameSaved";
+        private const string ChestIdsKey = "ChestIds";
+        private const char ChestIdsDelimiter = '\n';
         private const int TrueValue = 1;
         private const int FalseValue = 0;
         private const int MaxChestCount = 100;
-
         private readonly IProgressPreferences _preferences;
 
         public WorldProgressStore(IProgressPreferences preferences)
@@ -22,23 +23,31 @@ namespace GameLogic
 
         public bool IsChestOpened(string chestId)
         {
+            TrackChestId(chestId);
             return _preferences.GetInt(GetChestOpenedKey(chestId), FalseValue) == TrueValue;
         }
 
         public void SetChestOpened(string chestId, bool isOpened)
         {
-            _preferences.SetInt(GetChestOpenedKey(chestId), isOpened ? TrueValue : FalseValue);
+            TrackChestId(chestId);
+            _preferences.SetInt(GetChestOpenedKey(chestId), isOpened
+                ? TrueValue
+                : FalseValue);
             _preferences.Save();
         }
 
         public bool IsKeySpawned(string chestId)
         {
+            TrackChestId(chestId);
             return _preferences.GetInt(GetKeySpawnedKey(chestId), FalseValue) == TrueValue;
         }
 
         public void SetKeySpawned(string chestId, bool isSpawned)
         {
-            _preferences.SetInt(GetKeySpawnedKey(chestId), isSpawned ? TrueValue : FalseValue);
+            TrackChestId(chestId);
+            _preferences.SetInt(GetKeySpawnedKey(chestId), isSpawned
+                ? TrueValue
+                : FalseValue);
             _preferences.Save();
         }
 
@@ -46,7 +55,6 @@ namespace GameLogic
         {
             ClearAllKeyData();
             ClearAllChestData();
-
             _preferences.DeleteKey(GameSavedKey);
             _preferences.Save();
         }
@@ -71,6 +79,25 @@ namespace GameLogic
         public void RemoveKey(KeyColor color)
         {
             _preferences.DeleteKey(GetKeyColorKey(color));
+            _preferences.Save();
+        }
+
+        private void TrackChestId(string chestId)
+        {
+            if (string.IsNullOrWhiteSpace(chestId))
+            {
+                return;
+            }
+
+            string currentIds = _preferences.GetString(ChestIdsKey, string.Empty);
+            string[] trackedIds = currentIds.Split(ChestIdsDelimiter);
+            if (System.Array.IndexOf(trackedIds, chestId) >= 0)
+            {
+                return;
+            }
+
+            string separator = string.IsNullOrEmpty(currentIds) ? string.Empty : ChestIdsDelimiter.ToString();
+            _preferences.SetString(ChestIdsKey, $"{currentIds}{separator}{chestId}");
             _preferences.Save();
         }
 
@@ -99,6 +126,20 @@ namespace GameLogic
 
         private void ClearAllChestData()
         {
+            string[] trackedChestIds = _preferences.GetString(ChestIdsKey, string.Empty).Split(ChestIdsDelimiter);
+            foreach (string chestId in trackedChestIds)
+            {
+                if (string.IsNullOrEmpty(chestId))
+                {
+                    continue;
+                }
+
+                _preferences.DeleteKey(GetChestOpenedKey(chestId));
+                _preferences.DeleteKey(GetKeySpawnedKey(chestId));
+            }
+
+            _preferences.DeleteKey(ChestIdsKey);
+
             for (int i = 0; i < MaxChestCount; i++)
             {
                 _preferences.DeleteKey(GetChestOpenedKey(i.ToString()));
@@ -108,6 +149,5 @@ namespace GameLogic
             _preferences.DeleteKey($"{ChestOpenedPrefix}{ChestOpenedSuffix}");
             _preferences.DeleteKey($"{ChestOpenedPrefix}{KeySpawnedSuffix}");
         }
-
     }
 }

@@ -18,9 +18,14 @@ namespace DoorControl
         private const KeyCode InteractionKey = KeyCode.F;
         private const float MessageDisplayDistance = 3f;
         private const float PausedTimeScaleThreshold = 0.01f;
-
         [SerializeField]
-        private string[] _bossIds = { "226", "227", "228", "229" };
+        private string[] _bossIds =
+        {
+            "226",
+            "227",
+            "228",
+            "229"
+        };
         [SerializeField]
         private GameObject _interactionMessagePrefab;
         [SerializeField]
@@ -58,23 +63,22 @@ namespace DoorControl
         private void Start()
         {
             InitializeReferences();
-            _victory = new VictorySequencePlayer(
-                this,
-                _victoryVideoPlayer,
-                _videoPanel,
-                _videoFileName,
-                _audioController,
-                DisableDoorVisualsAndColliders);
-            _messages = new BossDoorMessageView(
-                this,
-                _interactionMessagePrefab,
-                _temporaryMessagePrefab,
-                _messageSortingOrder,
-                IsMenuOrPauseActive);
+            _victory = new VictorySequencePlayer(this,
+                 _victoryVideoPlayer,
+                 _videoPanel,
+                 _videoFileName,
+                 _audioController,
+                 DisableDoorVisualsAndColliders);
+            _messages = new BossDoorMessageView(this,
+                 _interactionMessagePrefab,
+                 _temporaryMessagePrefab,
+                 _messageSortingOrder,
+                 IsMenuOrPauseActive);
             _messages.Initialize();
-
             if (_videoPanel != null)
+            {
                 _videoPanel.SetActive(false);
+            }
 
             if (AreAllBossesKilledInSave())
             {
@@ -87,12 +91,14 @@ namespace DoorControl
             if (_victory != null && _victory.IsPlaying)
             {
                 if (Input.GetKeyDown(KeyCode.Escape))
+                {
                     _victory.SkipOrEndVideo();
+                }
+
                 return;
             }
 
             _messages?.RefreshVisibility();
-
             if (_playerTransform == null || _isOpened || IsMenuOrPauseActive())
             {
                 return;
@@ -139,10 +145,8 @@ namespace DoorControl
             if (AreAllBossesKilledInSave())
             {
                 _hasShownAllBossesDefeatedMessage = true;
-                _messages?.ShowTemporaryMessage(
-                    BossDoorText.GetAllBossesDefeatedMessage(),
-                    AllBossesDefeatedMessageDuration);
-
+                _messages?.ShowTemporaryMessage(BossDoorText.GetAllBossesDefeatedMessage(),
+                     AllBossesDefeatedMessageDuration);
                 if (_isPlayerNear)
                 {
                     ShowBossStatus();
@@ -158,7 +162,6 @@ namespace DoorControl
             }
 
             HashSet<string> killedEnemies = EnemyRegistry.Instance.GetKilledEnemies();
-
             foreach (string bossId in _bossIds)
             {
                 if (killedEnemies.Contains(bossId) == false)
@@ -172,25 +175,24 @@ namespace DoorControl
 
         private void InitializeReferences()
         {
-            GameObject playerObject =
-                Hero.Instance != null ? Hero.Instance.gameObject : GameObject.FindGameObjectWithTag(PlayerTag);
-
+            GameObject playerObject = Hero.Instance != null
+                ? Hero.Instance.gameObject
+                : GameObject.FindGameObjectWithTag(PlayerTag);
             if (playerObject != null)
             {
                 _playerTransform = playerObject.transform;
             }
 
-            _audioController = (Hero.Instance != null ? Hero.Instance.AudioController : null) ??
-                               FindAnyObjectByType<AudioController>();
+            _audioController = (Hero.Instance != null
+                ? Hero.Instance.AudioController
+                : null) ?? FindAnyObjectByType<AudioController>();
         }
 
         private void UpdatePlayerProximity()
         {
             float distanceToPlayer = Vector2.Distance(transform.position, _playerTransform.position);
             bool wasPlayerNear = _isPlayerNear;
-
             _isPlayerNear = distanceToPlayer <= MessageDisplayDistance;
-
             if (_isPlayerNear && wasPlayerNear == false)
             {
                 ShowBossStatus();
@@ -213,7 +215,6 @@ namespace DoorControl
         {
             int aliveBossCount = CountAliveBosses();
             string statusMessage = BossDoorText.GetBossStatusMessage(aliveBossCount, _bossIds.Length, InteractionKey);
-
             _messages?.ShowInteractionMessage(statusMessage);
         }
 
@@ -225,7 +226,6 @@ namespace DoorControl
         private void OpenDoorIfPossible()
         {
             int aliveBossCount = CountAliveBosses();
-
             if (aliveBossCount == 0)
             {
                 OpenDoor();
@@ -233,21 +233,18 @@ namespace DoorControl
             }
 
             int defeatedCount = _bossIds.Length - aliveBossCount;
-
             string message = LocalizationManager.CurrentLanguage switch
             {
                 GameLanguage.English => $"Not all bosses are defeated. ({defeatedCount}/{_bossIds.Length})",
                 GameLanguage.Turkish => $"Tüm patronlar yenilmedi. ({defeatedCount}/{_bossIds.Length})",
                 _ => $"Не все боссы побеждены. Осталось ({defeatedCount}/{_bossIds.Length})",
             };
-
             _messages?.ShowTemporaryMessage(message, MessageDisplayDuration);
         }
 
         private int CountAliveBosses()
         {
             int aliveCount = 0;
-
             if (EnemyRegistry.Instance == null)
             {
                 return aliveCount;
@@ -270,7 +267,6 @@ namespace DoorControl
             _messages?.Dispose();
             OnBossDoorOpenedGlobal?.Invoke();
             _audioController?.PlayBossDoorOpenSound();
-
             _victory.Play();
         }
 

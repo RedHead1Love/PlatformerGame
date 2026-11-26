@@ -48,7 +48,6 @@ namespace Foxberry
 
             bool isActive = !_statsPanel.activeInHierarchy;
             _statsPanel.SetActive(isActive);
-
             if (isActive)
             {
                 UpdateStatsText();
@@ -65,7 +64,6 @@ namespace Foxberry
             float time = LevelStatsTracker.Instance.TimeInSeconds;
             int minutes = Mathf.FloorToInt(time / 60f);
             int seconds = Mathf.FloorToInt(time % 60f);
-
             if (_timeText != null)
             {
                 _timeText.text = $" {minutes:00}:{seconds:00}";

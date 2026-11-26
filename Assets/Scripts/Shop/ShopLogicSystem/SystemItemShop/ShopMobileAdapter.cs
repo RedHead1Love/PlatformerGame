@@ -100,9 +100,7 @@ namespace Foxberry.Shop
             }
 
             _lastMoveTime = Time.time;
-
             IShopItem currentItem = _navigation.GetCurrentItem();
-
             if (currentItem != null)
             {
                 OnItemSelected?.Invoke(currentItem);

@@ -8,7 +8,6 @@ namespace Player
     {
         private const int MinimumHealth = 0;
         private HealthPresentation _presentation;
-
         [SerializeField]
         private int _maxHealth = 6;
         [SerializeField]
@@ -35,19 +34,15 @@ namespace Player
         public void SetHealth(int health)
         {
             int newHealth = Mathf.Clamp(health, MinimumHealth, _maxHealth);
-
             if (CurrentHealth == newHealth)
             {
                 UpdateHealthUI();
-
                 return;
             }
 
             CurrentHealth = newHealth;
-
             OnHealthChanged?.Invoke(CurrentHealth);
             UpdateHealthUI();
-
             if (CurrentHealth <= MinimumHealth)
             {
                 OnDeath?.Invoke();
@@ -62,9 +57,7 @@ namespace Player
             }
 
             OnDamageTakenGlobal?.Invoke(damageAmount);
-
             int remainingDamage = damageAmount;
-
             if (_armorManager != null && _armorManager.HasArmor)
             {
                 remainingDamage = _armorManager.TakeArmorDamage(damageAmount);
@@ -76,7 +69,6 @@ namespace Player
             }
 
             SetHealth(CurrentHealth - remainingDamage);
-
             _presentation?.PlayDamage();
         }
 
@@ -141,7 +133,6 @@ namespace Player
             if (_armorManager == null)
             {
                 _armorManager = GetComponent<ArmorManager>();
-
                 if (_armorManager == null)
                 {
                     _armorManager = FindFirstObjectByType<ArmorManager>();
@@ -151,7 +142,6 @@ namespace Player
             if (_audioController == null)
             {
                 _audioController = GetComponent<AudioController>();
-
                 if (_audioController == null)
                 {
                     _audioController = FindFirstObjectByType<AudioController>();

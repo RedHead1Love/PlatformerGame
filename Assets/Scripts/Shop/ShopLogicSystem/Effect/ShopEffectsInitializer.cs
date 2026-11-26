@@ -14,22 +14,21 @@ namespace Foxberry.Shop
             if (_shopManager == null)
             {
                 _shopManager = FindObjectOfType<ShopManager>();
-
                 if (_shopManager == null)
                 {
                     return;
                 }
             }
 
-            Hero hero = Hero.Instance != null ? Hero.Instance : FindAnyObjectByType<Hero>();
-
+            Hero hero = Hero.Instance != null
+                ? Hero.Instance
+                : FindAnyObjectByType<Hero>();
             if (hero == null || hero.AbilityManager == null)
             {
                 return;
             }
 
             var shopItems = _shopManager.ShopItems;
-
             if (shopItems == null)
             {
                 return;
@@ -58,121 +57,106 @@ namespace Foxberry.Shop
         {
             switch (itemId)
             {
-            case ShopItemIds.UnlockMap:
-                if (!abilityManager.HasMap)
-                {
-                    abilityManager.UnlockMap();
-                }
+                case ShopItemIds.UnlockMap:
+                    if (!abilityManager.HasMap)
+                    {
+                        abilityManager.UnlockMap();
+                    }
 
-                break;
+                    break;
+                case ShopItemIds.UnlockDash:
+                    if (!abilityManager.HasDash)
+                    {
+                        abilityManager.UnlockDash();
+                    }
 
-            case ShopItemIds.UnlockDash:
-                if (!abilityManager.HasDash)
-                {
-                    abilityManager.UnlockDash();
-                }
+                    break;
+                case ShopItemIds.UnlockAnatomy:
+                    if (!abilityManager.HasAnatomy)
+                    {
+                        abilityManager.UnlockAnatomy();
+                    }
 
-                break;
+                    break;
+                case ShopItemIds.UnlockArmor:
+                    if (!abilityManager.HasArmor)
+                    {
+                        abilityManager.UnlockArmor();
+                        var armorManager = hero.GetComponent<ArmorManager>();
+                        armorManager?.UnlockArmorAbility();
+                    }
 
-            case ShopItemIds.UnlockAnatomy:
-                if (!abilityManager.HasAnatomy)
-                {
-                    abilityManager.UnlockAnatomy();
-                }
+                    break;
+                case ShopItemIds.UnlockSwampDamageBonus:
+                    if (!abilityManager.HasSwampDamageBonus)
+                    {
+                        abilityManager.UnlockSwampDamageBonus();
+                    }
 
-                break;
+                    break;
+                case ShopItemIds.UnlockSkeletonDamageBonus:
+                    if (!abilityManager.HasSkeletonDamageBonus)
+                    {
+                        abilityManager.UnlockSkeletonDamageBonus();
+                    }
 
-            case ShopItemIds.UnlockArmor:
-                if (!abilityManager.HasArmor)
-                {
-                    abilityManager.UnlockArmor();
+                    break;
+                case ShopItemIds.UnlockDemonDamageBonus:
+                    if (!abilityManager.HasDemonDamageBonus)
+                    {
+                        abilityManager.UnlockDemonDamageBonus();
+                    }
 
-                    var armorManager = hero.GetComponent<ArmorManager>();
+                    break;
+                case ShopItemIds.UnlockSpiderDamageBonus:
+                    if (!abilityManager.HasSpiderDamageBonus)
+                    {
+                        abilityManager.UnlockSpiderDamageBonus();
+                    }
 
-                    armorManager?.UnlockArmorAbility();
-                }
+                    break;
+                case ShopItemIds.UnlockZombieDamageBonus:
+                    if (!abilityManager.HasZombieDamageBonus)
+                    {
+                        abilityManager.UnlockZombieDamageBonus();
+                    }
 
-                break;
+                    break;
+                case ShopItemIds.UnlockPassiveHealthRegeneration:
+                    if (!abilityManager.HasPassiveHealthRegeneration)
+                    {
+                        abilityManager.UnlockPassiveHealthRegeneration();
+                    }
 
-            case ShopItemIds.UnlockSwampDamageBonus:
-                if (!abilityManager.HasSwampDamageBonus)
-                {
-                    abilityManager.UnlockSwampDamageBonus();
-                }
+                    break;
+                case ShopItemIds.UnlockRobocopRegeneration:
+                    if (!abilityManager.HasRobocopRegeneration)
+                    {
+                        abilityManager.UnlockRobocopRegeneration();
+                    }
 
-                break;
+                    break;
+                case ShopItemIds.UnlockVampireAbility:
+                    if (!abilityManager.HasVampireAbility)
+                    {
+                        abilityManager.UnlockVampireAbility();
+                    }
 
-            case ShopItemIds.UnlockSkeletonDamageBonus:
-                if (!abilityManager.HasSkeletonDamageBonus)
-                {
-                    abilityManager.UnlockSkeletonDamageBonus();
-                }
+                    break;
+                case ShopItemIds.UnlockOnePunchManAbility:
+                    if (!abilityManager.HasOnePunchManAbility)
+                    {
+                        abilityManager.UnlockOnePunchManAbility();
+                    }
 
-                break;
+                    break;
+                case ShopItemIds.UnlockBossDamageBonus:
+                    if (!abilityManager.HasBossDamageBonus)
+                    {
+                        abilityManager.UnlockBossDamageBonus();
+                    }
 
-            case ShopItemIds.UnlockDemonDamageBonus:
-                if (!abilityManager.HasDemonDamageBonus)
-                {
-                    abilityManager.UnlockDemonDamageBonus();
-                }
-
-                break;
-
-            case ShopItemIds.UnlockSpiderDamageBonus:
-                if (!abilityManager.HasSpiderDamageBonus)
-                {
-                    abilityManager.UnlockSpiderDamageBonus();
-                }
-
-                break;
-
-            case ShopItemIds.UnlockZombieDamageBonus:
-                if (!abilityManager.HasZombieDamageBonus)
-                {
-                    abilityManager.UnlockZombieDamageBonus();
-                }
-
-                break;
-
-            case ShopItemIds.UnlockPassiveHealthRegeneration:
-                if (!abilityManager.HasPassiveHealthRegeneration)
-                {
-                    abilityManager.UnlockPassiveHealthRegeneration();
-                }
-
-                break;
-
-            case ShopItemIds.UnlockRobocopRegeneration:
-                if (!abilityManager.HasRobocopRegeneration)
-                {
-                    abilityManager.UnlockRobocopRegeneration();
-                }
-
-                break;
-
-            case ShopItemIds.UnlockVampireAbility:
-                if (!abilityManager.HasVampireAbility)
-                {
-                    abilityManager.UnlockVampireAbility();
-                }
-
-                break;
-
-            case ShopItemIds.UnlockOnePunchManAbility:
-                if (!abilityManager.HasOnePunchManAbility)
-                {
-                    abilityManager.UnlockOnePunchManAbility();
-                }
-
-                break;
-
-            case ShopItemIds.UnlockBossDamageBonus:
-                if (!abilityManager.HasBossDamageBonus)
-                {
-                    abilityManager.UnlockBossDamageBonus();
-                }
-
-                break;
+                    break;
             }
         }
     }

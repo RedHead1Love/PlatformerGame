@@ -7,8 +7,10 @@ namespace Player.StateMachine
     {
         private readonly GroundSensor _groundCheck;
 
-        public AirAttackState(Hero hero, Transform attackPoint)
-            : base(hero, attackPoint, hero.Data.AirAttackDamage, HeroAnimationState.AirAttack)
+        public AirAttackState(Hero hero, Transform attackPoint) : base(hero,
+             attackPoint,
+             hero.Data.AirAttackDamage,
+             HeroAnimationState.AirAttack)
         {
             _groundCheck = hero.GetComponentInChildren<GroundSensor>();
         }

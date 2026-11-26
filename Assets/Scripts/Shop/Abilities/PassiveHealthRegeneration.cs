@@ -8,7 +8,6 @@ namespace Foxberry
     {
         private const float DefaultRegenerationInterval = 5f;
         private const int DefaultHealAmount = 1;
-
         [SerializeField]
         private float _regenerationInterval = DefaultRegenerationInterval;
         [SerializeField]
@@ -44,35 +43,30 @@ namespace Foxberry
         private void Update()
         {
             RefreshAbilityManagerReference();
-
             if (CanRegenerate() == false)
             {
                 return;
             }
 
             _timer += Time.deltaTime;
-
             if (_timer < _regenerationInterval)
             {
                 return;
             }
 
             _timer = 0f;
-
             _healthManager.Heal(_healAmount);
         }
 
         private void InitializeReferences()
         {
             _hero = GetComponent<Hero>();
-
             if (_hero == null)
             {
                 _hero = FindFirstObjectByType<Hero>();
             }
 
             _healthManager = GetComponent<HealthManager>();
-
             if (_healthManager == null)
             {
                 _healthManager = FindFirstObjectByType<HealthManager>();
@@ -91,8 +85,7 @@ namespace Foxberry
 
         private bool CanRegenerate()
         {
-            return IsActive && _hero != null && _hero.IsAlive() && _healthManager != null &&
-                   _healthManager.IsFullHealth == false;
+            return IsActive && _hero != null && _hero.IsAlive() && _healthManager != null && _healthManager.IsFullHealth == false;
         }
     }
 }

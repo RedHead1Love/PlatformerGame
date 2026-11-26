@@ -20,9 +20,7 @@ namespace EasyBossLogic
         private const float DestroyDelay = 3f;
         private const float DefaultSoundEffectVolume = 1f;
         private const float AttackMissSoundVolumeMultiplier = 0.7f;
-
         private static readonly int StateParameterHash = Animator.StringToHash("state");
-
         [SerializeField]
         private VideoPlayer _introVideoPlayer;
         [SerializeField]
@@ -90,11 +88,15 @@ namespace EasyBossLogic
         public override void TakeDamage(int amount)
         {
             if (_isDead || amount <= 0)
+            {
                 return;
+            }
 
             DodgeIfPossible();
             if (_isDodging)
+            {
                 return;
+            }
 
             PlayTakeDamageSound();
             base.TakeDamage(amount);
@@ -103,16 +105,16 @@ namespace EasyBossLogic
         public override void Die()
         {
             if (_isDead)
+            {
                 return;
+            }
 
             _isDead = true;
             StopHorizontalMovement();
             SetAnimationState(DeathState);
-
             PlayDeathSound();
             _audio?.StopMusic();
             base.Die();
-
             Destroy(gameObject, DestroyDelay);
         }
 
@@ -131,8 +133,7 @@ namespace EasyBossLogic
                 return;
             }
 
-            IDamageable damageable =
-                _playerTransform.GetComponent<IDamageable>() ?? _playerTransform.GetComponentInParent<IDamageable>();
+            IDamageable damageable = _playerTransform.GetComponent<IDamageable>() ?? _playerTransform.GetComponentInParent<IDamageable>();
             if (damageable == null)
             {
                 PlayAttackMissSound();
@@ -145,47 +146,54 @@ namespace EasyBossLogic
         protected override void Awake()
         {
             base.Awake();
-
             _healthBar = GetComponent<BossHealthBar>();
             _animator = GetComponent<Animator>();
             _rigidbody = GetComponent<Rigidbody2D>();
             AudioController output = FindFirstObjectByType<AudioController>();
             _audio = new BossAudio(output, _bossMusic);
-            _intro = new BossIntroSequence(
-                this,
-                _introVideoPlayer,
-                _videoPanel,
-                _videoFileName,
-                _healthBar,
-                output,
-                StopHorizontalMovement,
-                _audio.StartMusic,
-                () => !_isDead);
-
+            _intro = new BossIntroSequence(this,
+                 _introVideoPlayer,
+                 _videoPanel,
+                 _videoFileName,
+                 _healthBar,
+                 output,
+                 StopHorizontalMovement,
+                 _audio.StartMusic,
+                 () => !_isDead);
             if (_videoPanel != null)
+            {
                 _videoPanel.SetActive(false);
+            }
         }
 
         private void Update()
         {
             if (_isDead)
+            {
                 return;
+            }
 
             if (_intro.IsPlaying)
             {
                 if (Input.GetKeyDown(KeyCode.Escape))
+                {
                     _intro.Finish();
+                }
+
                 return;
             }
 
             if (_isActivated == false)
+            {
                 ActivateIfPossible();
+            }
 
             if (_isActivated == false || _playerTransform == null)
+            {
                 return;
+            }
 
             float distanceToPlayer = Vector2.Distance(transform.position, _playerTransform.position);
-
             if (IsAttacking() && distanceToPlayer > _attackRange)
             {
                 InterruptAttack();
@@ -212,27 +220,38 @@ namespace EasyBossLogic
         {
             _intro?.Dispose();
             if (_isActivated)
+            {
                 _audio?.StopMusic();
+            }
         }
 
         private void ActivateIfPossible()
         {
             if (Time.timeSinceLevelLoad < 1.5f)
+            {
                 return;
+            }
+
             if (_isActivated || _intro.HasPlayed)
+            {
                 return;
+            }
+
             if (_groundCheckPoint == null)
+            {
                 return;
+            }
 
-            Collider2D playerCollider =
-                Physics2D.OverlapCircle(_groundCheckPoint.position, _detectionRadius, _playerLayer);
-
+            Collider2D playerCollider = Physics2D.OverlapCircle(_groundCheckPoint.position,
+                 _detectionRadius,
+                 _playerLayer);
             if (playerCollider == null)
+            {
                 return;
+            }
 
             _isActivated = true;
             _playerTransform = playerCollider.transform;
-
             if (!_intro.HasPlayed && _introVideoPlayer != null && _videoPanel != null)
             {
                 _audio?.StopMusic();
@@ -248,14 +267,15 @@ namespace EasyBossLogic
         private void MoveTowardPlayer()
         {
             if (_playerTransform == null || _rigidbody == null)
+            {
                 return;
+            }
 
             float direction = Mathf.Sign(_playerTransform.position.x - transform.position.x);
             _rigidbody.velocity = new Vector2(direction * _moveSpeed, _rigidbody.velocity.y);
-            transform.localScale = new Vector3(
-                Mathf.Abs(transform.localScale.x) * direction,
-                transform.localScale.y,
-                transform.localScale.z);
+            transform.localScale = new Vector3(Mathf.Abs(transform.localScale.x) * direction,
+                 transform.localScale.y,
+                 transform.localScale.z);
         }
 
         private void Attack()
@@ -280,9 +300,14 @@ namespace EasyBossLogic
         private void DodgeIfPossible()
         {
             if (_isDead || _isDodging || Time.time < _lastDodgeTime + _dodgeCooldown)
+            {
                 return;
+            }
+
             if (Random.value > _dodgeChance)
+            {
                 return;
+            }
 
             _lastDodgeTime = Time.time;
             StartCoroutine(DodgeRoutine());
@@ -293,14 +318,12 @@ namespace EasyBossLogic
             _isDodging = true;
             SetAnimationState(SkillState);
             PlayDodgeSound();
-
             Vector2 startPosition = transform.position;
             Vector2 direction = _playerTransform != null
-                                    ? ((Vector2)transform.position - (Vector2)_playerTransform.position).normalized
-                                    : Vector2.right;
+                ? ((Vector2)transform.position - (Vector2)_playerTransform.position).normalized
+                : Vector2.right;
             Vector2 targetPosition = startPosition + (direction * _dodgeDistance);
             float elapsedTime = 0f;
-
             while (elapsedTime < _dodgeDuration)
             {
                 Vector2 newPosition = Vector2.Lerp(startPosition, targetPosition, elapsedTime / _dodgeDuration);
@@ -316,13 +339,17 @@ namespace EasyBossLogic
         private void StopHorizontalMovement()
         {
             if (_rigidbody != null)
+            {
                 _rigidbody.velocity = new Vector2(0f, _rigidbody.velocity.y);
+            }
         }
 
         private void SetAnimationState(int state)
         {
             if (_animator != null)
+            {
                 _animator.SetInteger(StateParameterHash, state);
+            }
         }
 
         private void PlayAttackSound()
@@ -349,6 +376,5 @@ namespace EasyBossLogic
         {
             _audio.Play(_dodgeSound, _soundEffectVolume);
         }
-
     }
 }

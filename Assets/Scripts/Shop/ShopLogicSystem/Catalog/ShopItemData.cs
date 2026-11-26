@@ -41,7 +41,6 @@ namespace Foxberry.Shop
                 }
 
                 AbilityManager abilityManager = FindAbilityManager();
-
                 if (abilityManager != null)
                 {
                     return IsAbilityUnlocked(abilityManager);
@@ -63,7 +62,6 @@ namespace Foxberry.Shop
                 }
 
                 _isSold = value;
-
                 if (value)
                 {
                     SaveSystem.Instance?.MarkItemPurchased(_itemId);
@@ -86,15 +84,12 @@ namespace Foxberry.Shop
             if (_itemId == ShopItemIds.RestoreArmor)
             {
                 ArmorManager armorManager = FindArmorManager();
-
-                return armorManager != null && armorManager.IsArmorUnlocked() &&
-                       armorManager.CurrentArmor < armorManager.MaxArmor;
+                return armorManager != null && armorManager.IsArmorUnlocked() && armorManager.CurrentArmor < armorManager.MaxArmor;
             }
 
             if (_itemId == ShopItemIds.ActivateLastChance)
             {
                 AbilityManager abilityManager = FindAbilityManager();
-
                 return abilityManager != null && abilityManager.IsLastChanceActive == false;
             }
 
@@ -106,12 +101,10 @@ namespace Foxberry.Shop
             if (_itemId == ShopItemIds.RestoreArmor)
             {
                 IncrementArmorPlatesUsage();
-
                 return;
             }
 
             IsSold = true;
-
             SavePurchaseState();
         }
 
@@ -141,18 +134,17 @@ namespace Foxberry.Shop
         private AbilityManager FindAbilityManager()
         {
             Hero hero = Object.FindFirstObjectByType<Hero>();
-
-            return hero != null ? hero.AbilityManager : null;
+            return hero != null
+                ? hero.AbilityManager
+                : null;
         }
 
         private ArmorManager FindArmorManager()
         {
             Hero hero = Object.FindFirstObjectByType<Hero>();
-
             if (hero != null)
             {
                 ArmorManager heroArmorManager = hero.GetComponent<ArmorManager>();
-
                 if (heroArmorManager != null)
                 {
                     return heroArmorManager;
@@ -165,7 +157,6 @@ namespace Foxberry.Shop
         private void SavePurchaseState()
         {
             const int purchasedValue = 1;
-
             PlayerPrefs.SetInt($"Item_{_itemId}_Purchased", purchasedValue);
             PlayerPrefs.Save();
         }
@@ -173,9 +164,7 @@ namespace Foxberry.Shop
         private void IncrementArmorPlatesUsage()
         {
             const string armorUsesKey = "ArmorPlatesUsed";
-
             int uses = PlayerPrefs.GetInt(armorUsesKey, 0);
-
             PlayerPrefs.SetInt(armorUsesKey, uses + 1);
             PlayerPrefs.Save();
         }

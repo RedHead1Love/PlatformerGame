@@ -10,7 +10,6 @@ namespace Traps
     {
         private const string PlayerTag = "Player";
         private const float DefaultVolume = 1f;
-
         [SerializeField]
         private AudioClip _lightningStrikeSound;
         [SerializeField]
@@ -64,18 +63,16 @@ namespace Traps
         private void InitializeAudioPlayer()
         {
             AudioSource audioSource = GetComponent<AudioSource>();
-
             audioSource.playOnAwake = false;
             audioSource.loop = false;
-
             _audioPlayer = new AudioPlayer(audioSource);
         }
 
         private void InitializePlayerReference()
         {
-            GameObject player =
-                Hero.Instance != null ? Hero.Instance.gameObject : GameObject.FindGameObjectWithTag(PlayerTag);
-
+            GameObject player = Hero.Instance != null
+                ? Hero.Instance.gameObject
+                : GameObject.FindGameObjectWithTag(PlayerTag);
             if (player != null)
             {
                 _playerTransform = player.transform;
@@ -86,8 +83,9 @@ namespace Traps
         {
             if (_audioController == null)
             {
-                _audioController = (Hero.Instance != null ? Hero.Instance.AudioController : null) ??
-                                   FindAnyObjectByType<AudioController>();
+                _audioController = (Hero.Instance != null
+                    ? Hero.Instance.AudioController
+                    : null) ?? FindAnyObjectByType<AudioController>();
             }
         }
 

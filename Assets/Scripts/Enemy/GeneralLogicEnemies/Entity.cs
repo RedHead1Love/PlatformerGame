@@ -9,7 +9,6 @@ namespace GeneralLogicEnemies
         private const float GrayColorValue = 0.5f;
         private const float GrayAlphaValue = 0.7f;
         private const int DeathThreshold = 0;
-
         [SerializeField]
         private int _lives = DefaultMaxLives;
         [SerializeField]
@@ -23,11 +22,7 @@ namespace GeneralLogicEnemies
 
         public bool IsAlive => _lives > DeathThreshold && IsDead == false;
 
-        public int CurrentLives
-        {
-            get => _lives;
-            protected set => _lives = value;
-        }
+        public int CurrentLives { get => _lives; protected set => _lives = value; }
 
         public virtual void TakeDamage(int amount)
         {
@@ -37,7 +32,6 @@ namespace GeneralLogicEnemies
             }
 
             _lives = Mathf.Max(DeathThreshold, _lives - amount);
-
             if (_lives <= DeathThreshold)
             {
                 Die();
@@ -52,13 +46,10 @@ namespace GeneralLogicEnemies
             }
 
             IsDead = true;
-
             Died?.Invoke(this);
-
             MarkEnemyAsKilled();
             DisablePhysics();
             PlayDeathAnimation();
-
             Invoke(nameof(DestroyAfterAnimation), _deathAnimationDelay);
         }
 
@@ -71,14 +62,12 @@ namespace GeneralLogicEnemies
         protected virtual void PlayDeathAnimation()
         {
             Animator animator = GetComponent<Animator>();
-
             if (animator != null)
             {
                 animator.SetTrigger("Die");
             }
 
             SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
-
             if (spriteRenderer != null)
             {
                 spriteRenderer.color = new Color(GrayColorValue, GrayColorValue, GrayColorValue, GrayAlphaValue);
@@ -88,14 +77,12 @@ namespace GeneralLogicEnemies
         protected virtual void DisablePhysics()
         {
             Collider2D entityCollider = GetComponent<Collider2D>();
-
             if (entityCollider != null)
             {
                 entityCollider.enabled = false;
             }
 
             Rigidbody2D entityRigidbody = GetComponent<Rigidbody2D>();
-
             if (entityRigidbody != null)
             {
                 entityRigidbody.velocity = Vector2.zero;
@@ -106,20 +93,12 @@ namespace GeneralLogicEnemies
         protected virtual void MarkEnemyAsKilled()
         {
             EnemyRegistration enemyRegistration = GetComponent<EnemyRegistration>();
-
             if (enemyRegistration == null)
             {
                 return;
             }
 
-            string enemyId = enemyRegistration.GetEnemyId();
-
-            if (string.IsNullOrEmpty(enemyId))
-            {
-                return;
-            }
-
-            EnemyRegistry.Instance?.MarkEnemyKilled(enemyId);
+            enemyRegistration.MarkEnemyKilled();
         }
 
         protected virtual void DestroyAfterAnimation()

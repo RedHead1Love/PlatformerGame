@@ -11,6 +11,8 @@ namespace Foxberry.Shop
         private const string ShopItemKeysList = "ShopItemKeys";
         private const int PurchasedValue = 1;
         private const int NotPurchasedValue = 0;
+        private IProgressPreferences _preferences;
+        private IGameProgressSave _save;
 
         public static ShopPurchaseHistory Instance { get; private set; }
 
@@ -24,7 +26,6 @@ namespace Foxberry.Shop
             _preferences.SetInt(GetPurchaseKey(itemId), PurchasedValue);
             AppendItemKey(itemId);
             _preferences.Save();
-
             if (abilityManager != null && _save != null)
             {
                 _save.UpdateAbilityData(abilityManager);
@@ -43,8 +44,7 @@ namespace Foxberry.Shop
                 return _preferences.GetInt(GetPurchaseKey(itemId), NotPurchasedValue) == PurchasedValue;
             }
 
-            return _save != null && _save.CurrentSave?.Purchases != null &&
-                   _save.CurrentSave.Purchases.Contains(itemId);
+            return _save != null && _save.CurrentSave?.Purchases != null && _save.CurrentSave.Purchases.Contains(itemId);
         }
 
         public void LoadAllPurchases()
@@ -72,7 +72,6 @@ namespace Foxberry.Shop
         {
             string keysRaw = _preferences.GetString(ShopItemKeysList, string.Empty);
             string[] keys = keysRaw.Split(',');
-
             foreach (string key in keys)
             {
                 if (string.IsNullOrEmpty(key))
@@ -87,25 +86,28 @@ namespace Foxberry.Shop
             _preferences.Save();
         }
 
-        private readonly IProgressPreferences _preferences = new UnityProgressPreferences();
-        private IGameProgressSave _save;
+        public void SetPreferences(IProgressPreferences preferences)
+        {
+            _preferences = preferences ?? throw new System.ArgumentNullException(nameof(preferences));
+        }
+
+        public void SetSave(IGameProgressSave save)
+        {
+            _save = save;
+        }
 
         private void OnDestroy()
         {
-            GameSaveConnections.Disconnect(BindSave);
+            GameSaveConnections.Disconnect(SetSave);
             if (Instance == this)
             {
                 Instance = null;
             }
         }
 
-        private void BindSave(IGameProgressSave save)
-        {
-            _save = save;
-        }
-
         private void Awake()
         {
+            _preferences ??= GameServices.Preferences;
             InitializeSingleton();
         }
 
@@ -114,10 +116,8 @@ namespace Foxberry.Shop
             if (Instance == null)
             {
                 Instance = this;
-                GameSaveConnections.Connect(BindSave);
-
+                GameSaveConnections.Connect(SetSave);
                 DontDestroyOnLoad(gameObject);
-
                 return;
             }
 
@@ -132,14 +132,14 @@ namespace Foxberry.Shop
         private void AppendItemKey(string itemId)
         {
             string currentKeys = _preferences.GetString(ShopItemKeysList, string.Empty);
-
             if (System.Array.IndexOf(currentKeys.Split(','), itemId) >= 0)
             {
                 return;
             }
 
-            string separator = string.IsNullOrEmpty(currentKeys) ? string.Empty : ",";
-
+            string separator = string.IsNullOrEmpty(currentKeys)
+                ? string.Empty
+                : ",";
             _preferences.SetString(ShopItemKeysList, $"{currentKeys}{separator}{itemId}");
         }
     }

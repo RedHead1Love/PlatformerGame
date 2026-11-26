@@ -1,4 +1,3 @@
-using GameLogic;
 using UnityEngine;
 
 namespace GeneralLogicEnemies
@@ -6,8 +5,6 @@ namespace GeneralLogicEnemies
     public sealed class EnemyRegistration : MonoBehaviour
     {
         private const string DefaultIdFormat = "{0}_{1:F3}_{2:F3}";
-        private const float DeathSaveDelay = 0.1f;
-
         [SerializeField]
         private string _enemyId;
         private Entity _enemyEntity;
@@ -17,7 +14,7 @@ namespace GeneralLogicEnemies
 
         public void SetEnemyId(string id)
         {
-            if (string.IsNullOrEmpty(id))
+            if (string.IsNullOrWhiteSpace(id) || id == "-1")
             {
                 return;
             }
@@ -28,7 +25,6 @@ namespace GeneralLogicEnemies
         public string GetEnemyId()
         {
             GenerateEnemyIdIfEmpty();
-
             return _enemyId;
         }
 
@@ -37,10 +33,19 @@ namespace GeneralLogicEnemies
             InitializeEnemyRegistration();
         }
 
+        public void MarkEnemyKilled()
+        {
+            if (_isDead || _isRegistered == false || _isQuitting)
+            {
+                return;
+            }
+
+            _isDead = true;
+            EnemyRegistry.Instance?.MarkEnemyKilled(_enemyId);
+        }
+
         private void OnDestroy()
         {
-            UnsubscribeFromEntityDeath();
-
             if (_isDead || _isRegistered == false || _isQuitting)
             {
                 return;
@@ -57,63 +62,35 @@ namespace GeneralLogicEnemies
         private void InitializeEnemyRegistration()
         {
             _enemyEntity = GetComponent<Entity>();
-
             if (_enemyEntity == null || EnemyRegistry.Instance == null)
             {
                 return;
             }
 
             GenerateEnemyIdIfEmpty();
+            string registeredId = EnemyRegistry.Instance.RegisterEnemy(_enemyEntity, _enemyId);
+            if (string.IsNullOrWhiteSpace(registeredId))
+            {
+                return;
+            }
 
-            _enemyEntity.Died -= OnEnemyDeath;
-            _enemyEntity.Died += OnEnemyDeath;
-
-            EnemyRegistry.Instance.RegisterEnemy(_enemyEntity, _enemyId);
-
+            _enemyId = registeredId;
             _isRegistered = true;
         }
 
         private void GenerateEnemyIdIfEmpty()
         {
-            if (string.IsNullOrEmpty(_enemyId) == false)
+            if (string.IsNullOrWhiteSpace(_enemyId) == false && _enemyId != "-1")
             {
                 return;
             }
 
             string cleanObjectName = gameObject.name.Replace("(Clone)", string.Empty).Trim();
-
-            _enemyId = string.Format(DefaultIdFormat, cleanObjectName, transform.position.x, transform.position.y);
-        }
-
-        private void OnEnemyDeath(Entity enemy)
-        {
-            if (_isDead || _isQuitting)
-            {
-                return;
-            }
-
-            _isDead = true;
-
-            Invoke(nameof(SaveEnemyDeath), DeathSaveDelay);
-        }
-
-        private void SaveEnemyDeath()
-        {
-            if (string.IsNullOrEmpty(_enemyId))
-            {
-                return;
-            }
-
-            EnemyRegistry.Instance?.MarkEnemyKilled(_enemyId);
-            SaveSystem.Instance?.MarkEnemyKilled(_enemyId);
-        }
-
-        private void UnsubscribeFromEntityDeath()
-        {
-            if (_enemyEntity != null)
-            {
-                _enemyEntity.Died -= OnEnemyDeath;
-            }
+            _enemyId = string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                 DefaultIdFormat,
+                 cleanObjectName,
+                 transform.position.x,
+                 transform.position.y);
         }
     }
 }

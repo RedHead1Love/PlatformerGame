@@ -12,7 +12,6 @@ namespace Player.Abilities
         {
             _damageBonus = new AbilityDamageBonus(this);
             _effects = new AbilityEffects(hero);
-
             LoadAbilities();
         }
 
@@ -51,7 +50,6 @@ namespace Player.Abilities
         public void UnlockDash()
         {
             HasDash = true;
-
             SaveAbilities();
         }
 
@@ -65,90 +63,75 @@ namespace Player.Abilities
         public void UnlockMap()
         {
             HasMap = true;
-
             SaveAbilities();
         }
 
         public void UnlockArmor()
         {
             HasArmor = true;
-
             SaveAbilities();
-
             _effects.UnlockArmor();
         }
 
         public void UnlockSwampDamageBonus()
         {
             HasSwampDamageBonus = true;
-
             SaveAbilities();
         }
 
         public void UnlockSkeletonDamageBonus()
         {
             HasSkeletonDamageBonus = true;
-
             SaveAbilities();
         }
 
         public void UnlockDemonDamageBonus()
         {
             HasDemonDamageBonus = true;
-
             SaveAbilities();
         }
 
         public void UnlockSpiderDamageBonus()
         {
             HasSpiderDamageBonus = true;
-
             SaveAbilities();
         }
 
         public void UnlockZombieDamageBonus()
         {
             HasZombieDamageBonus = true;
-
             SaveAbilities();
         }
 
         public void UnlockBossDamageBonus()
         {
             HasBossDamageBonus = true;
-
             SaveAbilities();
         }
 
         public void PurchaseLastChance()
         {
             IsLastChanceActive = true;
-
             SaveAbilities();
         }
 
         public void UseLastChance()
         {
             IsLastChanceActive = false;
-
             SaveAbilities();
         }
 
         public void UnlockPassiveHealthRegeneration()
         {
             HasPassiveHealthRegeneration = true;
-
             SaveAbilities();
-
             _effects.EnableHealthRegeneration();
         }
 
         public void UnlockRobocopRegeneration()
         {
             HasRobocopRegeneration = true;
-
             SaveAbilities();
-
             _effects.EnableArmorRegeneration();
         }
 
@@ -160,9 +143,7 @@ namespace Player.Abilities
             }
 
             HasVampireAbility = true;
-
             SaveAbilities();
-
             _effects.EnableVampire();
         }
 
@@ -174,9 +155,7 @@ namespace Player.Abilities
             }
 
             HasOnePunchManAbility = true;
-
             SaveAbilities();
-
             _effects.EnableOnePunchMan();
         }
 
@@ -191,11 +170,9 @@ namespace Player.Abilities
 
         private void LoadAbilities()
         {
-            if (SaveSystem.Instance != null && SaveSystem.Instance.HasSave() &&
-                SaveSystem.Instance.CurrentSave?.Abilities != null)
+            if (SaveSystem.Instance != null && SaveSystem.Instance.HasSave() && SaveSystem.Instance.CurrentSave?.Abilities != null)
             {
                 LoadFromSaveData(SaveSystem.Instance.CurrentSave.Abilities);
-
                 return;
             }
 
@@ -220,7 +197,6 @@ namespace Player.Abilities
             HasRobocopRegeneration = saveData.RobocopRegeneration;
             HasVampireAbility = saveData.VampireAbility;
             HasOnePunchManAbility = saveData.OnePunchManAbility;
-
             _effects.ApplyLoadedEffects(this);
         }
 

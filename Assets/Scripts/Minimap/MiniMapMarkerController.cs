@@ -17,26 +17,26 @@ namespace Foxberry
         private readonly List<Checkpoint> _checkpoints;
         private readonly GameObject _checkpointMarkerPrefab;
         private readonly MiniMapProjection _projection;
-
         private List<RectTransform> _checkpointMarkers;
         private Transform _playerTransform;
+        private KeyCollection _keyCollection;
 
-        public MiniMapMarkerController(
-            GameObject panel,
-            RectTransform playerMarker,
-            Transform player,
-            List<Merchant> shops,
-            List<RectTransform> keyMarkers,
-            List<RectTransform> collectedMarkers,
-            List<Transform> keyAnchors,
-            List<Checkpoint> checkpoints,
-            List<RectTransform> checkpointMarkers,
-            GameObject checkpointPrefab,
-            MiniMapProjection projection)
+        public MiniMapMarkerController(GameObject panel,
+             RectTransform playerMarker,
+             Transform player,
+             List<Merchant> shops,
+             List<RectTransform> keyMarkers,
+             List<RectTransform> collectedMarkers,
+             List<Transform> keyAnchors,
+             List<Checkpoint> checkpoints,
+             List<RectTransform> checkpointMarkers,
+             GameObject checkpointPrefab,
+             MiniMapProjection projection)
         {
             _miniMapPanel = panel;
             _playerMarker = playerMarker;
             _playerTransform = player;
+            CachePlayerReferences();
             _shops = shops;
             _keyMarkers = keyMarkers;
             _keyCollectedMarkers = collectedMarkers;
@@ -59,6 +59,7 @@ namespace Foxberry
         public void ResetPlayer()
         {
             _playerTransform = null;
+            _keyCollection = null;
         }
 
         public void Hide()
@@ -67,17 +68,24 @@ namespace Foxberry
             {
                 _playerMarker.gameObject.SetActive(false);
             }
+
             HideAllMapMarkers();
         }
 
         public void Refresh()
         {
+            if (_projection == null)
+            {
+                return;
+            }
+
             if (HasPlayer && _playerMarker != null)
             {
                 _playerMarker.gameObject.SetActive(true);
                 _playerMarker.anchoredPosition = _projection.ToUIPosition(_playerTransform.position);
                 UpdatePlayerMarkerRotation();
             }
+
             SetShopsPositions();
             UpdateKeyMarkers();
             UpdateCheckpointMarkers();
@@ -115,9 +123,7 @@ namespace Foxberry
                 }
 
                 GameObject marker = Object.Instantiate(_checkpointMarkerPrefab, _miniMapPanel.transform, false);
-
                 RectTransform rect = marker.GetComponent<RectTransform>();
-
                 if (rect != null)
                 {
                     rect.localScale = Vector3.one;
@@ -134,11 +140,26 @@ namespace Foxberry
                 return;
             }
 
-            Hero hero = Object.FindFirstObjectByType<Hero>();
-
+            Hero hero = Hero.Instance;
             if (hero != null)
             {
                 _playerTransform = hero.transform;
+                CachePlayerReferences();
+            }
+        }
+
+        private void CachePlayerReferences()
+        {
+            if (_playerTransform == null)
+            {
+                _keyCollection = null;
+                return;
+            }
+
+            _keyCollection = _playerTransform.GetComponent<KeyCollection>();
+            if (_keyCollection == null)
+            {
+                _keyCollection = _playerTransform.GetComponentInChildren<KeyCollection>(true);
             }
         }
 
@@ -204,9 +225,7 @@ namespace Foxberry
                 }
 
                 bool isInsideBounds = _projection.Contains(merchant.transform.position);
-
                 merchant.SetMarkerVisible(isInsideBounds);
-
                 if (isInsideBounds)
                 {
                     Vector2 uiPosition = _projection.ToUIPosition(merchant.transform.position);
@@ -223,7 +242,6 @@ namespace Foxberry
             }
 
             int markerIndex = 0;
-
             for (int i = 0; i < _checkpoints.Count; i++)
             {
                 if (_checkpoints[i] == null)
@@ -237,7 +255,6 @@ namespace Foxberry
                 }
 
                 RectTransform marker = _checkpointMarkers[markerIndex];
-
                 if (marker == null || marker.gameObject == null)
                 {
                     markerIndex++;
@@ -245,9 +262,7 @@ namespace Foxberry
                 }
 
                 bool isInsideBounds = _projection.Contains(_checkpoints[i].transform.position);
-
                 marker.gameObject.SetActive(isInsideBounds);
-
                 if (isInsideBounds)
                 {
                     Vector2 uiPosition = _projection.ToUIPosition(_checkpoints[i].transform.position);
@@ -270,8 +285,7 @@ namespace Foxberry
                 return;
             }
 
-            KeyCollection keyCollection = Object.FindFirstObjectByType<KeyCollection>();
-
+            KeyCollection keyCollection = _keyCollection;
             if (keyCollection == null)
             {
                 return;
@@ -285,18 +299,13 @@ namespace Foxberry
                 }
 
                 bool isInsideBounds = _projection.Contains(_keyAnchors[i].position);
-
                 KeyColor color = (KeyColor)i;
-
                 bool isCollected = keyCollection.HasKey(color);
-
                 _keyMarkers[i].gameObject.SetActive(isInsideBounds && !isCollected);
                 _keyCollectedMarkers[i].gameObject.SetActive(isInsideBounds && isCollected);
-
                 if (isInsideBounds)
                 {
                     Vector2 uiPosition = _projection.ToUIPosition(_keyAnchors[i].position);
-
                     if (isCollected == false)
                     {
                         _keyMarkers[i].anchoredPosition = uiPosition;
@@ -318,7 +327,6 @@ namespace Foxberry
             }
 
             float playerRotation = _playerTransform.eulerAngles.z;
-
             _playerMarker.localEulerAngles = new Vector3(0f, 0f, playerRotation);
         }
     }

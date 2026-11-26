@@ -9,7 +9,6 @@ namespace Foxberry
         private const float DefaultRegenInterval = 10f;
         private const int DefaultRegenAmount = 1;
         private const float AbilityCheckInterval = 1f;
-
         [SerializeField]
         private float _regenInterval = DefaultRegenInterval;
         [SerializeField]
@@ -49,7 +48,6 @@ namespace Foxberry
             if (_isActive == false)
             {
                 CheckAbilityByInterval();
-
                 return;
             }
 
@@ -59,28 +57,24 @@ namespace Foxberry
             }
 
             _timer += Time.deltaTime;
-
             if (_timer < _regenInterval)
             {
                 return;
             }
 
             _timer = 0f;
-
             _armorManager.AddArmor(_regenAmount);
         }
 
         private void InitializeReferences()
         {
             _hero = GetComponent<Hero>();
-
             if (_hero == null)
             {
                 _hero = FindFirstObjectByType<Hero>();
             }
 
             _armorManager = GetComponent<IArmorManager>();
-
             if (_armorManager == null)
             {
                 _armorManager = FindFirstObjectByType<ArmorManager>();
@@ -92,16 +86,13 @@ namespace Foxberry
         private void CheckAbilityByInterval()
         {
             _checkTimer += Time.deltaTime;
-
             if (_checkTimer < AbilityCheckInterval)
             {
                 return;
             }
 
             _checkTimer = 0f;
-
             RefreshAbilityManagerReference();
-
             if (_abilityManager != null && _abilityManager.HasRobocopRegeneration)
             {
                 Activate();
@@ -118,8 +109,7 @@ namespace Foxberry
 
         private bool CanRegenerate()
         {
-            return _armorManager != null && _hero != null && _hero.IsAlive() && _armorManager.IsArmorUnlocked() &&
-                   _armorManager.CurrentArmor < _armorManager.MaxArmor;
+            return _armorManager != null && _hero != null && _hero.IsAlive() && _armorManager.IsArmorUnlocked() && _armorManager.CurrentArmor < _armorManager.MaxArmor;
         }
     }
 }

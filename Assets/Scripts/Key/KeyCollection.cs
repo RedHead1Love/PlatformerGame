@@ -7,9 +7,7 @@ namespace DoorControl
     public sealed class KeyCollection : MonoBehaviour
     {
         private const float DefaultSpacing = 80f;
-
         private readonly Dictionary<KeyColor, bool> _collectedKeys = new Dictionary<KeyColor, bool>();
-
         [SerializeField]
         private RectTransform _keyDisplayPanel;
         [SerializeField]
@@ -19,22 +17,25 @@ namespace DoorControl
         [SerializeField]
         private float _spacing = DefaultSpacing;
         private KeyCollectionView _view;
+        private IWorldProgress _worldProgress;
         private bool _isInitialized;
+
+        public void SetWorldProgress(IWorldProgress worldProgress)
+        {
+            _worldProgress = worldProgress ?? throw new System.ArgumentNullException(nameof(worldProgress));
+        }
 
         public void AddKey(KeyColor color)
         {
             EnsureInitialized();
-
             _collectedKeys[color] = true;
-
             _view.UpdateKeyDisplay(color, true);
-            WorldProgress.AddKey(color);
+            _worldProgress.AddKey(color);
         }
 
         public bool HasKey(KeyColor color)
         {
             EnsureInitialized();
-
             return _collectedKeys.ContainsKey(color) && _collectedKeys[color];
         }
 
@@ -46,10 +47,8 @@ namespace DoorControl
             }
 
             _collectedKeys[color] = false;
-
             _view.UpdateKeyDisplay(color, false);
-            WorldProgress.RemoveKey(color);
-
+            _worldProgress.RemoveKey(color);
             return true;
         }
 
@@ -61,11 +60,9 @@ namespace DoorControl
         public void ResetAllKeys()
         {
             EnsureInitialized();
-
             foreach (KeyColor color in System.Enum.GetValues(typeof(KeyColor)))
             {
                 _collectedKeys[color] = false;
-
                 _view.UpdateKeyDisplay(color, false);
             }
         }
@@ -73,9 +70,7 @@ namespace DoorControl
         public List<KeyColor> GetCollectedKeys()
         {
             EnsureInitialized();
-
             List<KeyColor> collectedKeys = new List<KeyColor>();
-
             foreach (KeyValuePair<KeyColor, bool> keyPair in _collectedKeys)
             {
                 if (keyPair.Value)
@@ -96,11 +91,15 @@ namespace DoorControl
 
             EnsureInitialized();
             ResetAllKeys();
-
             foreach (KeyColor color in collectedKeys)
             {
                 AddKey(color);
             }
+        }
+
+        private void Awake()
+        {
+            _worldProgress ??= GameServices.Progress;
         }
 
         private void Start()
@@ -119,14 +118,12 @@ namespace DoorControl
             _view = new KeyCollectionView(_keyDisplayPanel, _keyDisplayPrefab, _keySprites, _spacing);
             InitializeKeyStates();
             _view.Initialize();
-
             _isInitialized = true;
         }
 
         private void InitializeKeyStates()
         {
             _collectedKeys.Clear();
-
             foreach (KeyColor color in System.Enum.GetValues(typeof(KeyColor)))
             {
                 _collectedKeys[color] = false;
@@ -137,10 +134,9 @@ namespace DoorControl
         {
             foreach (KeyColor color in System.Enum.GetValues(typeof(KeyColor)))
             {
-                if (WorldProgress.HasKey(color))
+                if (_worldProgress.HasKey(color))
                 {
                     _collectedKeys[color] = true;
-
                     _view.UpdateKeyDisplay(color, true);
                 }
             }

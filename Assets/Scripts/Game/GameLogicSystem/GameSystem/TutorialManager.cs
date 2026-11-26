@@ -6,9 +6,8 @@ namespace Foxberry
     {
         private const float PausedTimeScale = 0f;
         private const float NormalTimeScale = 1f;
-
+        private readonly GamePauseScope _pause = new GamePauseScope();
         private static bool _isTutorialShown = false;
-
         [SerializeField]
         private GameObject _tutorialPanel;
 
@@ -19,25 +18,27 @@ namespace Foxberry
 
         public void CloseTutorial()
         {
-            _tutorialPanel.SetActive(false);
+            if (_tutorialPanel != null)
+            {
+                _tutorialPanel.SetActive(false);
+            }
 
             ResumeGame();
-
             _isTutorialShown = true;
         }
 
-        public void TryCloseTutorial()
+        private bool TryCloseTutorial()
         {
-            if (_tutorialPanel.activeInHierarchy == false)
+            if (_tutorialPanel == null || !_tutorialPanel.activeInHierarchy || !Input.anyKeyDown)
             {
-                return;
+                return false;
             }
 
-            if (Input.anyKeyDown)
-            {
-                CloseTutorial();
-            }
+            CloseTutorial();
+            return true;
         }
+
+        private void OnDisable() => _pause.Dispose();
 
         private void Start()
         {
@@ -58,26 +59,32 @@ namespace Foxberry
             else
             {
                 ResumeGame();
-
-                _tutorialPanel.SetActive(false);
+                if (_tutorialPanel != null)
+                {
+                    _tutorialPanel.SetActive(false);
+                }
             }
         }
 
         private void ShowTutorial()
         {
-            _tutorialPanel.SetActive(true);
+            if (_tutorialPanel == null)
+            {
+                return;
+            }
 
+            _tutorialPanel.SetActive(true);
             PauseGame();
         }
 
         private void PauseGame()
         {
-            Time.timeScale = PausedTimeScale;
+            _pause.Pause();
         }
 
         private void ResumeGame()
         {
-            Time.timeScale = NormalTimeScale;
+            _pause.Dispose();
         }
     }
 }

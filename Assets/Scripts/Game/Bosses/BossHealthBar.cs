@@ -11,7 +11,6 @@ namespace Foxberry
         private const float HealthBarPadding = 2f;
         private const float TextOffsetY = 25f;
         private const int FontSize = 16;
-
         [SerializeField]
         private Vector2 _healthBarOffset = new Vector2(0f, 3f);
         [SerializeField]
@@ -31,7 +30,6 @@ namespace Foxberry
         {
             InitializeComponents();
             InitializeHealthData();
-
             _isVisible = !_showOnlyWhenAggro;
         }
 
@@ -79,7 +77,6 @@ namespace Foxberry
         {
             int currentHealth = Mathf.Max(0, _bossEntity.CurrentLives);
             Vector2 screenPosition = CalculateScreenPosition();
-
             if (IsPositionOnScreen(screenPosition) == false)
             {
                 return;
@@ -87,7 +84,6 @@ namespace Foxberry
 
             Rect healthBarRect = CalculateHealthBarRect(screenPosition);
             float healthPercentage = CalculateHealthPercentage(currentHealth);
-
             DrawHealthBar(healthBarRect, healthPercentage);
             DrawHealthText(healthBarRect, currentHealth);
         }
@@ -96,28 +92,27 @@ namespace Foxberry
         {
             Vector3 worldPosition = transform.position + new Vector3(_healthBarOffset.x, _healthBarOffset.y, 0f);
             Vector3 screenPosition = _mainCamera.WorldToScreenPoint(worldPosition);
-
             return new Vector2(screenPosition.x, Screen.height - screenPosition.y);
         }
 
         private bool IsPositionOnScreen(Vector2 screenPosition)
         {
-            return screenPosition.x >= 0f && screenPosition.x <= Screen.width && screenPosition.y >= 0f &&
-                   screenPosition.y <= Screen.height;
+            return screenPosition.x >= 0f && screenPosition.x <= Screen.width && screenPosition.y >= 0f && screenPosition.y <= Screen.height;
         }
 
         private Rect CalculateHealthBarRect(Vector2 screenPosition)
         {
-            return new Rect(
-                screenPosition.x - (HealthBarWidth / 2f),
-                screenPosition.y - (HealthBarHeight / 2f),
-                HealthBarWidth,
-                HealthBarHeight);
+            return new Rect(screenPosition.x - (HealthBarWidth / 2f),
+                 screenPosition.y - (HealthBarHeight / 2f),
+                 HealthBarWidth,
+                 HealthBarHeight);
         }
 
         private float CalculateHealthPercentage(int currentHealth)
         {
-            return _maxHealth > 0 ? Mathf.Clamp01((float)currentHealth / _maxHealth) : 0f;
+            return _maxHealth > 0
+                ? Mathf.Clamp01((float)currentHealth / _maxHealth)
+                : 0f;
         }
 
         private void DrawHealthBar(Rect healthBarRect, float healthPercentage)
@@ -135,44 +130,34 @@ namespace Foxberry
             }
 
             float fillWidth = (healthBarRect.width - (HealthBarPadding * 2f)) * healthPercentage;
-
-            Rect fillRect = new Rect(
-                healthBarRect.x + HealthBarPadding,
-                healthBarRect.y + HealthBarPadding,
-                fillWidth,
-                healthBarRect.height - (HealthBarPadding * 2f));
-
+            Rect fillRect = new Rect(healthBarRect.x + HealthBarPadding,
+                 healthBarRect.y + HealthBarPadding,
+                 fillWidth,
+                 healthBarRect.height - (HealthBarPadding * 2f));
             DrawRectangle(fillRect, Color.red);
         }
 
         private void DrawHealthBarBorder(Rect healthBarRect)
         {
-            DrawRectangle(
-                new Rect(healthBarRect.x, healthBarRect.y, healthBarRect.width, HealthBarBorderThickness),
-                Color.white);
-            DrawRectangle(
-                new Rect(
-                healthBarRect.x,
-                healthBarRect.y + healthBarRect.height - HealthBarBorderThickness,
-                healthBarRect.width,
-                HealthBarBorderThickness),
-                Color.white);
-            DrawRectangle(
-                new Rect(healthBarRect.x, healthBarRect.y, HealthBarBorderThickness, healthBarRect.height),
-                Color.white);
-            DrawRectangle(
-                new Rect(
-                healthBarRect.x + healthBarRect.width - HealthBarBorderThickness,
-                healthBarRect.y,
-                HealthBarBorderThickness,
-                healthBarRect.height),
-                Color.white);
+            DrawRectangle(new Rect(healthBarRect.x, healthBarRect.y, healthBarRect.width, HealthBarBorderThickness),
+                 Color.white);
+            DrawRectangle(new Rect(healthBarRect.x,
+                 healthBarRect.y + healthBarRect.height - HealthBarBorderThickness,
+                 healthBarRect.width,
+                 HealthBarBorderThickness),
+                 Color.white);
+            DrawRectangle(new Rect(healthBarRect.x, healthBarRect.y, HealthBarBorderThickness, healthBarRect.height),
+                 Color.white);
+            DrawRectangle(new Rect(healthBarRect.x + healthBarRect.width - HealthBarBorderThickness,
+                 healthBarRect.y,
+                 HealthBarBorderThickness,
+                 healthBarRect.height),
+                 Color.white);
         }
 
         private void DrawHealthText(Rect healthBarRect, int currentHealth)
         {
             Rect textRect = new Rect(healthBarRect.x, healthBarRect.y - TextOffsetY, healthBarRect.width, TextOffsetY);
-
             GUI.Label(textRect, $"{currentHealth}/{_maxHealth}", GetHealthTextStyle());
         }
 
@@ -182,7 +167,10 @@ namespace Foxberry
             {
                 _healthTextStyle = new GUIStyle
                 {
-                    normal = { textColor = Color.yellow },
+                    normal =
+                    {
+                        textColor = Color.yellow
+                    },
                     fontSize = FontSize,
                     fontStyle = FontStyle.Bold,
                     alignment = TextAnchor.MiddleCenter,
@@ -196,7 +184,6 @@ namespace Foxberry
         {
             Texture2D texture = Texture2D.whiteTexture;
             Color previousColor = GUI.color;
-
             GUI.color = color;
             GUI.DrawTexture(rect, texture);
             GUI.color = previousColor;

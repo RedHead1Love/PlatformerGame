@@ -14,7 +14,6 @@ namespace Foxberry
         private const float DefaultInstakillTextHeight = 1f;
         private const float DefaultTextLifetime = 2f;
         private const int InstakillFontSize = 16;
-
         [SerializeField]
         private float _instakillChance = DefaultInstakillChance;
         [SerializeField]
@@ -35,9 +34,7 @@ namespace Foxberry
         public void Activate()
         {
             _isActive = true;
-
             RefreshAbilityManagerReference();
-
             if (_abilityManager != null)
             {
                 _abilityManager.UnlockOnePunchManAbility();
@@ -62,7 +59,6 @@ namespace Foxberry
             }
 
             PerformInstakill(enemy);
-
             return true;
         }
 
@@ -117,22 +113,18 @@ namespace Foxberry
         {
             GameObject textObject = new GameObject("InstakillText");
             textObject.transform.position = position + (Vector3.up * DefaultInstakillTextHeight);
-
             TextMeshPro textMesh = textObject.AddComponent<TextMeshPro>();
-
             textMesh.text = LocalizationManager.CurrentLanguage switch
             {
                 GameLanguage.English => "InstaKill",
                 GameLanguage.Turkish => "Tek Atış",
                 _ => "Уничтожен",
             };
-
             textMesh.color = Color.red;
             textMesh.fontSize = InstakillFontSize;
             textMesh.alignment = TextAlignmentOptions.Center;
             textMesh.fontStyle = FontStyles.Bold | FontStyles.Italic;
             textMesh.sortingOrder = 10000;
-
             if (_textFont != null)
             {
                 textMesh.font = _textFont;
@@ -140,7 +132,6 @@ namespace Foxberry
 
             Rigidbody2D rb = textObject.AddComponent<Rigidbody2D>();
             rb.gravityScale = -0.5f;
-
             Destroy(textObject, DefaultTextLifetime);
         }
     }

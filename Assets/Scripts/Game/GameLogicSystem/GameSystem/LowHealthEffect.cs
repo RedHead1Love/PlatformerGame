@@ -19,9 +19,7 @@ namespace Foxberry
         public void UpdateHealthState(int currentHealth, int maxHealth)
         {
             float healthPercent = (float)currentHealth / maxHealth;
-
             _isLowHealth = healthPercent <= _healthThreshold;
-
             if (_isLowHealth == false)
             {
                 DisableEffect();
@@ -42,11 +40,9 @@ namespace Foxberry
         {
             float sineShift = 1f;
             float sineRange = 2f;
-
             if (_isLowHealth && _overlayImage != null)
             {
                 float alpha = (Mathf.Sin(Time.time * _pulseSpeed) + sineShift) / sineRange * _maxAlpha;
-
                 SetAlpha(alpha);
             }
         }
@@ -54,7 +50,6 @@ namespace Foxberry
         private void DisableEffect()
         {
             float transparentAlpha = 0f;
-
             if (_overlayImage != null)
             {
                 SetAlpha(transparentAlpha);

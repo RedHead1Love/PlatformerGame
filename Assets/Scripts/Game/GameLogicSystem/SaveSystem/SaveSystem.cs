@@ -17,38 +17,39 @@ namespace GameLogic
 
         public GameSaveData CurrentSave { get; private set; }
 
+        public void Configure(IGameSaveStore store, IGameSnapshotCapture snapshot)
+        {
+            _store = store ?? throw new ArgumentNullException(nameof(store));
+            _snapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
+        }
+
         public void SaveGame(string checkpointId, Vector3 playerPosition)
         {
             InitializeSaveDataIfNeeded();
-
             CurrentSave.Id = Guid.NewGuid().ToString();
             CurrentSave.Timestamp = DateTime.Now;
             CurrentSave.Checkpoint = checkpointId;
             CurrentSave.Position = playerPosition;
             CurrentSave.Scene = SceneManager.GetActiveScene().name;
-
             _snapshot.Capture(CurrentSave);
-
             SaveToFile();
-
             YG2.InterstitialAdvShow();
         }
 
-        public void MarkEnemyKilled(string enemyId)
+        public void MarkEnemyKilled(string id)
         {
-            if (string.IsNullOrEmpty(enemyId))
+            if (string.IsNullOrEmpty(id))
             {
                 return;
             }
 
             InitializeSaveDataIfNeeded();
-
-            if (CurrentSave.DefeatedEnemies.Contains(enemyId))
+            if (CurrentSave.DefeatedEnemies.Contains(id))
             {
                 return;
             }
 
-            CurrentSave.DefeatedEnemies.Add(enemyId);
+            CurrentSave.DefeatedEnemies.Add(id);
         }
 
         public void MarkHealthPickupCollected(string pickupId)
@@ -59,7 +60,6 @@ namespace GameLogic
             }
 
             InitializeSaveDataIfNeeded();
-
             if (CurrentSave.HealthPickups.Contains(pickupId))
             {
                 return;
@@ -76,49 +76,50 @@ namespace GameLogic
             }
 
             InitializeSaveDataIfNeeded();
-
             if (CurrentSave.Purchases.Contains(itemId))
             {
                 return;
             }
 
             CurrentSave.Purchases.Add(itemId);
-
             SaveToFile();
         }
 
-        public void UpdateAbilityData(AbilityManager abilityManager)
+        public void UpdateAbilityData(AbilityManager abilities)
         {
-            if (abilityManager == null)
+            if (abilities == null)
             {
                 return;
             }
 
             InitializeSaveDataIfNeeded();
-
-            CurrentSave.Abilities.Capture(abilityManager);
-
+            CurrentSave.Abilities.Capture(abilities);
             SaveToFile();
         }
 
         public void LoadGameData()
         {
+            if (_store == null)
+            {
+                CurrentSave = null;
+                Debug.LogError("SaveSystem has no save store. Configure GameServices before loading save data.", this);
+                return;
+            }
+
             CurrentSave = _store.Load();
             CurrentSave?.EnsureValidCollections();
-
             OnGameLoaded?.Invoke(CurrentSave);
         }
 
         public void DeleteSaveData()
         {
-            _store.Delete();
-
+            _store?.Delete();
             CurrentSave = null;
         }
 
         public bool HasSave()
         {
-            return _store.Exists();
+            return _store != null && _store.Exists();
         }
 
         private void OnDestroy()
@@ -132,8 +133,16 @@ namespace GameLogic
 
         private void Awake()
         {
-            _store = new JsonGameSaveStore(Application.persistentDataPath);
-            _snapshot = new UnityGameSnapshotCapture();
+            GameServices.EnsureInitialized();
+            _store ??= GameServices.SaveStore;
+            _snapshot ??= GameServices.Snapshot;
+            if (_store == null || _snapshot == null)
+            {
+                Debug.LogError("SaveSystem services are not configured. SaveSystem will be disabled.", this);
+                enabled = false;
+                return;
+            }
+
             InitializeSingleton();
         }
 
@@ -143,10 +152,8 @@ namespace GameLogic
             {
                 Instance = this;
                 GameSaveConnections.SetActive(this);
-
                 DontDestroyOnLoad(gameObject);
                 LoadGameData();
-
                 return;
             }
 
@@ -170,7 +177,7 @@ namespace GameLogic
                 return;
             }
 
-            _store.Save(CurrentSave);
+            _store?.Save(CurrentSave);
         }
     }
 }

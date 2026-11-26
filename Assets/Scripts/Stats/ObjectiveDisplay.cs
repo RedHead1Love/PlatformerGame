@@ -6,7 +6,6 @@ namespace Foxberry
     public sealed class ObjectiveDisplay : MonoBehaviour
     {
         private const float DefaultDisplayDuration = 5f;
-
         [SerializeField]
         private GameObject _objectivePanel;
         [SerializeField]
@@ -44,11 +43,8 @@ namespace Foxberry
         private IEnumerator DisplayRoutine()
         {
             _isShowing = true;
-
             _objectivePanel.SetActive(true);
-
             yield return new WaitForSeconds(_displayDuration);
-
             _objectivePanel.SetActive(false);
             _isShowing = false;
         }

@@ -9,33 +9,37 @@ namespace GeneralLogicEnemies
     public sealed class EnemyRegistry : MonoBehaviour
     {
         private const float SaveSyncDelay = 0.5f;
-        private const int RandomIdMinValue = 1000;
-        private const int RandomIdMaxValue = 9999;
         private const string InvalidIdentifier = "-1";
-
+        private const string DefaultIdFormat = "{0}_{1:F3}_{2:F3}";
         private readonly Dictionary<string, Entity> _enemies = new Dictionary<string, Entity>();
-
         private HashSet<string> _killedEnemies = new HashSet<string>();
+        private IGameProgressSave _save;
 
         public static event System.Action OnEnemyKilledGlobal;
 
         public static EnemyRegistry Instance { get; private set; }
 
-        public void RegisterEnemy(Entity enemy, string enemyId)
+        public string RegisterEnemy(Entity enemy, string enemyId)
         {
             if (enemy == null)
             {
-                return;
+                return null;
             }
 
             string validId = CreateValidEnemyId(enemy, enemyId);
+            if (_enemies.TryGetValue(validId, out Entity registeredEnemy) && registeredEnemy != enemy)
+            {
+                Debug.LogError($"Duplicate enemy ID '{validId}' on '{enemy.name}'. Give each enemy a unique ID.", enemy);
+                return null;
+            }
 
             _enemies[validId] = enemy;
-
             if (_killedEnemies.Contains(validId))
             {
                 enemy.gameObject.SetActive(false);
             }
+
+            return validId;
         }
 
         public void RemoveEnemy(string enemyId)
@@ -61,9 +65,7 @@ namespace GeneralLogicEnemies
             }
 
             OnEnemyKilledGlobal?.Invoke();
-
             _save?.MarkEnemyKilled(enemyId);
-
             _enemies.Remove(enemyId);
         }
 
@@ -80,14 +82,12 @@ namespace GeneralLogicEnemies
             }
 
             GameSaveData saveData = _save.CurrentSave;
-
             if (saveData?.DefeatedEnemies == null)
             {
                 return;
             }
 
             _killedEnemies = new HashSet<string>(saveData.DefeatedEnemies);
-
             ApplyKilledEnemiesStates();
         }
 
@@ -95,9 +95,7 @@ namespace GeneralLogicEnemies
         {
             _killedEnemies.Clear();
             _enemies.Clear();
-
-            Entity[] allEnemies = FindObjectsByType<Entity>(FindObjectsSortMode.None);
-
+            Entity[] allEnemies = FindObjectsByType<Entity>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (Entity enemy in allEnemies)
             {
                 if (IsEnemyValid(enemy))
@@ -114,20 +112,18 @@ namespace GeneralLogicEnemies
                 return false;
             }
 
-            return _enemies.ContainsKey(enemyId) && IsEnemyValid(_enemies[enemyId]) &&
-                   _enemies[enemyId].gameObject.activeInHierarchy;
+            return _enemies.ContainsKey(enemyId) && IsEnemyValid(_enemies[enemyId]) && _enemies[enemyId].gameObject.activeInHierarchy;
         }
 
         public void ResetForSceneRestart()
         {
             _enemies.Clear();
-
             if (_save != null && _save.HasSave())
             {
                 GameSaveData saveData = _save.CurrentSave;
-
-                _killedEnemies = saveData?.DefeatedEnemies != null ? new HashSet<string>(saveData.DefeatedEnemies)
-                                                                   : new HashSet<string>();
+                _killedEnemies = saveData?.DefeatedEnemies != null
+                    ? new HashSet<string>(saveData.DefeatedEnemies)
+                    : new HashSet<string>();
             }
             else
             {
@@ -135,9 +131,7 @@ namespace GeneralLogicEnemies
             }
         }
 
-        private IGameProgressSave _save;
-
-        private void BindSave(IGameProgressSave save)
+        public void SetSave(IGameProgressSave save)
         {
             if (_save != null)
             {
@@ -145,7 +139,6 @@ namespace GeneralLogicEnemies
             }
 
             _save = save;
-
             if (_save != null)
             {
                 _save.OnGameLoaded += OnGameLoaded;
@@ -165,11 +158,12 @@ namespace GeneralLogicEnemies
 
         private void OnDestroy()
         {
-            GameSaveConnections.Disconnect(BindSave);
+            GameSaveConnections.Disconnect(SetSave);
             if (Instance == this)
             {
                 Instance = null;
             }
+
             CleanupEventSubscriptions();
         }
 
@@ -178,11 +172,9 @@ namespace GeneralLogicEnemies
             if (Instance == null)
             {
                 Instance = this;
-                GameSaveConnections.Connect(BindSave);
-
+                GameSaveConnections.Connect(SetSave);
                 DontDestroyOnLoad(gameObject);
                 SubscribeToEvents();
-
                 return;
             }
 
@@ -210,7 +202,6 @@ namespace GeneralLogicEnemies
         private IEnumerator DelayedSaveSync()
         {
             yield return new WaitForSeconds(SaveSyncDelay);
-
             SyncWithSaveData();
         }
 
@@ -221,9 +212,9 @@ namespace GeneralLogicEnemies
                 return;
             }
 
-            _killedEnemies = saveData.DefeatedEnemies != null ? new HashSet<string>(saveData.DefeatedEnemies)
-                                                              : new HashSet<string>();
-
+            _killedEnemies = saveData.DefeatedEnemies != null
+                ? new HashSet<string>(saveData.DefeatedEnemies)
+                : new HashSet<string>();
             ApplyKilledEnemiesStates();
         }
 
@@ -243,7 +234,6 @@ namespace GeneralLogicEnemies
             }
 
             string savedSceneName = _save.CurrentSave?.Scene;
-
             return newSceneName == savedSceneName;
         }
 
@@ -265,19 +255,28 @@ namespace GeneralLogicEnemies
                 return enemyId;
             }
 
-            string generatedId = $"{enemy.gameObject.name}_{Random.Range(RandomIdMinValue, RandomIdMaxValue)}";
-
-            while (_enemies.ContainsKey(generatedId))
+            EnemyRegistration registration = enemy.GetComponent<EnemyRegistration>();
+            if (registration != null)
             {
-                generatedId = $"{enemy.gameObject.name}_{Random.Range(RandomIdMinValue, RandomIdMaxValue)}";
+                string registeredId = registration.GetEnemyId();
+                if (IsInvalidEnemyId(registeredId) == false)
+                {
+                    return registeredId;
+                }
             }
 
-            return generatedId;
+            string cleanObjectName = enemy.gameObject.name.Replace("(Clone)", string.Empty).Trim();
+            return string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                 DefaultIdFormat,
+                 cleanObjectName,
+                 enemy.transform.position.x,
+                 enemy.transform.position.y);
         }
 
         private bool IsInvalidEnemyId(string enemyId)
         {
-            return string.IsNullOrEmpty(enemyId) || enemyId.Contains(InvalidIdentifier);
+            return string.IsNullOrWhiteSpace(enemyId) ||
+                   string.Equals(enemyId, InvalidIdentifier, System.StringComparison.Ordinal);
         }
 
         private bool IsEnemyValid(Entity enemy)

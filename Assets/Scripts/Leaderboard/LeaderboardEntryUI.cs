@@ -21,7 +21,6 @@ namespace Foxberry
             int deaths = rawData % 100;
             int timeInSeconds = (rawData / 100) % 10000;
             int score = rawData / 1000000;
-
             if (rawData < 100000)
             {
                 score = rawData;
@@ -30,10 +29,10 @@ namespace Foxberry
             }
 
             _rankText.text = string.Empty;
-            _nameText.text = string.IsNullOrEmpty(playerName) ? "Аноним" : playerName;
-
-            _timeText.text = $"{timeInSeconds / 60}:{(timeInSeconds % 60):00}";
-
+            _nameText.text = string.IsNullOrEmpty(playerName)
+                ? "Аноним"
+                : playerName;
+            _timeText.text = $"{timeInSeconds / 60}:{timeInSeconds % 60:00}";
             _deathsText.text = deaths.ToString();
             _scoreText.text = score.ToString();
         }

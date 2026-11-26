@@ -25,9 +25,7 @@ namespace HardBossLogic
         private const float LaserSoundVolumeMultiplier = 0.8f;
         private const float MoveSoundVolumeMultiplier = 0.4f;
         private const float AttackMissSoundVolumeMultiplier = 0.7f;
-
         private static readonly int StateParameterHash = Animator.StringToHash("state");
-
         [SerializeField]
         private VideoPlayer _introVideoPlayer;
         [SerializeField]
@@ -85,6 +83,7 @@ namespace HardBossLogic
         [SerializeField]
         private float _laserChargeSoundDelay = 0.2f;
         private Rigidbody2D _rigidbody;
+        private BossLocomotion _locomotion;
         private Animator _animator;
         private BossAudio _audio;
         private BossHealthBar _healthBar;
@@ -102,7 +101,9 @@ namespace HardBossLogic
         public override void TakeDamage(int amount)
         {
             if (_isInvulnerable || _currentState == BossStoneGolemState.Death || amount <= 0)
+            {
                 return;
+            }
 
             PlayTakeDamageSound();
             base.TakeDamage(amount);
@@ -111,7 +112,9 @@ namespace HardBossLogic
         public override void Die()
         {
             if (_currentState == BossStoneGolemState.Death)
+            {
                 return;
+            }
 
             _audio?.StopMusic();
             SwitchState(BossStoneGolemState.Death);
@@ -128,7 +131,10 @@ namespace HardBossLogic
         public void AnimEvent_AttackFinished()
         {
             if (_wasAttackSuccessful == false)
+            {
                 PlayAttackMissSound();
+            }
+
             SwitchState(BossStoneGolemState.Idle);
         }
 
@@ -157,26 +163,27 @@ namespace HardBossLogic
         protected override void Awake()
         {
             base.Awake();
-
             _healthBar = GetComponent<BossHealthBar>();
             _animator = GetComponent<Animator>();
             _rigidbody = GetComponent<Rigidbody2D>();
-            AudioController output = (Hero.Instance != null ? Hero.Instance.AudioController : null) ??
-                               FindAnyObjectByType<AudioController>();
+            _locomotion = new BossLocomotion(transform, _rigidbody, false);
+            AudioController output = (Hero.Instance != null
+                ? Hero.Instance.AudioController
+                : null) ?? FindAnyObjectByType<AudioController>();
             _audio = new BossAudio(output, _bossMusic);
-            _intro = new BossIntroSequence(
-                this,
-                _introVideoPlayer,
-                _videoPanel,
-                _videoFileName,
-                _healthBar,
-                output,
-                StopMovement,
-                _audio.StartMusic,
-                () => _currentState != BossStoneGolemState.Death);
-
+            _intro = new BossIntroSequence(this,
+                 _introVideoPlayer,
+                 _videoPanel,
+                 _videoFileName,
+                 _healthBar,
+                 output,
+                 StopMovement,
+                 _audio.StartMusic,
+                 () => _currentState != BossStoneGolemState.Death);
             if (_videoPanel != null)
+            {
                 _videoPanel.SetActive(false);
+            }
 
             FindPlayerIfNeeded();
         }
@@ -184,20 +191,26 @@ namespace HardBossLogic
         private void Update()
         {
             if (_currentState == BossStoneGolemState.Death)
+            {
                 return;
+            }
 
             if (_intro.IsPlaying)
             {
                 if (Input.GetKeyDown(KeyCode.Escape))
+                {
                     _intro.Finish();
+                }
+
                 return;
             }
 
             FindPlayerIfNeeded();
             CheckAggro();
-
             if (_isAggro == false)
+            {
                 return;
+            }
 
             UpdateCurrentState();
         }
@@ -206,39 +219,48 @@ namespace HardBossLogic
         {
             _intro?.Dispose();
             if (_isAggro)
+            {
                 _audio?.StopMusic();
+            }
         }
 
         private void UpdateCurrentState()
         {
             switch (_currentState)
             {
-            case BossStoneGolemState.Idle:
-                UpdateIdleState();
-                break;
-            case BossStoneGolemState.Attack:
-                StopMovement();
-                break;
-            case BossStoneGolemState.Immune:
-                UpdateImmuneState();
-                break;
-            case BossStoneGolemState.LaserAttack:
-                StopMovement();
-                break;
+                case BossStoneGolemState.Idle:
+                    UpdateIdleState();
+                    break;
+                case BossStoneGolemState.Attack:
+                    StopMovement();
+                    break;
+                case BossStoneGolemState.Immune:
+                    UpdateImmuneState();
+                    break;
+                case BossStoneGolemState.LaserAttack:
+                    StopMovement();
+                    break;
             }
         }
 
         private void CheckAggro()
         {
             if (Time.timeSinceLevelLoad < AggroWarmupSeconds)
+            {
                 return;
+            }
+
             if (_isAggro || _playerTransform == null)
+            {
                 return;
+            }
+
             if (Vector2.Distance(transform.position, _playerTransform.position) > _aggroDistance)
+            {
                 return;
+            }
 
             _isAggro = true;
-
             if (!_intro.HasPlayed && _introVideoPlayer != null && _videoPanel != null)
             {
                 _audio?.StopMusic();
@@ -256,11 +278,12 @@ namespace HardBossLogic
         private void UpdateIdleState()
         {
             if (_playerTransform == null)
+            {
                 return;
+            }
 
             MoveTowardsPlayer();
             PlayMoveSound();
-
             if (_isInvulnerable == false && (float)CurrentLives / MaximumHealth <= _immuneHealthThreshold)
             {
                 SwitchState(BossStoneGolemState.Immune);
@@ -286,27 +309,28 @@ namespace HardBossLogic
         {
             _immuneTimer -= Time.deltaTime;
             if (_immuneTimer <= TimerEndThreshold)
+            {
                 EndImmunity();
+            }
         }
 
         private void MoveTowardsPlayer()
         {
-            if (_playerTransform == null || _rigidbody == null)
-                return;
-
-            float direction = Mathf.Sign(_playerTransform.position.x - transform.position.x);
-            _rigidbody.velocity = new Vector2(direction * _moveSpeed, _rigidbody.velocity.y);
-            transform.localScale = new Vector3(direction, 1f, 1f);
+            _locomotion.MoveTowards(_playerTransform, _moveSpeed);
         }
 
         private bool IsPlayerJumping()
         {
             if (_playerTransform == null)
+            {
                 return false;
+            }
 
             Rigidbody2D playerRigidbody = _playerTransform.GetComponent<Rigidbody2D>();
             if (playerRigidbody == null)
+            {
                 return false;
+            }
 
             bool isGrounded = Mathf.Abs(playerRigidbody.velocity.y) < GroundedVelocityThreshold;
             bool justJumped = _playerWasGrounded && isGrounded == false;
@@ -318,11 +342,15 @@ namespace HardBossLogic
         {
             Collider2D hit = Physics2D.OverlapCircle(transform.position, _attackDistance, _playerLayerMask);
             if (hit == null)
+            {
                 return false;
+            }
 
             IDamageable damageable = hit.GetComponent<IDamageable>() ?? hit.GetComponentInParent<IDamageable>();
             if (damageable == null)
+            {
                 return false;
+            }
 
             damageable.TakeDamage(BossMeleeDamage);
             return true;
@@ -331,18 +359,24 @@ namespace HardBossLogic
         private void ApplyLaserDamage()
         {
             if (_laserFirePoint == null)
+            {
                 return;
+            }
 
             float direction = Mathf.Sign(transform.localScale.x);
-            Vector2 rayDirection = direction >= 0f ? Vector2.right : Vector2.left;
-
-            RaycastHit2D hit =
-                Physics2D.Raycast(_laserFirePoint.position, rayDirection, MaximumBeamLength, _playerLayerMask);
+            Vector2 rayDirection = direction >= 0f
+                ? Vector2.right
+                : Vector2.left;
+            RaycastHit2D hit = Physics2D.Raycast(_laserFirePoint.position,
+                 rayDirection,
+                 MaximumBeamLength,
+                 _playerLayerMask);
             if (hit.collider == null)
+            {
                 return;
+            }
 
-            IDamageable damageable =
-                hit.collider.GetComponent<IDamageable>() ?? hit.collider.GetComponentInParent<IDamageable>();
+            IDamageable damageable = hit.collider.GetComponent<IDamageable>() ?? hit.collider.GetComponentInParent<IDamageable>();
             damageable?.TakeDamage(BossLaserDamage);
         }
 
@@ -350,25 +384,27 @@ namespace HardBossLogic
         {
             _currentState = newState;
             if (_animator != null)
+            {
                 _animator.SetInteger(StateParameterHash, (int)newState);
+            }
 
             switch (newState)
             {
-            case BossStoneGolemState.Immune:
-                StartImmunity();
-                break;
-            case BossStoneGolemState.Death:
-                StopMovement();
-                PlayDeathSound();
-                break;
-            case BossStoneGolemState.Attack:
-                StopMovement();
-                _wasAttackSuccessful = false;
-                break;
-            case BossStoneGolemState.LaserAttack:
-                StopMovement();
-                Invoke(nameof(PlayLaserChargeSound), _laserChargeSoundDelay);
-                break;
+                case BossStoneGolemState.Immune:
+                    StartImmunity();
+                    break;
+                case BossStoneGolemState.Death:
+                    StopMovement();
+                    PlayDeathSound();
+                    break;
+                case BossStoneGolemState.Attack:
+                    StopMovement();
+                    _wasAttackSuccessful = false;
+                    break;
+                case BossStoneGolemState.LaserAttack:
+                    StopMovement();
+                    Invoke(nameof(PlayLaserChargeSound), _laserChargeSoundDelay);
+                    break;
             }
         }
 
@@ -390,56 +426,62 @@ namespace HardBossLogic
         private void FindPlayerIfNeeded()
         {
             if (_playerTransform != null)
+            {
                 return;
-            Hero hero = Hero.Instance != null ? Hero.Instance : FindAnyObjectByType<Hero>();
+            }
+
+            Hero hero = Hero.Instance != null
+                ? Hero.Instance
+                : FindAnyObjectByType<Hero>();
             if (hero != null)
+            {
                 _playerTransform = hero.transform;
+            }
         }
 
         private void StopMovement()
         {
-            if (_rigidbody != null)
-                _rigidbody.velocity = Vector2.zero;
+            _locomotion?.Stop();
         }
 
         private AudioClip GetRandomClip(AudioClip fallbackClip, AudioClip[] variations)
         {
             if (_useSoundVariations == false || variations == null || variations.Length == 0)
+            {
                 return fallbackClip;
+            }
+
             return variations[UnityEngine.Random.Range(0, variations.Length)];
         }
 
-        private void PlayAttackSound() => _audio.Play(
-            GetRandomClip(_attackSound, _attackSoundVariations),
-            _soundEffectVolume);
+        private void PlayAttackSound() => _audio.Play(GetRandomClip(_attackSound, _attackSoundVariations),
+             _soundEffectVolume);
 
-        private void PlayAttackMissSound() => _audio.Play(
-            _attackMissSound,
-            _soundEffectVolume * AttackMissSoundVolumeMultiplier);
+        private void PlayAttackMissSound() => _audio.Play(_attackMissSound,
+             _soundEffectVolume * AttackMissSoundVolumeMultiplier);
 
-        private void PlayTakeDamageSound() => _audio.Play(
-            GetRandomClip(_takeDamageSound, _takeDamageSoundVariations),
-            _soundEffectVolume);
+        private void PlayTakeDamageSound() => _audio.Play(GetRandomClip(_takeDamageSound, _takeDamageSoundVariations),
+             _soundEffectVolume);
 
         private void PlayDeathSound() => _audio.Play(_deathSound, _soundEffectVolume);
 
-        private void PlayLaserChargeSound() => _audio.Play(
-            _laserChargeSound,
-            _soundEffectVolume * LaserSoundVolumeMultiplier);
+        private void PlayLaserChargeSound() => _audio.Play(_laserChargeSound,
+             _soundEffectVolume * LaserSoundVolumeMultiplier);
 
-        private void PlayLaserShootSound() => _audio.Play(
-            _laserShootSound,
-            _soundEffectVolume * LaserSoundVolumeMultiplier);
+        private void PlayLaserShootSound() => _audio.Play(_laserShootSound,
+             _soundEffectVolume * LaserSoundVolumeMultiplier);
 
         private void PlayImmuneActivateSound() => _audio.Play(_immuneActivateSound, _soundEffectVolume);
 
         private void PlayMoveSound()
         {
             if (Time.time < _lastMoveSoundTime + _moveSoundInterval)
+            {
                 return;
+            }
+
             _lastMoveSoundTime = Time.time;
             _audio.Play(GetRandomClip(_moveSound, _moveSoundVariations), _soundEffectVolume * MoveSoundVolumeMultiplier);
         }
-
     }
 }

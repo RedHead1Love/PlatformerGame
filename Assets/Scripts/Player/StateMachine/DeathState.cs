@@ -12,11 +12,9 @@ namespace Player.StateMachine
     {
         private const float AnimationEndThreshold = 0.2f;
         private const float RestartDelay = 0.9f;
-
         private readonly Hero _hero;
         private readonly Rigidbody2D _rigidbody;
         private readonly Animator _animator;
-
         private bool _isRestarting;
 
         public DeathState(Hero hero)
@@ -29,12 +27,13 @@ namespace Player.StateMachine
         public void Enter()
         {
             if (_isRestarting)
+            {
                 return;
-            _isRestarting = true;
+            }
 
+            _isRestarting = true;
             FreezeHero();
             _hero.AnimationService.SetState(HeroAnimationState.Die);
-
             _hero.StartCoroutine(RestartSequence());
         }
 
@@ -68,27 +67,23 @@ namespace Player.StateMachine
                 {
                     break;
                 }
+
                 timer += Time.deltaTime;
                 yield return null;
             }
 
             ShowInterstitialAdSafe();
-
             yield return new WaitForSecondsRealtime(RestartDelay);
-
             Time.timeScale = 1f;
-
             if (SaveSystem.Instance != null && SaveSystem.Instance.HasSave())
             {
                 SaveSystem.Instance.LoadGameData();
-
                 GameSaveData diskData = SaveSystem.Instance.CurrentSave;
                 if (diskData != null)
                 {
                     CoinData balance = diskData.WalletBalance;
                     balance.IsInitialized = true;
                     diskData.WalletBalance = balance;
-
                     if (WalletManager.Instance != null)
                     {
                         WalletManager.Instance.LoadFromSaveData(diskData.WalletBalance);
@@ -108,9 +103,7 @@ namespace Player.StateMachine
 
             float music = PlayerPrefs.GetFloat("MusicVolume", 0.8f);
             float sfx = PlayerPrefs.GetFloat("SFXVolume", 0.8f);
-
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-
             PlayerPrefs.SetFloat("MusicVolume", music);
             PlayerPrefs.SetFloat("SFXVolume", sfx);
             PlayerPrefs.Save();

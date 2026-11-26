@@ -15,9 +15,7 @@ namespace GameLogic
         private void CreateSystemManagers()
         {
             GameObject systemManagers = new GameObject("SystemManagers");
-
             systemManagers.AddComponent<SaveSystem>();
-
             DontDestroyOnLoad(systemManagers);
         }
     }

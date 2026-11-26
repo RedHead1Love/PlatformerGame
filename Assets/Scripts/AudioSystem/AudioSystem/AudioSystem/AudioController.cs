@@ -11,7 +11,6 @@ namespace AudioSystem
     {
         private const float MinimumVolume = 0f;
         private const float MaximumVolume = 1f;
-
         [SerializeField]
         private AudioMixerGroup _musicMixerGroup;
         [SerializeField]
@@ -76,23 +75,23 @@ namespace AudioSystem
         public void SetMusicVolume(float volume)
         {
             _musicVolume = Mathf.Clamp(volume, MinimumVolume, MaximumVolume);
-
             _musicPlayer.SetVolume(_musicVolume);
         }
 
         public void SetSoundEffectsVolume(float volume)
         {
             _soundEffectsVolume = Mathf.Clamp(volume, MinimumVolume, MaximumVolume);
-
             _soundEffectsPlayer.SetVolume(_soundEffectsVolume);
-
             UpdateFootstepVolume();
         }
 
         public void StartFootsteps()
         {
             if (_isMoving || _footstepSource == null || _footstepSource.clip == null)
+            {
                 return;
+            }
+
             _isMoving = true;
             _footstepSource.Play();
         }
@@ -111,24 +110,30 @@ namespace AudioSystem
         public void ResumeFootsteps()
         {
             if (_isMoving && _footstepSource != null && !_footstepSource.isPlaying)
+            {
                 _footstepSource.Play();
+            }
         }
 
         public void SetFootstepSound(AudioClip newClip, bool playImmediately = false)
         {
             _footstepSound = newClip;
             if (_footstepSource == null)
+            {
                 return;
+            }
+
             _footstepSource.Stop();
             _footstepSource.clip = newClip;
             if (playImmediately && _isMoving && newClip != null)
+            {
                 _footstepSource.Play();
+            }
         }
 
         public void SetFootstepVolumeMultiplier(float multiplier)
         {
             _footstepVolumeMultiplier = Mathf.Clamp01(multiplier);
-
             UpdateFootstepVolume();
         }
 
@@ -141,30 +146,30 @@ namespace AudioSystem
 
             switch (state)
             {
-            case HeroAnimationState.Attack:
-                PlaySoundWithDelay(
-                    hitConnected ? _soundConfiguration.Attack1HitSound
-                                                : _soundConfiguration.Attack1MissSound,
-                    _soundConfiguration.Attack1SoundDelay);
-                break;
-            case HeroAnimationState.Attack2:
-                PlaySoundWithDelay(
-                    hitConnected ? _soundConfiguration.Attack2HitSound
-                                                : _soundConfiguration.Attack2MissSound,
-                    _soundConfiguration.Attack2SoundDelay);
-                break;
-            case HeroAnimationState.Attack3:
-                PlaySoundWithDelay(
-                    hitConnected ? _soundConfiguration.Attack3HitSound
-                                                : _soundConfiguration.Attack3MissSound,
-                    _soundConfiguration.Attack3SoundDelay);
-                break;
-            case HeroAnimationState.AirAttack:
-                PlaySoundWithDelay(
-                    hitConnected ? _soundConfiguration.AirAttackHitSound
-                                                : _soundConfiguration.AirAttackMissSound,
-                    _soundConfiguration.AirAttackSoundDelay);
-                break;
+                case HeroAnimationState.Attack:
+                    PlaySoundWithDelay(hitConnected
+                        ? _soundConfiguration.Attack1HitSound
+                        : _soundConfiguration.Attack1MissSound,
+                         _soundConfiguration.Attack1SoundDelay);
+                    break;
+                case HeroAnimationState.Attack2:
+                    PlaySoundWithDelay(hitConnected
+                        ? _soundConfiguration.Attack2HitSound
+                        : _soundConfiguration.Attack2MissSound,
+                         _soundConfiguration.Attack2SoundDelay);
+                    break;
+                case HeroAnimationState.Attack3:
+                    PlaySoundWithDelay(hitConnected
+                        ? _soundConfiguration.Attack3HitSound
+                        : _soundConfiguration.Attack3MissSound,
+                         _soundConfiguration.Attack3SoundDelay);
+                    break;
+                case HeroAnimationState.AirAttack:
+                    PlaySoundWithDelay(hitConnected
+                        ? _soundConfiguration.AirAttackHitSound
+                        : _soundConfiguration.AirAttackMissSound,
+                         _soundConfiguration.AirAttackSoundDelay);
+                    break;
             }
         }
 
@@ -272,7 +277,6 @@ namespace AudioSystem
             }
 
             float volume = Mathf.Clamp(_soundEffectsVolume * volumeMultiplier, MinimumVolume, MaximumVolume);
-
             _soundEffectsPlayer.PlayOneShot(clip, volume);
         }
 
@@ -306,59 +310,35 @@ namespace AudioSystem
             InitializeAudioSources();
             InitializeMusicSystem();
             InitializeFootstepSource();
-
             SetMusicVolume(PlayerPrefs.GetFloat("MusicVolume", 0.8f));
             SetSoundEffectsVolume(PlayerPrefs.GetFloat("SFXVolume", 0.8f));
-
             StartBackgroundMusic();
         }
 
         private void Update()
         {
             _musicManager?.Update();
-
-            if (MiniMapController.IsCutscenePlaying)
-            {
-                AudioListener.volume = 0f;
-                AudioListener.pause = false;
-                return;
-            }
-
-            if (PauseMenuController.IsGamePaused)
-            {
-                AudioListener.volume = 0f;
-                AudioListener.pause = true;
-            }
-            else
-            {
-                AudioListener.volume = 1f;
-                AudioListener.pause = false;
-            }
+            AudioListenerState.Apply(MiniMapController.IsCutscenePlaying, PauseMenuController.IsGamePaused);
         }
 
         private void InitializeAudioSources()
         {
             AudioSource soundEffectsAudioSource = GetComponent<AudioSource>();
-
             if (soundEffectsAudioSource == null)
             {
                 soundEffectsAudioSource = gameObject.AddComponent<AudioSource>();
             }
 
             soundEffectsAudioSource.playOnAwake = false;
-
             if (_sfxMixerGroup != null)
             {
                 soundEffectsAudioSource.outputAudioMixerGroup = _sfxMixerGroup;
             }
 
             _soundEffectsPlayer = new AudioPlayer(soundEffectsAudioSource);
-
             AudioSource musicSource = gameObject.AddComponent<AudioSource>();
-
             musicSource.loop = false;
             musicSource.playOnAwake = false;
-
             if (_musicMixerGroup != null)
             {
                 musicSource.outputAudioMixerGroup = _musicMixerGroup;
@@ -371,9 +351,7 @@ namespace AudioSystem
         {
             _musicPlaylist = new MusicPlaylist();
             _musicPlaylist.Initialize(_backgroundMusicTracks);
-
             _musicManager = new MusicPlayback(_musicPlayer, _musicPlaylist);
-
             SetMusicVolume(_musicVolume);
         }
 
@@ -383,7 +361,6 @@ namespace AudioSystem
             _footstepSource.playOnAwake = false;
             _footstepSource.loop = _loopFootstepSound;
             _footstepSource.clip = _footstepSound;
-
             UpdateFootstepVolume();
         }
 
@@ -412,7 +389,6 @@ namespace AudioSystem
             if (delay <= Mathf.Epsilon)
             {
                 PlaySound(clip);
-
                 return;
             }
 
@@ -422,7 +398,6 @@ namespace AudioSystem
         private IEnumerator PlayDelayedSoundCoroutine(AudioClip clip, float delay)
         {
             yield return new WaitForSeconds(delay);
-
             PlaySound(clip);
         }
 

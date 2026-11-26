@@ -16,15 +16,12 @@ namespace Foxberry
         private IEnumerator InitializeCoins()
         {
             yield return new WaitForSeconds(InitializationDelay);
-
             if (SaveSystem.Instance != null && SaveSystem.Instance.HasSave())
             {
                 GameSaveData saveData = SaveSystem.Instance.CurrentSave;
-
                 if (saveData != null && saveData.WalletBalance.IsInitialized)
                 {
                     InitializeFromSave(saveData.WalletBalance);
-
                     yield break;
                 }
             }
@@ -41,7 +38,6 @@ namespace Foxberry
         private void InitializeFromPlayerPrefs()
         {
             PersistentWallet.Instance?.LoadCoins();
-
             if (PersistentWallet.Instance != null && WalletManager.Instance != null)
             {
                 WalletManager.Instance.LoadFromSaveData(PersistentWallet.Instance.CurrentCoins);

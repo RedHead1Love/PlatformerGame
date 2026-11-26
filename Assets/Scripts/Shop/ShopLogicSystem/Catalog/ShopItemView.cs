@@ -10,7 +10,6 @@ namespace Foxberry.Shop
     public sealed class ShopItemView : MonoBehaviour, IPointerClickHandler
     {
         private readonly Color _overlayColor = new Color(0f, 1f, 0f, 0.2f);
-
         [SerializeField]
         private Image _iconImage;
         private Color _originalIconColor;
@@ -23,7 +22,9 @@ namespace Foxberry.Shop
 
         public RectTransform RectTransform { get; private set; }
 
-        public Sprite ItemIcon => _iconImage != null ? _iconImage.sprite : null;
+        public Sprite ItemIcon => _iconImage != null
+            ? _iconImage.sprite
+            : null;
 
         public void Initialize(IShopItem itemData)
         {
@@ -81,14 +82,18 @@ namespace Foxberry.Shop
                 _originalIconColor = _iconImage.color;
             }
 
-            _originalScale = RectTransform != null ? RectTransform.localScale : Vector3.one;
+            _originalScale = RectTransform != null
+                ? RectTransform.localScale
+                : Vector3.one;
         }
 
         private void UpdateScaleSelection(bool isSelected)
         {
             if (RectTransform != null)
             {
-                RectTransform.localScale = isSelected ? _originalScale * 1.05f : _originalScale;
+                RectTransform.localScale = isSelected
+                    ? _originalScale * 1.05f
+                    : _originalScale;
             }
         }
 
@@ -101,7 +106,9 @@ namespace Foxberry.Shop
         private AbilityManager FindAbilityManager()
         {
             Hero hero = FindFirstObjectByType<Hero>();
-            return hero != null ? hero.AbilityManager : null;
+            return hero != null
+                ? hero.AbilityManager
+                : null;
         }
     }
 }

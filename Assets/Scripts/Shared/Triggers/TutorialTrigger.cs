@@ -31,11 +31,9 @@ namespace Triggers
         private void ActivateTutorial()
         {
             _hasTriggered = true;
-
             if (_tutorialPanel != null)
             {
                 _tutorialPanel.SetActive(true);
-
                 if (_pauseGameOnTrigger)
                 {
                     Time.timeScale = 0f;

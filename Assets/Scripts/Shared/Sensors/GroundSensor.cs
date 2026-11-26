@@ -15,8 +15,9 @@ namespace Shared.Sensors
         {
             get
             {
-                Transform point = _checkPoint != null ? _checkPoint : transform;
-
+                Transform point = _checkPoint != null
+                    ? _checkPoint
+                    : transform;
                 return Physics2D.OverlapBox(point.position, _checkSize, 0f, _groundLayerMask);
             }
         }
@@ -36,8 +37,9 @@ namespace Shared.Sensors
 
         private void OnDrawGizmosSelected()
         {
-            Transform point = _checkPoint != null ? _checkPoint : transform;
-
+            Transform point = _checkPoint != null
+                ? _checkPoint
+                : transform;
             Gizmos.color = Color.green;
             Gizmos.DrawWireCube(point.position, _checkSize);
         }

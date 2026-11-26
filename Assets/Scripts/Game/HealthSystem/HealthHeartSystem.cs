@@ -18,7 +18,9 @@ namespace Foxberry
                 return;
             }
 
-            _spriteRenderer.sprite = isFull ? _fullHeartSprite : _emptyHeartSprite;
+            _spriteRenderer.sprite = isFull
+                ? _fullHeartSprite
+                : _emptyHeartSprite;
         }
 
         private void Awake()

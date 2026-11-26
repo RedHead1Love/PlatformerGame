@@ -20,17 +20,16 @@ namespace GameLogic
         private void UpdatePlayerData(GameSaveData save)
         {
             Hero player = UnityEngine.Object.FindFirstObjectByType<Hero>();
-
             if (player == null)
             {
                 return;
             }
 
             save.Health = player.Lives;
-
             ArmorManager armorManager = player.GetComponent<ArmorManager>();
-            save.Armor = armorManager != null ? armorManager.CurrentArmor : 0;
-
+            save.Armor = armorManager != null
+                ? armorManager.CurrentArmor
+                : 0;
             if (player.AbilityManager != null)
             {
                 save.Abilities.Capture(player.AbilityManager);
@@ -40,7 +39,6 @@ namespace GameLogic
         private void UpdateKeyCollectionData(GameSaveData save)
         {
             KeyCollection keyCollection = UnityEngine.Object.FindFirstObjectByType<KeyCollection>();
-
             if (keyCollection != null)
             {
                 save.Keys = keyCollection.GetCollectedKeys();
@@ -52,7 +50,6 @@ namespace GameLogic
             if (EnemyRegistry.Instance == null)
             {
                 save.DefeatedEnemies = new List<string>();
-
                 return;
             }
 
@@ -64,7 +61,6 @@ namespace GameLogic
             if (PersistentWallet.Instance != null)
             {
                 save.WalletBalance = PersistentWallet.Instance.CurrentCoins;
-
                 return;
             }
 
@@ -73,10 +69,9 @@ namespace GameLogic
                 return;
             }
 
-            save.WalletBalance = new CoinData(
-                WalletManager.Instance.GetCoins(CoinType.Bronze),
-                WalletManager.Instance.GetCoins(CoinType.Silver),
-                WalletManager.Instance.GetCoins(CoinType.Gold));
+            save.WalletBalance = new CoinData(WalletManager.Instance.GetCoins(CoinType.Bronze),
+                 WalletManager.Instance.GetCoins(CoinType.Silver),
+                 WalletManager.Instance.GetCoins(CoinType.Gold));
         }
     }
 }

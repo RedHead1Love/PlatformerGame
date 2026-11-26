@@ -6,14 +6,14 @@ namespace Player
     public sealed class HeroData : ScriptableObject
     {
         private const float DefaultSlideDuration = 0.2f;
-
         [SerializeField]
         private int _maxLives = 6;
         [SerializeField]
         private float _movementSpeed = 3f;
         [SerializeField]
         private float _jumpForce = 8f;
-        [SerializeField, Range(0f, 1f)]
+        [SerializeField]
+        [Range(0f, 1f)]
         private float _jumpCutMultiplier = 0.5f;
         [SerializeField]
         private float _slideSpeed = 5f;

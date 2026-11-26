@@ -17,9 +17,7 @@ namespace HardBossLogic
         private const float DestroyDelay = 6.3f;
         private const float AttackMissSoundVolumeMultiplier = 0.7f;
         private const float SpinSoundVolumeMultiplier = 0.8f;
-
         private static readonly int StateParameterHash = Animator.StringToHash("state");
-
         [SerializeField]
         private VideoPlayer _introVideoPlayer;
         [SerializeField]
@@ -75,6 +73,7 @@ namespace HardBossLogic
         [SerializeField]
         private float _spinSoundInterval = 0.3f;
         private Rigidbody2D _rigidbody;
+        private BossLocomotion _locomotion;
         private Animator _animator;
         private BossAudio _audio;
         private BossHealthBar _healthBar;
@@ -93,7 +92,9 @@ namespace HardBossLogic
         public override void TakeDamage(int amount)
         {
             if (_currentState == BossState.Death || amount <= 0)
+            {
                 return;
+            }
 
             PlayTakeDamageSound();
             base.TakeDamage(amount);
@@ -102,7 +103,9 @@ namespace HardBossLogic
         public override void Die()
         {
             if (_currentState == BossState.Death)
+            {
                 return;
+            }
 
             _audio?.StopMusic();
             PlayDeathSound();
@@ -124,13 +127,17 @@ namespace HardBossLogic
                 PlaySpinHitSound();
                 _lastSpinSoundTime = Time.time;
             }
+
             ApplyDamageInRadius(_spinRadius, _spinDamage);
         }
 
         public void AnimEvent_AttackFinished()
         {
             if (_wasAttackSuccessful == false)
+            {
                 PlayAttackMissSound();
+            }
+
             _shouldTaunt = true;
             SwitchState(BossState.Idle);
         }
@@ -154,25 +161,25 @@ namespace HardBossLogic
         protected override void Awake()
         {
             base.Awake();
-
             _healthBar = GetComponent<BossHealthBar>();
             _animator = GetComponent<Animator>();
             _rigidbody = GetComponent<Rigidbody2D>();
+            _locomotion = new BossLocomotion(transform, _rigidbody, false);
             AudioController output = FindFirstObjectByType<AudioController>();
             _audio = new BossAudio(output, _bossMusic);
-            _intro = new BossIntroSequence(
-                this,
-                _introVideoPlayer,
-                _videoPanel,
-                _videoFileName,
-                _healthBar,
-                output,
-                StopMovement,
-                _audio.StartMusic,
-                () => _currentState != BossState.Death);
-
+            _intro = new BossIntroSequence(this,
+                 _introVideoPlayer,
+                 _videoPanel,
+                 _videoFileName,
+                 _healthBar,
+                 output,
+                 StopMovement,
+                 _audio.StartMusic,
+                 () => _currentState != BossState.Death);
             if (_videoPanel != null)
+            {
                 _videoPanel.SetActive(false);
+            }
 
             FindPlayerIfNeeded();
         }
@@ -180,20 +187,26 @@ namespace HardBossLogic
         private void Update()
         {
             if (_currentState == BossState.Death)
+            {
                 return;
+            }
 
             if (_intro.IsPlaying)
             {
                 if (Input.GetKeyDown(KeyCode.Escape))
+                {
                     _intro.Finish();
+                }
+
                 return;
             }
 
             FindPlayerIfNeeded();
             CheckAggro();
-
             if (_isAggro == false)
+            {
                 return;
+            }
 
             UpdateCurrentState();
         }
@@ -202,39 +215,48 @@ namespace HardBossLogic
         {
             _intro?.Dispose();
             if (_isAggro)
+            {
                 _audio?.StopMusic();
+            }
         }
 
         private void UpdateCurrentState()
         {
             switch (_currentState)
             {
-            case BossState.Idle:
-                UpdateIdleState();
-                break;
-            case BossState.Walk:
-                UpdateWalkState();
-                break;
-            case BossState.SpinAttack:
-                UpdateSpinAttackState();
-                break;
-            case BossState.Taunt:
-                UpdateTauntState();
-                break;
+                case BossState.Idle:
+                    UpdateIdleState();
+                    break;
+                case BossState.Walk:
+                    UpdateWalkState();
+                    break;
+                case BossState.SpinAttack:
+                    UpdateSpinAttackState();
+                    break;
+                case BossState.Taunt:
+                    UpdateTauntState();
+                    break;
             }
         }
 
         private void CheckAggro()
         {
             if (Time.timeSinceLevelLoad < 1.5f)
+            {
                 return;
+            }
+
             if (_isAggro || _playerTransform == null)
+            {
                 return;
+            }
+
             if (Vector2.Distance(transform.position, _playerTransform.position) > _aggroDistance)
+            {
                 return;
+            }
 
             _isAggro = true;
-
             if (!_intro.HasPlayed && _introVideoPlayer != null && _videoPanel != null)
             {
                 _audio?.StopMusic();
@@ -252,7 +274,9 @@ namespace HardBossLogic
         private void UpdateIdleState()
         {
             if (_playerTransform == null)
+            {
                 return;
+            }
 
             if (_shouldTaunt)
             {
@@ -262,16 +286,15 @@ namespace HardBossLogic
             }
 
             float distanceToPlayer = Vector2.Distance(transform.position, _playerTransform.position);
-
             if (distanceToPlayer <= _meleeRange && Time.time >= _lastAttackTime + _attackCooldown)
             {
                 _lastAttackTime = Time.time;
-
                 if (UnityEngine.Random.Range(0, SpinAttackChance) == 0)
+                {
                     SwitchState(BossState.SpinAttack);
+                }
                 else
                     SwitchState(BossState.Attack);
-
                 return;
             }
 
@@ -282,10 +305,11 @@ namespace HardBossLogic
         {
             MoveTowardsPlayer();
             PlayMoveSound();
-
             float distanceToPlayer = Vector2.Distance(transform.position, _playerTransform.position);
             if (distanceToPlayer <= _meleeRange)
+            {
                 SwitchState(BossState.Idle);
+            }
         }
 
         private void UpdateSpinAttackState()
@@ -293,7 +317,9 @@ namespace HardBossLogic
             _stateTimer -= Time.deltaTime;
             MoveTowardsPlayer();
             if (_stateTimer <= TimerEndThreshold)
+            {
                 SwitchState(BossState.Idle);
+            }
         }
 
         private void UpdateTauntState()
@@ -301,32 +327,32 @@ namespace HardBossLogic
             _stateTimer -= Time.deltaTime;
             StopMovement();
             if (_stateTimer <= TimerEndThreshold)
+            {
                 SwitchState(BossState.Idle);
+            }
         }
 
         private void MoveTowardsPlayer()
         {
-            if (_playerTransform == null || _rigidbody == null)
-                return;
-            float direction = Mathf.Sign(_playerTransform.position.x - transform.position.x);
-            _rigidbody.velocity = new Vector2(direction * _moveSpeed, _rigidbody.velocity.y);
-            transform.localScale = new Vector3(direction, 1f, 1f);
+            _locomotion.MoveTowards(_playerTransform, _moveSpeed);
         }
 
         private bool ApplyDamageInRadius(float radius, int damage)
         {
             Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, radius, _playerLayerMask);
             bool hitSuccessful = false;
-
             foreach (Collider2D hit in hits)
             {
                 IDamageable damageable = hit.GetComponent<IDamageable>() ?? hit.GetComponentInParent<IDamageable>();
                 if (damageable == null)
+                {
                     continue;
+                }
 
                 damageable.TakeDamage(damage);
                 hitSuccessful = true;
             }
+
             return hitSuccessful;
         }
 
@@ -334,49 +360,54 @@ namespace HardBossLogic
         {
             _currentState = nextState;
             if (_animator != null)
+            {
                 _animator.SetInteger(StateParameterHash, (int)nextState);
+            }
 
             switch (nextState)
             {
-            case BossState.SpinAttack:
-                _stateTimer = _spinDuration;
-                _lastSpinSoundTime = 0f;
-                PlaySpinStartSound();
-                break;
-            case BossState.Taunt:
-                _stateTimer = _tauntDuration;
-                PlayTauntSound();
-                break;
-            case BossState.Death:
-                StopMovement();
-                break;
-            case BossState.Attack:
-                _wasAttackSuccessful = false;
-                StopMovement();
-                break;
+                case BossState.SpinAttack:
+                    _stateTimer = _spinDuration;
+                    _lastSpinSoundTime = 0f;
+                    PlaySpinStartSound();
+                    break;
+                case BossState.Taunt:
+                    _stateTimer = _tauntDuration;
+                    PlayTauntSound();
+                    break;
+                case BossState.Death:
+                    StopMovement();
+                    break;
+                case BossState.Attack:
+                    _wasAttackSuccessful = false;
+                    StopMovement();
+                    break;
             }
         }
 
         private void FindPlayerIfNeeded()
         {
             if (_playerTransform != null)
+            {
                 return;
+            }
+
             Hero hero = FindFirstObjectByType<Hero>();
             if (hero != null)
+            {
                 _playerTransform = hero.transform;
+            }
         }
 
         private void StopMovement()
         {
-            if (_rigidbody != null)
-                _rigidbody.velocity = Vector2.zero;
+            _locomotion?.Stop();
         }
 
         private void PlayAttackSound() => _audio.Play(_attackSound, _soundEffectVolume);
 
-        private void PlayAttackMissSound() => _audio.Play(
-            _attackMissSound,
-            _soundEffectVolume * AttackMissSoundVolumeMultiplier);
+        private void PlayAttackMissSound() => _audio.Play(_attackMissSound,
+             _soundEffectVolume * AttackMissSoundVolumeMultiplier);
 
         private void PlayTakeDamageSound() => _audio.Play(_takeDamageSound, _soundEffectVolume);
 
@@ -393,10 +424,12 @@ namespace HardBossLogic
         private void PlayMoveSound()
         {
             if (Time.time < _lastMoveSoundTime + _moveSoundInterval)
+            {
                 return;
+            }
+
             _lastMoveSoundTime = Time.time;
             _audio.Play(_moveSound, _soundEffectVolume);
         }
-
     }
 }

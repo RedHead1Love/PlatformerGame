@@ -14,7 +14,6 @@ namespace EnemyLogicDefault
         private const float DirectionThreshold = 0f;
         private const float BoxRotationAngle = 0f;
         private const int HealthThreshold = 0;
-
         [SerializeField]
         private float _attackCooldown = 1f;
         [SerializeField]
@@ -58,7 +57,6 @@ namespace EnemyLogicDefault
             }
 
             base.TakeDamage(amount);
-
             if (CurrentLives > HealthThreshold)
             {
                 StartHurtState();
@@ -74,16 +72,13 @@ namespace EnemyLogicDefault
             }
 
             PlayDeathSound();
-
             SetAnimationState(AnimationState.Death);
-
             if (_patrolAI != null)
             {
                 _patrolAI.enabled = false;
             }
 
             base.Die();
-
             Destroy(gameObject, DestroyDelay);
         }
 
@@ -105,7 +100,6 @@ namespace EnemyLogicDefault
         protected override void Awake()
         {
             base.Awake();
-
             InitializeComponents();
             SubscribeToPatrolEvents();
         }
@@ -165,15 +159,15 @@ namespace EnemyLogicDefault
         private void FinishAttack()
         {
             _isAttacking = false;
-
-            SetAnimationState(_isPlayerInRange ? AnimationState.Idle : AnimationState.Walk);
+            SetAnimationState(_isPlayerInRange
+                ? AnimationState.Idle
+                : AnimationState.Walk);
         }
 
         private void StartAttack()
         {
             _isAttacking = true;
             _nextAttackTime = Time.time + _attackDuration + _attackPause + _attackCooldown;
-
             SetAnimationState(AnimationState.Attack);
             Invoke(nameof(OnAttackEnded), _attackDuration);
         }
@@ -181,21 +175,18 @@ namespace EnemyLogicDefault
         private void ApplyAttackDamage()
         {
             FacePlayerIfPossible();
-
             Vector2 attackCenter = CalculateAttackCenter();
-
-            Collider2D playerCollider =
-                Physics2D.OverlapBox(attackCenter, _attackSize, BoxRotationAngle, LayerMask.GetMask(PlayerLayerName));
-
+            Collider2D playerCollider = Physics2D.OverlapBox(attackCenter,
+                 _attackSize,
+                 BoxRotationAngle,
+                 LayerMask.GetMask(PlayerLayerName));
             if (playerCollider == null)
             {
                 _audioController?.PlayAttackMissSound();
-
                 return;
             }
 
             IDamageable damageable = playerCollider.GetComponent<IDamageable>();
-
             if (damageable == null)
             {
                 damageable = playerCollider.GetComponentInParent<IDamageable>();
@@ -204,26 +195,22 @@ namespace EnemyLogicDefault
             if (damageable == null)
             {
                 _audioController?.PlayAttackMissSound();
-
                 return;
             }
 
             damageable.TakeDamage(_attackDamage);
-
             _audioController?.PlayAttackHitSound();
         }
 
         private void FacePlayerIfPossible()
         {
             GameObject player = GameObject.FindGameObjectWithTag("Player");
-
             if (player == null)
             {
                 return;
             }
 
             float directionToPlayer = player.transform.position.x - transform.position.x;
-
             if (Mathf.Abs(directionToPlayer) <= DirectionThreshold)
             {
                 return;
@@ -234,10 +221,10 @@ namespace EnemyLogicDefault
 
         private Vector2 CalculateAttackCenter()
         {
-            float direction = transform.localScale.x >= DirectionThreshold ? 1f : -1f;
-
+            float direction = transform.localScale.x >= DirectionThreshold
+                ? 1f
+                : -1f;
             Vector2 offset = new Vector2(_attackOffset.x * direction, _attackOffset.y);
-
             return (Vector2)transform.position + offset;
         }
 
@@ -247,10 +234,8 @@ namespace EnemyLogicDefault
             const string StateParameterName = "state";
             const int FullBodyAnimationLayer = -1;
             const float ResetToAnimationStart = 0f;
-
             _wasPlayerInRangeBeforeHurt = _isPlayerInRange;
             _isHurt = true;
-
             if (_patrolAI != null)
             {
                 _patrolAI.enabled = false;
@@ -269,13 +254,14 @@ namespace EnemyLogicDefault
         {
             _isHurt = false;
             _isPlayerInRange = _wasPlayerInRangeBeforeHurt;
-
             if (_patrolAI != null && IsDead == false)
             {
                 _patrolAI.enabled = true;
             }
 
-            SetAnimationState(_isPlayerInRange ? AnimationState.Idle : AnimationState.Walk);
+            SetAnimationState(_isPlayerInRange
+                ? AnimationState.Idle
+                : AnimationState.Walk);
         }
 
         private void OnMovementDirectionChanged(Vector2 direction)
@@ -297,23 +283,22 @@ namespace EnemyLogicDefault
         private void UpdateFacingDirection(float directionX)
         {
             float directionSign = Mathf.Sign(directionX);
-
-            transform.localScale = new Vector3(
-                directionSign * Mathf.Abs(transform.localScale.x),
-                transform.localScale.y,
-                transform.localScale.z);
+            transform.localScale = new Vector3(directionSign * Mathf.Abs(transform.localScale.x),
+                 transform.localScale.y,
+                 transform.localScale.z);
         }
 
         private void OnAttackRangeChanged(bool isInRange)
         {
             _isPlayerInRange = isInRange;
-
             if (_isHurt || _isAttacking)
             {
                 return;
             }
 
-            SetAnimationState(isInRange ? AnimationState.Idle : AnimationState.Walk);
+            SetAnimationState(isInRange
+                ? AnimationState.Idle
+                : AnimationState.Walk);
         }
 
         private void SetAnimationState(AnimationState state)

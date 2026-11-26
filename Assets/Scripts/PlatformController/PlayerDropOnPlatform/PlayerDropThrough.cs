@@ -12,7 +12,6 @@ namespace PlayerDropOnPlatform
         private const float DefaultDropOffsetY = 1f;
         private const float DefaultDropVelocityY = -0.3f;
         private const float DefaultIgnoreDuration = 0.3f;
-
         [SerializeField]
         private float _checkRadius = DefaultCheckRadius;
         [SerializeField]
@@ -36,7 +35,6 @@ namespace PlayerDropOnPlatform
             _rigidbody = GetComponent<Rigidbody2D>();
             _platformLayerMask = LayerMask.GetMask(PlatformLayerName);
             _inputProvider = GetComponent<IInputProvider>();
-
             if (_inputProvider == null)
             {
                 _inputProvider = GetComponentInParent<IInputProvider>();
@@ -85,23 +83,17 @@ namespace PlayerDropOnPlatform
         private IEnumerator PerformDropThrough()
         {
             _isDropping = true;
-
             Collider2D platform = FindPlatformBelow();
-
             if (platform == null)
             {
                 _isDropping = false;
-
                 yield break;
             }
 
             IgnorePlatformCollision(platform, true);
             ApplyDropMovement();
-
             yield return new WaitForSeconds(_ignoreDuration);
-
             IgnorePlatformCollision(platform, false);
-
             _isDropping = false;
         }
 

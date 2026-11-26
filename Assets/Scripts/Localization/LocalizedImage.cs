@@ -22,47 +22,26 @@ namespace Foxberry
 
         private void OnEnable()
         {
-            LocalizationManager.OnLanguageChanged += UpdateImage;
-            UpdateImage(LocalizationManager.CurrentLanguage);
+            LocalizationManager.OnLanguageChanged += OnLanguageChanged;
+            OnLanguageChanged(LocalizationManager.CurrentLanguage);
         }
 
         private void OnDisable()
         {
-            LocalizationManager.OnLanguageChanged -= UpdateImage;
+            LocalizationManager.OnLanguageChanged -= OnLanguageChanged;
         }
 
-        private void UpdateImage(GameLanguage language)
+        private void OnLanguageChanged(GameLanguage language)
         {
             if (_imageComponent == null)
             {
                 return;
             }
 
-            switch (language)
+            Sprite selected = LocalizedValue.Select(language, _russianSprite, _englishSprite, _turkishSprite);
+            if (selected != null)
             {
-            case GameLanguage.Russian:
-                if (_russianSprite != null)
-                {
-                    _imageComponent.sprite = _russianSprite;
-                }
-
-                break;
-
-            case GameLanguage.English:
-                if (_englishSprite != null)
-                {
-                    _imageComponent.sprite = _englishSprite;
-                }
-
-                break;
-
-            case GameLanguage.Turkish:
-                if (_turkishSprite != null)
-                {
-                    _imageComponent.sprite = _turkishSprite;
-                }
-
-                break;
+                _imageComponent.sprite = selected;
             }
         }
     }

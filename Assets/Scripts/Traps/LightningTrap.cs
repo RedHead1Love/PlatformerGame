@@ -9,7 +9,6 @@ namespace Traps
         private const string ActivateTriggerName = "Activate";
         private const string PlayerTagDefault = "Player";
         private const float BoxRotationAngle = 0f;
-
         [SerializeField]
         private bool _activateOnTriggerEnter = true;
         [SerializeField]
@@ -48,7 +47,6 @@ namespace Traps
             }
 
             _isActive = true;
-
             if (_animator != null)
             {
                 _animator.enabled = true;
@@ -59,7 +57,6 @@ namespace Traps
         public void ApplyDamage()
         {
             Collider2D[] hits = Physics2D.OverlapBoxAll(_damageAreaCenter, _damageAreaSize, BoxRotationAngle);
-
             foreach (Collider2D hit in hits)
             {
                 if (hit == null || hit.CompareTag(_playerTag) == false)
@@ -75,7 +72,6 @@ namespace Traps
         {
             _damageAreaSize = size;
             _damageAreaOffset = offset;
-
             if (_damageCollider is BoxCollider2D boxCollider)
             {
                 boxCollider.size = size;
@@ -88,7 +84,6 @@ namespace Traps
         public void Deactivate()
         {
             _isActive = false;
-
             if (_damageCollider != null)
             {
                 _damageCollider.enabled = false;
@@ -169,7 +164,6 @@ namespace Traps
             }
 
             CalculateDamageAreaCenter();
-
             if (_usePositionActivation && _player != null && !_isActive)
             {
                 CheckPositionActivation();
@@ -185,7 +179,6 @@ namespace Traps
 
             bool layerOk = IsActivationLayer(other.gameObject.layer);
             bool tagOk = other.CompareTag(_playerTag);
-
             if (layerOk && tagOk)
             {
                 ActivateTrap();
@@ -231,7 +224,6 @@ namespace Traps
         private void InitializePlayerReference()
         {
             GameObject playerObject = GameObject.FindGameObjectWithTag(_playerTag);
-
             if (playerObject != null)
             {
                 _player = playerObject.transform;
@@ -251,7 +243,6 @@ namespace Traps
             }
 
             float distanceToPlayer = Vector2.Distance(_activationPoint.position, _player.position);
-
             if (distanceToPlayer <= _activationRange)
             {
                 ActivateTrap();
@@ -266,7 +257,6 @@ namespace Traps
         private void DamagePlayerIfPossible(Collider2D playerCollider)
         {
             IDamageable damageable = playerCollider.GetComponent<IDamageable>();
-
             if (damageable == null)
             {
                 damageable = playerCollider.GetComponentInParent<IDamageable>();
@@ -278,10 +268,8 @@ namespace Traps
         private void OnDrawGizmosSelected()
         {
             CalculateDamageAreaCenter();
-
             Gizmos.color = Color.red;
             Gizmos.DrawWireCube(_damageAreaCenter, _damageAreaSize);
-
             if (_activationPoint != null)
             {
                 Gizmos.color = Color.yellow;

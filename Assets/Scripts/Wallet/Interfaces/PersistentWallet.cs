@@ -16,9 +16,10 @@ namespace Foxberry
         private const string SaveKey = "PlayerCoins";
         private const float SyncDelay = 0.5f;
         private const int MinimumCoinAmount = 0;
-
         [SerializeField]
         private CoinData _currentCoins;
+        private IProgressPreferences _preferences;
+        private IGameProgressSave _save;
 
         public event Action<CoinData> OnCoinsUpdated;
 
@@ -34,40 +35,31 @@ namespace Foxberry
             }
 
             CoinData newCoins = _currentCoins;
-
             switch (coinType.Trim().ToLowerInvariant())
             {
-            case BronzeCoinCommand:
-            case BronzeCoinName:
-                newCoins.Bronze += amount;
-
-                break;
-
-            case SilverCoinCommand:
-            case SilverCoinName:
-                newCoins.Silver += amount;
-
-                break;
-
-            case GoldCoinCommand:
-            case GoldCoinName:
-                newCoins.Gold += amount;
-
-                break;
-
-            default:
-                return;
+                case BronzeCoinCommand:
+                case BronzeCoinName:
+                    newCoins.Bronze += amount;
+                    break;
+                case SilverCoinCommand:
+                case SilverCoinName:
+                    newCoins.Silver += amount;
+                    break;
+                case GoldCoinCommand:
+                case GoldCoinName:
+                    newCoins.Gold += amount;
+                    break;
+                default:
+                    return;
             }
 
             newCoins.IsInitialized = true;
-
             SetCoins(newCoins);
         }
 
         public void LoadCoinsFromSave(CoinData savedCoins)
         {
             CoinData validCoins = new CoinData(savedCoins.Bronze, savedCoins.Silver, savedCoins.Gold);
-
             SetCoins(validCoins);
         }
 
@@ -79,7 +71,6 @@ namespace Foxberry
         public void SaveCoins()
         {
             string json = JsonUtility.ToJson(_currentCoins);
-
             _preferences.SetString(SaveKey, json);
             _preferences.Save();
         }
@@ -88,34 +79,34 @@ namespace Foxberry
         {
             if (_preferences.HasKey(SaveKey) == false)
             {
-                _currentCoins = new CoinData();
-
+                _currentCoins = default;
                 return;
             }
 
             string json = _preferences.GetString(SaveKey);
-
             _currentCoins = JsonUtility.FromJson<CoinData>(json);
-
             _currentCoins = new CoinData(_currentCoins.Bronze, _currentCoins.Silver, _currentCoins.Gold);
         }
 
-        private readonly IProgressPreferences _preferences = new UnityProgressPreferences();
-        private IGameProgressSave _save;
+        public void SetPreferences(IProgressPreferences preferences)
+        {
+            _preferences = preferences ?? throw new System.ArgumentNullException(nameof(preferences));
+        }
 
-        private void BindSave(IGameProgressSave save)
+        public void SetSave(IGameProgressSave save)
         {
             _save = save;
         }
 
         private void Awake()
         {
+            _preferences ??= GameServices.Preferences;
             InitializeSingleton();
         }
 
         private void OnDestroy()
         {
-            GameSaveConnections.Disconnect(BindSave);
+            GameSaveConnections.Disconnect(SetSave);
             if (Instance == this)
             {
                 Instance = null;
@@ -132,11 +123,9 @@ namespace Foxberry
             if (Instance == null)
             {
                 Instance = this;
-                GameSaveConnections.Connect(BindSave);
-
+                GameSaveConnections.Connect(SetSave);
                 DontDestroyOnLoad(gameObject);
                 LoadCoins();
-
                 return;
             }
 
@@ -146,14 +135,12 @@ namespace Foxberry
         private IEnumerator SyncWithSaveData()
         {
             yield return new WaitForSeconds(SyncDelay);
-
             if (_save == null || _save.HasSave() == false)
             {
                 yield break;
             }
 
             GameSaveData saveData = _save.CurrentSave;
-
             if (saveData == null || saveData.WalletBalance.IsInitialized == false)
             {
                 yield break;
@@ -165,7 +152,6 @@ namespace Foxberry
         private void SetCoins(CoinData coins)
         {
             _currentCoins = coins;
-
             SaveCoins();
             SyncWalletManager();
             OnCoinsUpdated?.Invoke(_currentCoins);

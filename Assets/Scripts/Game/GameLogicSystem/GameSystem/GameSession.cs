@@ -7,23 +7,22 @@ namespace GameLogic
     public sealed class GameSession : MonoBehaviour
     {
         private const string MainMenuSceneName = "MainMenu";
-
         [SerializeField]
         private bool _shouldStartNewGame = false;
+        private IGameProgressSave _save;
+        private IWorldProgress _worldProgress;
+        private IProgressPreferences _preferences;
 
         public static GameSession Instance { get; private set; }
 
         public void StartNewGame()
         {
-            WorldProgress.ResetGameState();
-
+            _worldProgress.ResetGameState();
             _shouldStartNewGame = false;
-
-            PlayerPrefs.DeleteKey("LastChance_Active");
-            PlayerPrefs.DeleteKey("ArmorPlates_Used");
-
+            _preferences.DeleteKey("LastChance_Active");
+            _preferences.DeleteKey("ArmorPlates_Used");
+            _preferences.Save();
             _save?.DeleteSaveData();
-
             ResetKeyCollectionUI();
         }
 
@@ -32,25 +31,36 @@ namespace GameLogic
             _shouldStartNewGame = true;
         }
 
-        private IGameProgressSave _save;
-
-        private void BindSave(IGameProgressSave save)
+        public void SetSave(IGameProgressSave save)
         {
             _save = save;
         }
 
+        public void SetWorldProgress(IWorldProgress worldProgress)
+        {
+            _worldProgress = worldProgress ?? throw new System.ArgumentNullException(nameof(worldProgress));
+        }
+
+        public void SetPreferences(IProgressPreferences preferences)
+        {
+            _preferences = preferences ?? throw new System.ArgumentNullException(nameof(preferences));
+        }
+
         private void Awake()
         {
+            _worldProgress ??= GameServices.Progress;
+            _preferences ??= GameServices.Preferences;
             InitializeSingleton();
         }
 
         private void OnDestroy()
         {
-            GameSaveConnections.Disconnect(BindSave);
+            GameSaveConnections.Disconnect(SetSave);
             if (Instance == this)
             {
                 Instance = null;
             }
+
             SceneManager.sceneLoaded -= OnSceneLoaded;
         }
 
@@ -59,11 +69,9 @@ namespace GameLogic
             if (Instance == null)
             {
                 Instance = this;
-                GameSaveConnections.Connect(BindSave);
-
+                GameSaveConnections.Connect(SetSave);
                 DontDestroyOnLoad(gameObject);
                 SceneManager.sceneLoaded += OnSceneLoaded;
-
                 return;
             }
 
@@ -81,7 +89,6 @@ namespace GameLogic
         private void ResetKeyCollectionUI()
         {
             KeyCollection keyCollection = FindFirstObjectByType<KeyCollection>();
-
             keyCollection?.ResetAllKeys();
         }
     }

@@ -14,15 +14,14 @@ namespace Player.Abilities
         private readonly float _slideSpeed;
         private readonly float _slideDuration;
 
-        public Slide(
-            Rigidbody2D rigidbody,
-            BoxCollider2D boxCollider,
-            float slideSpeed,
-            float slideDuration,
-            Vector2 slideColliderSize,
-            Vector2 slideColliderOffset,
-            Vector2 standColliderSize,
-            Vector2 standColliderOffset)
+        public Slide(Rigidbody2D rigidbody,
+             BoxCollider2D boxCollider,
+             float slideSpeed,
+             float slideDuration,
+             Vector2 slideColliderSize,
+             Vector2 slideColliderOffset,
+             Vector2 standColliderSize,
+             Vector2 standColliderOffset)
         {
             _rigidbody = rigidbody;
             _boxCollider = boxCollider;
@@ -37,11 +36,8 @@ namespace Player.Abilities
         public IEnumerator Execute(float rawDirection)
         {
             int direction = CalculateSlideDirection(rawDirection);
-
             ApplySlideColliderSettings(direction);
-
             yield return PerformSlideMovement(direction);
-
             ResetColliderToStanding();
             StopHorizontalMovement();
         }
@@ -49,8 +45,9 @@ namespace Player.Abilities
         private int CalculateSlideDirection(float rawDirection)
         {
             int direction = Mathf.RoundToInt(Mathf.Sign(rawDirection));
-
-            return direction == 0 ? 1 : direction;
+            return direction == 0
+                ? 1
+                : direction;
         }
 
         private void ApplySlideColliderSettings(int direction)
@@ -67,13 +64,10 @@ namespace Player.Abilities
         private IEnumerator PerformSlideMovement(int direction)
         {
             float elapsedTime = 0f;
-
             while (elapsedTime < _slideDuration)
             {
                 ApplySlideVelocity(direction);
-
                 elapsedTime += Time.deltaTime;
-
                 yield return null;
             }
         }

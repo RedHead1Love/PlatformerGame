@@ -8,29 +8,24 @@ namespace Player.StateMachine
     {
         private readonly Hero _hero;
         private readonly Slide _slideAbility;
-
         private Coroutine _slideCoroutine;
 
         public SlideState(Hero hero)
         {
             _hero = hero;
-
-            _slideAbility =
-                new Slide(
-                    _hero.Rigidbody,
-                    _hero.GetComponent<BoxCollider2D>(),
-                    _hero.Data.SlideSpeed,
-                    _hero.Data.SlideDuration,
-                    _hero.Data.SlideColliderSize,
-                    _hero.Data.SlideColliderOffset,
-                    _hero.Data.StandColliderSize,
-                    _hero.Data.StandColliderOffset);
+            _slideAbility = new Slide(_hero.Rigidbody,
+                 _hero.GetComponent<BoxCollider2D>(),
+                 _hero.Data.SlideSpeed,
+                 _hero.Data.SlideDuration,
+                 _hero.Data.SlideColliderSize,
+                 _hero.Data.SlideColliderOffset,
+                 _hero.Data.StandColliderSize,
+                 _hero.Data.StandColliderOffset);
         }
 
         public void Enter()
         {
             _hero.AnimationService.SetState(HeroAnimationState.Slide);
-
             StartSlideCoroutine();
         }
 
@@ -66,7 +61,6 @@ namespace Player.StateMachine
         private IEnumerator PerformSlide()
         {
             yield return _slideAbility.Execute(_hero.FacingDirection);
-
             _hero.StateMachine.Change<IdleState>();
         }
     }

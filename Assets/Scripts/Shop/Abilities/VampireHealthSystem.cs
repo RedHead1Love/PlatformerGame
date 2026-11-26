@@ -9,7 +9,6 @@ namespace Foxberry
     {
         private const int DefaultHealthPerKill = 1;
         private const float EnemyCheckInterval = 2f;
-
         [SerializeField]
         private int _healthPerKill = DefaultHealthPerKill;
         private Hero _hero;
@@ -25,9 +24,7 @@ namespace Foxberry
         public void Activate()
         {
             _isActive = true;
-
             RefreshAbilityManagerReference();
-
             if (_abilityManager != null)
             {
                 _abilityManager.UnlockVampireAbility();
@@ -39,7 +36,6 @@ namespace Foxberry
         public void Deactivate()
         {
             _isActive = false;
-
             UnsubscribeFromAllEnemies();
         }
 
@@ -74,14 +70,12 @@ namespace Foxberry
             }
 
             _checkTimer += Time.deltaTime;
-
             if (_checkTimer < EnemyCheckInterval)
             {
                 return;
             }
 
             _checkTimer = 0f;
-
             SubscribeToAllEnemies();
         }
 
@@ -95,9 +89,7 @@ namespace Foxberry
         private void CheckIfAbilityPurchased()
         {
             RefreshAbilityManagerReference();
-
             _isActive = _abilityManager?.HasVampireAbility ?? false;
-
             if (_isActive)
             {
                 SubscribeToAllEnemies();
@@ -115,7 +107,6 @@ namespace Foxberry
         private void SubscribeToAllEnemies()
         {
             Entity[] enemies = FindObjectsByType<Entity>(FindObjectsSortMode.None);
-
             foreach (Entity enemy in enemies)
             {
                 SubscribeToEnemy(enemy);
@@ -125,7 +116,6 @@ namespace Foxberry
         private void UnsubscribeFromAllEnemies()
         {
             Entity[] enemies = FindObjectsByType<Entity>(FindObjectsSortMode.None);
-
             foreach (Entity enemy in enemies)
             {
                 if (enemy != null)
@@ -158,8 +148,7 @@ namespace Foxberry
 
         private bool CanHealFromKill()
         {
-            return _isActive && _healthManager != null && _hero != null && _hero.IsAlive() &&
-                   _healthManager.IsFullHealth == false;
+            return _isActive && _healthManager != null && _hero != null && _hero.IsAlive() && _healthManager.IsFullHealth == false;
         }
     }
 }

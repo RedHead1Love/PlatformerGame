@@ -11,7 +11,6 @@ namespace Foxberry
         private const float ScaleMultiplier = 0.2f;
         private const float RotationSpeed = 360f;
         private const float GizmoRadius = 0.5f;
-
         [SerializeField]
         private KeyColor _keyColor = KeyColor.BlackColor;
         private bool _isCollected;
@@ -19,7 +18,6 @@ namespace Foxberry
         public void SetKeyColor(KeyColor keyColor)
         {
             _keyColor = keyColor;
-
             ApplyKeyColor();
         }
 
@@ -53,7 +51,6 @@ namespace Foxberry
         private void ConfigureCollider()
         {
             Collider2D keyCollider = GetComponent<Collider2D>();
-
             if (keyCollider != null)
             {
                 keyCollider.isTrigger = true;
@@ -63,7 +60,6 @@ namespace Foxberry
         private void ApplyKeyColor()
         {
             SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
-
             if (spriteRenderer == null)
             {
                 return;
@@ -87,16 +83,13 @@ namespace Foxberry
         private void CollectKey(GameObject player)
         {
             _isCollected = true;
-
             KeyCollection keyCollection = player.GetComponent<KeyCollection>();
-
             if (keyCollection == null)
             {
                 keyCollection = player.GetComponentInParent<KeyCollection>();
             }
 
             keyCollection?.AddKey(_keyColor);
-
             StartCoroutine(PlayCollectionAnimation());
         }
 
@@ -104,7 +97,6 @@ namespace Foxberry
         {
             SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
             Collider2D keyCollider = GetComponent<Collider2D>();
-
             if (keyCollider != null)
             {
                 keyCollider.enabled = false;
@@ -112,15 +104,11 @@ namespace Foxberry
 
             float elapsedTime = 0f;
             Vector3 originalScale = transform.localScale;
-
             while (elapsedTime < CollectAnimationDuration)
             {
                 elapsedTime += Time.deltaTime;
-
                 float progress = elapsedTime / CollectAnimationDuration;
-
                 ApplyAnimationTransform(originalScale, progress, spriteRenderer);
-
                 yield return null;
             }
 
@@ -131,7 +119,6 @@ namespace Foxberry
         {
             transform.Rotate(0f, 0f, RotationSpeed * Time.deltaTime);
             transform.localScale = originalScale * (1f + (progress * ScaleMultiplier));
-
             if (spriteRenderer != null)
             {
                 UpdateSpriteAlpha(spriteRenderer, progress);
@@ -141,9 +128,7 @@ namespace Foxberry
         private void UpdateSpriteAlpha(SpriteRenderer spriteRenderer, float progress)
         {
             Color spriteColor = spriteRenderer.color;
-
             spriteColor.a = 1f - progress;
-
             spriteRenderer.color = spriteColor;
         }
     }

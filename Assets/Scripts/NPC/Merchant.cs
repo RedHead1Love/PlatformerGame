@@ -11,9 +11,7 @@ namespace NPC
         private const int StateIdle2 = 1;
         private const int StateTalk = 2;
         private const float BoxRotationAngle = 0f;
-
         private readonly int _stateHash = Animator.StringToHash("state");
-
         [SerializeField]
         private IInputProvider _inputProvider;
         [SerializeField]
@@ -42,12 +40,15 @@ namespace NPC
         {
             _isShopOpen = true;
             SetAnimation(StateTalk);
-
             if (_interactionHint != null)
+            {
                 _interactionHint.SetActive(false);
+            }
 
             if (_shopPanel != null)
+            {
                 _shopPanel.SetActive(true);
+            }
 
             _shopManager?.OpenShop();
         }
@@ -55,13 +56,13 @@ namespace NPC
         public void CloseShop()
         {
             _shopManager?.CloseShop();
-
             if (_shopPanel != null)
+            {
                 _shopPanel.SetActive(false);
+            }
 
             _isShopOpen = false;
             SetAnimation(StateIdle);
-
             if (_isPlayerInRange && _interactionHint != null)
             {
                 _interactionHint.SetActive(true);
@@ -100,12 +101,10 @@ namespace NPC
             }
 
             _isPlayerInRange = IsPlayerInsideInteractionArea();
-
             if (_isPlayerInRange != _wasPlayerInside)
             {
                 _wasPlayerInside = _isPlayerInRange;
                 UpdateInteractionHint(_isPlayerInRange);
-
                 if (!_isPlayerInRange && _closeShopOnExit && _isShopOpen)
                 {
                     CloseShop();
@@ -126,13 +125,19 @@ namespace NPC
         private void InitializeReferences()
         {
             if (_interactionHint != null)
+            {
                 _interactionHint.SetActive(false);
+            }
 
             if (_shopPanel != null)
+            {
                 _shopPanel.SetActive(false);
+            }
 
             if (_shopManager == null && _shopPanel != null)
+            {
                 _shopManager = _shopPanel.GetComponent<ShopManager>();
+            }
 
             SetAnimation(StateIdle2);
         }
@@ -140,7 +145,9 @@ namespace NPC
         private void UpdateInteractionHint(bool isInside)
         {
             if (_isShopOpen)
+            {
                 return;
+            }
 
             if (_interactionHint != null)
             {
@@ -151,18 +158,25 @@ namespace NPC
         private void FindInputProvider()
         {
             if (_inputProvider != null)
+            {
                 return;
+            }
 
             _inputProvider = FindFirstObjectByType<AggregatedInputProvider>();
-
             if (_inputProvider == null && YG2.envir.isDesktop)
+            {
                 _inputProvider = FindFirstObjectByType<LegacyInputProvider>();
+            }
 
             if (_inputProvider == null && YG2.envir.isMobile)
+            {
                 _inputProvider = FindFirstObjectByType<JoystickInput>();
+            }
 
             if (_inputProvider == null)
+            {
                 Debug.LogWarning("IInputProvider не найден для торговца");
+            }
         }
 
         private bool IsPlayerInsideInteractionArea()
@@ -173,7 +187,9 @@ namespace NPC
         private void ToggleShop()
         {
             if (_isShopOpen)
+            {
                 CloseShop();
+            }
             else
                 OpenShop();
         }
@@ -181,7 +197,9 @@ namespace NPC
         private void SetAnimation(int state)
         {
             if (_animator != null)
+            {
                 _animator.SetInteger(_stateHash, state);
+            }
         }
 
         private void OnDrawGizmosSelected()

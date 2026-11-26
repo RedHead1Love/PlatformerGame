@@ -9,7 +9,6 @@ namespace AudioSystem
         private const string MusicPrefsKey = "MusicVolume";
         private const string SFXPrefsKey = "SFXVolume";
         private const float DefaultVolume = 0.8f;
-
         [SerializeField]
         private bool _isMusic = false;
         private AudioSource _audioSource;
@@ -18,7 +17,6 @@ namespace AudioSystem
         private void Awake()
         {
             _audioSource = GetComponent<AudioSource>();
-
             if (_audioSource != null)
             {
                 _originalVolume = _audioSource.volume;
@@ -29,13 +27,13 @@ namespace AudioSystem
         {
             if (_isMusic)
             {
-                VolumeSettings.OnMusicVolumeChanged += UpdateVolume;
-                UpdateVolume(PlayerPrefs.GetFloat(MusicPrefsKey, DefaultVolume));
+                VolumeSettings.OnMusicVolumeChanged += OnVolumeChanged;
+                OnVolumeChanged(PlayerPrefs.GetFloat(MusicPrefsKey, DefaultVolume));
             }
             else
             {
-                VolumeSettings.OnSFXVolumeChanged += UpdateVolume;
-                UpdateVolume(PlayerPrefs.GetFloat(SFXPrefsKey, DefaultVolume));
+                VolumeSettings.OnSFXVolumeChanged += OnVolumeChanged;
+                OnVolumeChanged(PlayerPrefs.GetFloat(SFXPrefsKey, DefaultVolume));
             }
         }
 
@@ -43,15 +41,15 @@ namespace AudioSystem
         {
             if (_isMusic)
             {
-                VolumeSettings.OnMusicVolumeChanged -= UpdateVolume;
+                VolumeSettings.OnMusicVolumeChanged -= OnVolumeChanged;
             }
             else
             {
-                VolumeSettings.OnSFXVolumeChanged -= UpdateVolume;
+                VolumeSettings.OnSFXVolumeChanged -= OnVolumeChanged;
             }
         }
 
-        private void UpdateVolume(float globalVolume)
+        private void OnVolumeChanged(float globalVolume)
         {
             if (_audioSource != null)
             {

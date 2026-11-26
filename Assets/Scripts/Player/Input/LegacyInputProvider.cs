@@ -16,40 +16,33 @@ namespace Player.Input
         private const KeyCode MapKey = KeyCode.M;
         private const KeyCode MenuKey = KeyCode.Escape;
         private const KeyCode InteractKey = KeyCode.F;
-
         private bool _isInputBlocked;
         private bool _isShopOpen;
         private Hero _hero;
 
-        public float HorizontalAxis => IsGameplayInputBlocked() ? 0f : UnityEngine.Input.GetAxisRaw(HorizontalAxisName);
+        public float HorizontalAxis => IsGameplayInputBlocked()
+            ? 0f
+            : UnityEngine.Input.GetAxisRaw(HorizontalAxisName);
 
-        public bool IsJumpPressed =>
-            IsGameplayInputBlocked() == false && UnityEngine.Input.GetButtonDown(JumpButtonName);
+        public bool IsJumpPressed => IsGameplayInputBlocked() == false && UnityEngine.Input.GetButtonDown(JumpButtonName);
 
         public bool IsJumpHeld => IsGameplayInputBlocked() == false && UnityEngine.Input.GetButton(JumpButtonName);
 
-        public bool IsAttackPressed =>
-            IsGameplayInputBlocked() == false && UnityEngine.Input.GetButtonDown(PrimaryAttackButtonName);
+        public bool IsAttackPressed => IsGameplayInputBlocked() == false && UnityEngine.Input.GetButtonDown(PrimaryAttackButtonName);
 
-        public bool IsSecondaryAttackPressed =>
-            IsGameplayInputBlocked() == false && UnityEngine.Input.GetButtonDown(SecondaryAttackButtonName);
+        public bool IsSecondaryAttackPressed => IsGameplayInputBlocked() == false && UnityEngine.Input.GetButtonDown(SecondaryAttackButtonName);
 
         public bool IsLiftPressed => IsGameplayInputBlocked() == false && UnityEngine.Input.GetKeyDown(LiftKey);
 
-        public bool IsDropHeroPressed =>
-            IsGameplayInputBlocked() == false &&
-            (UnityEngine.Input.GetKeyDown(DropHeroKey) || UnityEngine.Input.GetKeyDown(DropHeroAltKey));
+        public bool IsDropHeroPressed => IsGameplayInputBlocked() == false && (UnityEngine.Input.GetKeyDown(DropHeroKey) || UnityEngine.Input.GetKeyDown(DropHeroAltKey));
 
         public bool IsOpenMapPressed => IsGameplayInputBlocked() == false && UnityEngine.Input.GetKeyDown(MapKey);
 
-        public bool IsOpenShopOrChestPressed =>
-            IsGameplayInputBlocked() == false && (UnityEngine.Input.GetKeyDown(InteractKey));
+        public bool IsOpenShopOrChestPressed => IsGameplayInputBlocked() == false && UnityEngine.Input.GetKeyDown(InteractKey);
 
-        public bool IsMenuPressed =>
-            _isInputBlocked == false && _isShopOpen == false && UnityEngine.Input.GetKeyDown(MenuKey);
+        public bool IsMenuPressed => _isInputBlocked == false && _isShopOpen == false && UnityEngine.Input.GetKeyDown(MenuKey);
 
-        public bool IsSlidePressed => IsGameplayInputBlocked() == false && UnityEngine.Input.GetKeyDown(SlideKey) &&
-                                      (_hero?.AbilityManager?.HasDash ?? true);
+        public bool IsSlidePressed => IsGameplayInputBlocked() == false && UnityEngine.Input.GetKeyDown(SlideKey) && (_hero?.AbilityManager?.HasDash ?? true);
 
         public void BlockInput(bool isBlocked)
         {
@@ -69,7 +62,6 @@ namespace Player.Input
         private void InitializeHeroReference()
         {
             _hero = GetComponent<Hero>();
-
             if (_hero == null)
             {
                 _hero = FindFirstObjectByType<Hero>();

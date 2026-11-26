@@ -17,7 +17,6 @@ namespace Foxberry
             }
 
             WalletManager.Instance.OnCoinsChanged += OnCoinsChanged;
-
             InitializeDisplay();
         }
 
@@ -44,7 +43,6 @@ namespace Foxberry
                 }
 
                 int currentCoins = WalletManager.Instance.GetCoins(display.CoinType);
-
                 UpdateCoinDisplay(display, currentCoins);
             }
         }
@@ -64,7 +62,6 @@ namespace Foxberry
                 }
 
                 UpdateCoinDisplay(display, newAmount);
-
                 break;
             }
         }

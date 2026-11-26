@@ -16,7 +16,9 @@ namespace GameLogic
 
         public bool Exists() => File.Exists(_path);
 
-        public GameSaveData Load() => Exists() ? JsonUtility.FromJson<GameSaveData>(File.ReadAllText(_path)) : null;
+        public GameSaveData Load() => Exists()
+            ? JsonUtility.FromJson<GameSaveData>(File.ReadAllText(_path))
+            : null;
 
         public void Save(GameSaveData data)
         {

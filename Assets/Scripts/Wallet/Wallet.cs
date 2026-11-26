@@ -21,7 +21,6 @@ namespace GameLogic
             }
 
             _coins += amount;
-
             OnCoinsChanged?.Invoke(_coins);
         }
 
@@ -33,9 +32,7 @@ namespace GameLogic
             }
 
             _coins -= amount;
-
             OnCoinsChanged?.Invoke(_coins);
-
             return true;
         }
 
@@ -62,9 +59,7 @@ namespace GameLogic
             if (Instance == null)
             {
                 Instance = this;
-
                 DontDestroyOnLoad(gameObject);
-
                 return;
             }
 
